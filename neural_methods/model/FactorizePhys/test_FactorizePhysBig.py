@@ -34,10 +34,14 @@ model_config = {
     "assess_latency": False,
     "num_trials": 20,
     "visualize": False,
-    # "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_Base_HighRes.pth",
-    "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_FSAM_Res_HighRes.pth",
+    "data_type": "rgb",
+    "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_Base_HighRes.pth",
+    # "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_FSAM_Res_HighRes.pth",
     "data_path": "/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128",
     "label_path": "/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128"
+    # "ckpt_path": "./runs/exp/iBVP_RGBT_240_128x128/PreTrainedModels/iBVP_T_FactorizePhys_HighRes_Epoch9.pth",
+    # "data_path": "/home/jitesh/data/iBVP_Dataset/iBVP_RGBT_240_128x128",
+    # "label_path": "/home/jitesh/data/iBVP_Dataset/iBVP_RGBT_240_128x128"
 }
 
 # default `log_dir` is "runs" - we'll be more specific here
@@ -189,7 +193,10 @@ class TestFactorizePhysBig(object):
         fig.tight_layout()
         cmap = "coolwarm"
 
-        ax[0, 0].imshow(self.np_data[enc_frames//2, ...].astype(np.uint8))
+        if model_config["data_type"] == "thermal":
+            ax[0, 0].imshow(self.np_data[enc_frames//2, :, :, -1])
+        else:
+            ax[0, 0].imshow(self.np_data[enc_frames//2, ...].astype(np.uint8))
         ax[0, 0].axis('off')
 
         ch = 0
