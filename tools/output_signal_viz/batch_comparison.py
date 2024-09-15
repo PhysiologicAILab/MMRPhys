@@ -57,6 +57,17 @@ path_dict_cross_dataset = {
                 "UBFC_EfficientPhys_SASN": "UBFC-rPPG_EfficientPhys_iBVP_outputs.pickle",
                 "UBFC_FactorizePhys_FSAM": "UBFC-rPPG_FactorizePhys_FSAM_Res_iBVP_outputs.pickle"
             }
+        },
+        "UBFC-rPPG": {
+            "root": "runs/exp/UBFC-rPPG_Raw_160_72x72/saved_test_outputs",
+            "exp": {
+                "iBVP_EfficientPhys_SASN": "iBVP_EfficientPhys_UBFC-rPPG_outputs.pickle",
+                "iBVP_FactorizePhys_FSAM": "iBVP_FactorizePhys_FSAM_Res_UBFC-rPPG_outputs.pickle",
+                "PURE_EfficientPhys_SASN": "PURE_EfficientPhys_UBFC-rPPG_outputs.pickle",
+                "PURE_FactorizePhys_FSAM": "PURE_FactorizePhys_FSAM_Res_UBFC-rPPG_outputs.pickle",
+                "SCAMPS_EfficientPhys_SASN": "SCAMPS_EfficientPhys_UBFC-rPPG_outputs.pickle",
+                "SCAMPS_FactorizePhys_FSAM": "SCAMPS_FactorizePhys_FSAM_Res_UBFC-rPPG_outputs.pickle"
+            }
         }
     }
 }
@@ -70,9 +81,18 @@ path_dict_within_dataset = {
                 "FactorizePhys_FSAM": "PURE_Intra_FactorizePhys_FSAM_Res_outputs.pickle",
                 "PhysNet": "PURE_Intra_PhysNet_outputs.pickle",
             }
+        },
+        "UBFC-rPPG": {
+            "root": "runs/exp/UBFC-rPPG_Raw_160_72x72/saved_test_outputs",
+            "exp": {
+                "EfficientPhys_SASN": "UBFC-rPPG_Intra_EfficientPhys_Epoch9_UBFC-rPPG_outputs.pickle",
+                "FactorizePhys_FSAM": "UBFC-rPPG_Intra_FactorizePhys_FSAM_Res_Epoch9_UBFC-rPPG_outputs.pickle",
+                "PhysNet": "UBFC-rPPG_Intra_PhysNet_Epoch9_UBFC-rPPG_outputs.pickle",
+            }
         }
     }
 }
+
 
 # HELPER FUNCTIONS
 
@@ -208,10 +228,14 @@ def compare_estimated_bvps_cross_dataset():
                 data_dict[train_datasets[0]][model_names[0]]['labels'][trial_list[trial_ind]]))
             bvp_label = _process_signal(bvp_label, fs, diff_flag=diff_flag)
 
+            hr_label = _calculate_fft_hr(bvp_label, fs=fs)
+            hr_label = int(np.round(hr_label))
+            hr_pred = {}
+
             for c_ind in range(total_chunks):
                 try:
                     fig, ax = plt.subplots(total_train_datasets, 1, figsize=(20, 12), sharex=True)
-                    fig.tight_layout()
+                    # fig.tight_layout()
                     plt.suptitle('Testing on ' + test_dataset + ' Dataset; Trial: ' +
                                 trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
 
@@ -225,7 +249,7 @@ def compare_estimated_bvps_cross_dataset():
                             trial_dict[train_datasets[d_ind]] = {}
 
                         for m_ind in range(len(model_names)):
-                                
+
                             if model_names[m_ind] not in trial_dict[train_datasets[d_ind]]:
                                 trial_dict[train_datasets[d_ind]][model_names[m_ind]] = {}
 
@@ -237,10 +261,13 @@ def compare_estimated_bvps_cross_dataset():
                                 trial_dict[train_datasets[d_ind]][model_names[m_ind]]["prediction"] = _process_signal(
                                     trial_dict[train_datasets[d_ind]][model_names[m_ind]]["prediction"], fs, diff_flag=diff_flag)
 
-                            ax[d_ind].plot(x_time, trial_dict[train_datasets[d_ind]][model_names[m_ind]]
-                                        ["prediction"][start: stop], label=model_names[m_ind])
+                                hr_pred[model_names[m_ind]] = _calculate_fft_hr(trial_dict[train_datasets[d_ind]][model_names[m_ind]]["prediction"], fs=fs)
+                                hr_pred[model_names[m_ind]] = int(np.round(hr_pred[model_names[m_ind]]))
 
-                        ax[d_ind].plot(x_time, bvp_label[start: stop], label="GT", color='black')
+                            ax[d_ind].plot(x_time, trial_dict[train_datasets[d_ind]][model_names[m_ind]]
+                                           ["prediction"][start: stop], label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
+
+                        ax[d_ind].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
                         ax[d_ind].legend(loc = "upper right")
                         ax[d_ind].set_title("Training Dataset: " + train_datasets[d_ind])
 
@@ -315,10 +342,14 @@ def compare_estimated_bvps_within_dataset():
                 data_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
             bvp_label = _process_signal(bvp_label, fs, diff_flag=diff_flag)
 
+            hr_label = _calculate_fft_hr(bvp_label, fs=fs)
+            hr_label = int(np.round(hr_label))
+            hr_pred = {}
+
             for c_ind in range(total_chunks):
                 try:
                     fig = plt.figure(figsize=(15, 5))
-                    fig.tight_layout()
+                    # fig.tight_layout()
 
                     start = (c_ind)*chunk_size
                     stop = (c_ind+1)*chunk_size
@@ -326,7 +357,7 @@ def compare_estimated_bvps_within_dataset():
                     x_time = np.linspace(0, samples/fs, num=samples)
 
                     for m_ind in range(len(model_names)):
-                            
+
                         if model_names[m_ind] not in trial_dict:
                             trial_dict[model_names[m_ind]] = {}
 
@@ -338,15 +369,11 @@ def compare_estimated_bvps_within_dataset():
                             trial_dict[model_names[m_ind]]["prediction"] = _process_signal(
                                 trial_dict[model_names[m_ind]]["prediction"], fs, diff_flag=diff_flag)
 
-                        hr_pred = _calculate_fft_hr(
-                            trial_dict[model_names[m_ind]]["prediction"], fs=fs)
-                        hr_pred = int(np.round(hr_pred))
+                            hr_pred[model_names[m_ind]] = _calculate_fft_hr(trial_dict[model_names[m_ind]]["prediction"], fs=fs)
+                            hr_pred[model_names[m_ind]] = int(np.round([model_names[m_ind]]))
         
                         plt.plot(x_time, trial_dict[model_names[m_ind]]
-                                    ["prediction"][start: stop], label=model_names[m_ind] + "; HR = " + str(hr_pred))
-
-                    hr_label = _calculate_fft_hr(bvp_label, fs=fs)
-                    hr_label = int(np.round(hr_label))
+                                 ["prediction"][start: stop], label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
 
                     plt.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
                     plt.legend(loc = "upper right")
@@ -364,5 +391,5 @@ def compare_estimated_bvps_within_dataset():
 
 
 if __name__ == "__main__":
-    # compare_estimated_bvps_cross_dataset()
+    compare_estimated_bvps_cross_dataset()
     compare_estimated_bvps_within_dataset()

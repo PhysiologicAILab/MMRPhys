@@ -35,8 +35,6 @@ import numpy as np
 import pandas as pd
 import pickle 
 
-from unsupervised_methods.methods import POS_WANG
-from unsupervised_methods import utils
 from scipy import signal
 from scipy import sparse
 import math
@@ -266,7 +264,6 @@ class BP4DPlusBigSmallLoader(BaseLoader):
 
         # CONSTRUCT DATA DICTIONARY FOR VIDEO TRIAL
         data_dict = self.construct_data_dict(data_dir_info, config_data) # construct a dictionary of ALL labels and video frames (of equal length)
-        data_dict = self.generate_pos_psuedo_labels(data_dict, fs=config_data.FS)
         
         # SEPERATE DATA INTO VIDEO FRAMES AND LABELS ARRAY
         frames = self.read_video(data_dict) # read in the video frames
@@ -281,72 +278,6 @@ class BP4DPlusBigSmallLoader(BaseLoader):
         count, input_name_list, label_name_list = self.save_multi_process(big_clips, small_clips, labels_clips, saved_filename, config_data)
 
         file_list_dict[i] = input_name_list
-
-
-
-    def generate_pos_psuedo_labels(self, data_dict, fs=30):
-        """Generated POS-based PPG Psuedo Labels For Training
-
-        Args:
-            frames(List[array]): a video frames.
-            fs(int or float): Sampling rate of video
-        Returns:
-            env_norm_bvp: Hilbert envlope normalized POS PPG signal, filtered are HR frequency
-        """
-
-        frames = data_dict['X']
-
-        # GENERATE POS PPG SIGNAL
-        WinSec = 1.6
-        RGB = POS_WANG._process_video(frames)
-        N = RGB.shape[0]
-        H = np.zeros((1, N))
-        l = math.ceil(WinSec * fs)
-
-        for n in range(N):
-            m = n - l
-            if m >= 0:
-                Cn = np.true_divide(RGB[m:n, :], np.mean(RGB[m:n, :], axis=0))
-                Cn = np.mat(Cn).H
-                S = np.matmul(np.array([[0, 1, -1], [-2, 1, 1]]), Cn)
-                h = S[0, :] + (np.std(S[0, :]) / np.std(S[1, :])) * S[1, :]
-                mean_h = np.mean(h)
-                for temp in range(h.shape[1]):
-                    h[0, temp] = h[0, temp] - mean_h
-                H[0, m:n] = H[0, m:n] + (h[0])
-
-        bvp = H
-        bvp = utils.detrend(np.mat(bvp).H, 100)
-        bvp = np.asarray(np.transpose(bvp))[0]
-
-        # AGGRESSIVELY FILTER PPG SIGNAL
-        hr_arr = data_dict['HR_bpm'] # get hr freq from GT label
-        avg_hr_bpm = np.sum(hr_arr)/len(hr_arr) # calculate avg hr for the entire trial
-        hr_freq = avg_hr_bpm / 60 # divide beats per min by 60, to get beats pers secone
-        halfband = 20 / fs # half bandwith to account for HR variation (accounts for +/- 20 bpm variation from mean HR)
-
-        # MAX BANDWIDTH [0.70, 3]Hz = [42, 180]BPM (BANDWIDTH MAY BE SMALLER)
-        min_freq = hr_freq - halfband # calculate min cutoff frequency
-        if min_freq < 0.70:
-            min_freq = 0.70
-        max_freq = hr_freq + halfband # calculate max cutoff frequency
-        if max_freq > 3:
-            max_freq = 3
-
-        # FILTER POS PPG W/ 2nd ORDER BUTTERWORTH FILTER
-        b, a = signal.butter(2, [(min_freq) / fs * 2, (max_freq) / fs * 2], btype='bandpass')
-        pos_bvp = signal.filtfilt(b, a, bvp.astype(np.double))
-
-        # APPLY HILBERT NORMALIZATION TO NORMALIZE PPG AMPLITUDE
-        analytic_signal = signal.hilbert(pos_bvp)
-        amplitude_envelope = np.abs(analytic_signal)
-        env_norm_bvp = pos_bvp/amplitude_envelope
-
-        data_dict['pos_bvp'] = pos_bvp
-        data_dict['pos_env_norm_bvp'] = env_norm_bvp
-
-        return data_dict # return data dict w/ POS psuedo labels
-
 
 
     def construct_data_dict(self, data_dir_info, config_data):

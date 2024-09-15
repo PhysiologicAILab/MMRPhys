@@ -12,8 +12,6 @@ import re
 from math import ceil
 from scipy import signal
 from scipy import sparse
-from unsupervised_methods.methods import POS_WANG
-from unsupervised_methods import utils
 import math
 import multiprocessing as mp
 
@@ -160,53 +158,6 @@ class BaseLoader(Dataset):
             raise Exception(f'Loaded frames are of an incorrect type or range of values! '\
             + f'Received frames of type {frames.dtype} and range {np.min(frames)} to {np.max(frames)}.')
         return np.asarray(processed_frames)
-
-    def generate_pos_psuedo_labels(self, frames, fs=30):
-        """Generated POS-based PPG Psuedo Labels For Training
-
-        Args:
-            frames(List[array]): a video frames.
-            fs(int or float): Sampling rate of video
-        Returns:
-            env_norm_bvp: Hilbert envlope normalized POS PPG signal, filtered are HR frequency
-        """
-
-        # generate POS PPG signal
-        WinSec = 1.6
-        RGB = POS_WANG._process_video(frames)
-        N = RGB.shape[0]
-        H = np.zeros((1, N))
-        l = math.ceil(WinSec * fs)
-
-        for n in range(N):
-            m = n - l
-            if m >= 0:
-                Cn = np.true_divide(RGB[m:n, :], np.mean(RGB[m:n, :], axis=0))
-                Cn = np.mat(Cn).H
-                S = np.matmul(np.array([[0, 1, -1], [-2, 1, 1]]), Cn)
-                h = S[0, :] + (np.std(S[0, :]) / np.std(S[1, :])) * S[1, :]
-                mean_h = np.mean(h)
-                for temp in range(h.shape[1]):
-                    h[0, temp] = h[0, temp] - mean_h
-                H[0, m:n] = H[0, m:n] + (h[0])
-
-        bvp = H
-        bvp = utils.detrend(np.mat(bvp).H, 100)
-        bvp = np.asarray(np.transpose(bvp))[0]
-
-        # filter POS PPG w/ 2nd order butterworth filter (around HR freq)
-        # min freq of 0.7Hz was experimentally found to work better than 0.75Hz
-        min_freq = 0.70
-        max_freq = 3
-        b, a = signal.butter(2, [(min_freq) / fs * 2, (max_freq) / fs * 2], btype='bandpass')
-        pos_bvp = signal.filtfilt(b, a, bvp.astype(np.double))
-
-        # apply hilbert normalization to normalize PPG amplitude
-        analytic_signal = signal.hilbert(pos_bvp) 
-        amplitude_envelope = np.abs(analytic_signal) # derive envelope signal
-        env_norm_bvp = pos_bvp/amplitude_envelope # normalize by env
-
-        return np.array(env_norm_bvp) # return POS psuedo labels
     
     def preprocess_dataset(self, data_dirs, config_preprocess, begin, end):
         """Parses and preprocesses all the raw data based on split.
