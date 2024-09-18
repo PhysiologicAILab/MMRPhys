@@ -11,7 +11,7 @@ from neural_methods.model.MMRPhys.LGAM import LGAM
 nf = [8, 12, 16]
 
 model_config = {
-    "MODALITY": ["BVP"],
+    "TASKS": ["BVP"],
     "LGAM": True,
     "MD_FSAM": False,
     "MD_TYPE": "NMF",
@@ -128,9 +128,9 @@ class BVP_Head(nn.Module):
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "NMF" in self.md_type:
-                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min()) # to make it positive (>= 0)
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_bvp) # to make it positive (>= 0)
             else:
-                att_mask, appx_error = self.fsam(voxel_embeddings)
+                att_mask, appx_error = self.fsam(voxel_embeddings, label_bvp)
 
             if self.debug:
                 print("att_mask.shape", att_mask.shape)
@@ -313,16 +313,16 @@ class MMRPhys(nn.Module):
         else:
             pass
         
-        self.modality = md_config["MODALITY"]
+        self.tasks = md_config["TASKS"]
 
         if self.debug:
             print("nf:", nf)
 
-        if "BVP" in self.modality:
+        if "BVP" in self.tasks:
             self.rppg_feature_extractor = rPPG_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)
             self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
-        if "Resp" in self.modality:
+        if "Resp" in self.tasks:
             self.rbr_feature_extractor = rBr_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)        
             self.rBr_head = Resp_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
@@ -364,26 +364,26 @@ class MMRPhys(nn.Module):
         if self.debug:
             print("Diff Normalized shape", x.shape)
 
-        if "BVP" in self.modality:
+        if "BVP" in self.tasks:
             rppg_voxel_embeddings = self.rppg_feature_extractor(x)
     
-        if "Resp" in self.modality:
+        if "Resp" in self.tasks:
             rbr_voxel_embeddings = self.rbr_feature_extractor(x)
         
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.modality:
-                rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
-            if "Resp" in self.modality:
+            if "BVP" in self.tasks:
+                rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
+            if "Resp" in self.tasks:
                 rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
         elif (self.training or self.debug) and self.use_lgam:
-            if "BVP" in self.modality:
+            if "BVP" in self.tasks:
                 rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
-            if "Resp" in self.modality:
+            if "Resp" in self.tasks:
                 rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1, label_resp)
         else:
-            if "BVP" in self.modality:
+            if "BVP" in self.tasks:
                 rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
-            if "Resp" in self.modality:
+            if "Resp" in self.tasks:
                 rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
 
         # if self.debug:
@@ -392,22 +392,22 @@ class MMRPhys(nn.Module):
         # rPPG = rppg_feats.view(-1, length-1)
 
         if self.debug:
-            if "BVP" in self.modality:
+            if "BVP" in self.tasks:
                 print("rPPG.shape", rPPG.shape)
-            if "Resp" in self.modality:
+            if "Resp" in self.tasks:
                 print("rBr.shape", rBr.shape)
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.modality and "Resp" in self.modality:
+            if "BVP" in self.tasks and "Resp" in self.tasks:
                 return rPPG, rBr, rppg_voxel_embeddings, factorized_embeddings, appx_error, factorized_embeddings_br, appx_error_br
-            elif "BVP" in self.modality:
+            elif "BVP" in self.tasks:
                 return rPPG, rppg_voxel_embeddings, factorized_embeddings, appx_error
-            elif "Resp" in self.modality:
+            elif "Resp" in self.tasks:
                 return rBr, rbr_voxel_embeddings, factorized_embeddings_br, appx_error_br
         else:
-            if "BVP" in self.modality and "Resp" in self.modality:
+            if "BVP" in self.tasks and "Resp" in self.tasks:
                 return rPPG, rBr, rppg_voxel_embeddings
-            elif "BVP" in self.modality:
+            elif "BVP" in self.tasks:
                 return rPPG, rppg_voxel_embeddings
-            elif "Resp" in self.modality:
+            elif "Resp" in self.tasks:
                 return rBr, rbr_voxel_embeddings

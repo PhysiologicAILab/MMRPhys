@@ -60,7 +60,7 @@ class _MatrixDecompositionBase(nn.Module):
     def compute_coef(self, x, bases, coef):
         raise NotImplementedError
 
-    def forward(self, x, return_bases=False):
+    def forward(self, x, y=None, return_bases=False):
 
         if self.debug:
             print("Org x.shape", x.shape)
@@ -303,7 +303,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
     def compute_coef(self, x, rbfs, bases, coef):
         raise NotImplementedError
 
-    def forward(self, x, return_bases=False):
+    def forward(self, x, y=None, return_bases=False):
 
         if self.debug:
             print("Org x.shape", x.shape)
@@ -334,8 +334,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             exit()
 
         P = D
-        opt = "bvp"
-        if opt == "radial_basis":
+        if "rbf" in self.md_type.lower():
             sig0 = torch.tensor(6.0)
             sig1 = torch.tensor(8.0)
             sig2 = torch.tensor(12.0)
@@ -365,7 +364,11 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                 rbf5[:, torch.arange(0, P, 3)],
                 rbfN,
             ], dim=1)
-        else:
+
+            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
+            rbf_shape2 = rbfs.shape[2]
+
+        elif "sim" in self.md_type.lower():
             hr_range = np.arange(30, 180)
             ppg = []
             for iter in range(5):
@@ -394,8 +397,21 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             ppg = np.asarray(ppg).T
             rbfs = torch.FloatTensor(ppg)
 
-        rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
-        rbf_shape2 = rbfs.shape[2]
+            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
+            rbf_shape2 = rbfs.shape[2]
+
+        elif "label" in self.md_type.lower():
+            rbfs = torch.zeros((15, B, P)).to(self.device)
+            # print("y.shape", y.shape)
+            for shift in range(15):
+                rbfs[shift,...] = y.roll(shift-7)
+            rbfs = rbfs.permute(1, 2, 0)
+            # print("rbfs.shape", rbfs.shape)
+            rbf_shape2 = rbfs.shape[2]
+
+        else:
+            print("Invalid Smooth NMF option specified... Exiting...")
+            exit()
 
         if self.debug:
             print("MD_Type", self.md_type)
@@ -760,9 +776,9 @@ class FeaturesFactorizationModule(nn.Module):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
-    def forward(self, x):
+    def forward(self, x, y=None):
         x = self.pre_conv_block(x)
-        att = self.md_block(x)
+        att = self.md_block(x, y)
         dist = torch.dist(x, att)
         att = self.post_conv_block(att)
 

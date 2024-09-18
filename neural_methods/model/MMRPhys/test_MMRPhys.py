@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 
 model_config = {
-    "MODALITY": ["BVP"],
+    "TASKS": ["BVP"],
     "LGAM": True,
     "MD_FSAM": False,
     "MD_TYPE": "NMF",
@@ -45,7 +45,7 @@ class TestMMRPhys(object):
         self.data_path = Path(model_config["data_path"])
         self.label_path = Path(model_config["label_path"])
 
-        self.modality = model_config["MODALITY"]
+        self.tasks = model_config["TASKS"]
         self.use_lgam = model_config["LGAM"]
         self.use_fsam = model_config["MD_FSAM"]
         self.md_infer = model_config["MD_INFERENCE"]
@@ -148,31 +148,31 @@ class TestMMRPhys(object):
             t0 = time.time()
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-            if "BVP" in self.modality and "Resp" in self.modality:
+            if "BVP" in self.tasks and "Resp" in self.tasks:
                 self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-            elif "BVP" in self.modality:
+            elif "BVP" in self.tasks:
                 self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
-            elif "Resp" in self.modality:
+            elif "Resp" in self.tasks:
                 self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
             else:
                 print("Unknown modality... Only BVP and Resp are supported. Exiting the code...")
                 exit()
         elif (self.net.training or self.debug) and self.use_lgam:
-            if "BVP" in self.modality and "Resp" in self.modality:
+            if "BVP" in self.tasks and "Resp" in self.tasks:
                 self.pred, self.pred_rBr, self.vox_embed = self.net(self.test_data, self.bvp_label, self.resp_label)
-            elif "BVP" in self.modality:
+            elif "BVP" in self.tasks:
                 self.pred, self.vox_embed = self.net(self.test_data, self.bvp_label)
-            elif "Resp" in self.modality:
+            elif "Resp" in self.tasks:
                 self.pred_rBr, self.vox_embed = self.net(self.test_data, self.resp_label)
             else:
                 print("Unknown modality... Only BVP and Resp are supported. Exiting the code...")
                 exit()
         else:
-            if "BVP" in self.modality and "Resp" in self.modality:
+            if "BVP" in self.tasks and "Resp" in self.tasks:
                 self.pred, self.pred_rBr, self.vox_embed = self.net(self.test_data)
-            elif "BVP" in self.modality:
+            elif "BVP" in self.tasks:
                 self.pred, self.vox_embed = self.net(self.test_data)
-            elif "Resp" in self.modality:
+            elif "Resp" in self.tasks:
                 self.pred_rBr, self.vox_embed = self.net(self.test_data)
             else:
                 print("Unknown modality... Only BVP and Resp are supported. Exiting the code...")
