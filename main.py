@@ -11,7 +11,7 @@ from dataset import data_loader
 from neural_methods import trainer
 from torch.utils.data import DataLoader
 
-RANDOM_SEED = 100  # 100, [128, 138, 212, 308, 319, 900, 10, 38, 55]  # 455, 634, 740, 818]
+RANDOM_SEED = 100  # 100, [10, 38, 55, 100, 128, 138, 212, 308, 319, 900]  # 455, 634, 740, 818]
 torch.manual_seed(RANDOM_SEED)
 torch.cuda.manual_seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
