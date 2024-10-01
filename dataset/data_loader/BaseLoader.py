@@ -175,7 +175,7 @@ class BaseLoader(Dataset):
         self.load_preprocessed_data()  # load all data and corresponding labels (sorted for consistency)
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
-    def preprocess(self, frames, bvps, config_preprocess, resps=None, process_frames=True):
+    def preprocess(self, frames, bvps, config_preprocess, phys_axis=[], resps=None, process_frames=True):
         """Preprocesses a pair of data.
 
         Args:
@@ -221,7 +221,7 @@ class BaseLoader(Dataset):
                 resps = BaseLoader.diff_normalize_label(resps)
 
         elif config_preprocess.LABEL_TYPE == "Standardized":
-            bvps = BaseLoader.standardized_label(bvps)
+            bvps = BaseLoader.standardized_label(bvps, axis=phys_axis)
             if np.all(resps) != None:
                 resps = BaseLoader.standardized_label(resps)
 
@@ -676,11 +676,20 @@ class BaseLoader(Dataset):
         return data
 
     @staticmethod
-    def standardized_label(label):
+    def standardized_label(label, axis=[]):
         """Z-score standardization for label signal."""
-        label = label - np.mean(label)
-        label = label / np.std(label)
-        label[np.isnan(label)] = 0
+        if len(label.shape) <= 1:
+            label = label - np.mean(label)
+            label = label / np.std(label)
+            label[np.isnan(label)] = 0
+        else:
+            N = label.shape[-1]
+            if axis == []:
+                axis = range(N)
+            for ax in axis:
+                label[:, ax] = label[:, ax] - np.mean(label[:, ax])
+                label[:, ax] = label[:, ax] / np.std(label[:, ax])
+                label[:, ax][np.isnan(label[:, ax])] = 0
         return label
 
     @staticmethod

@@ -100,6 +100,7 @@ class BP4DLoader(BaseLoader):
         """ Invoked by preprocess_dataset for multi_process. """
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
+        process_frames = config_preprocess.PREPROCESS_FRAMES
 
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
@@ -127,6 +128,8 @@ class BP4DLoader(BaseLoader):
             raise ValueError(f'Unsupported DATA_AUG specified for {self.dataset_name} dataset! Received {config_preprocess.DATA_AUG}.')
 
         # Read Labels
+        # "BVP", "RSP", "EDA", "ECG", "HR", "RR", "SysBP", "MeanBP", "DiaBP", 
+        # e.g. after normalization: ['-0.45', '1.37', '-0.15', '0.0', '97.4', '18.55', '121.61', '115.85', '94.2']
         phys, sq_vec = self.read_wave(os.path.join(data_dirs[i]['path'], "{0}_phys.csv".format(filename)))
 
         if "RGBT" in config_preprocess.BP4D.DATA_MODE:
@@ -148,7 +151,7 @@ class BP4DLoader(BaseLoader):
         # phys = np.delete(phys, del_idx, axis=0)
         # sq_vec = np.delete(sq_vec, del_idx, axis=0)
 
-        frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess)
+        frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess, phys_axis=[0, 1, 2, 3], process_frames=process_frames)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)
         file_list_dict[i] = input_name_list
 

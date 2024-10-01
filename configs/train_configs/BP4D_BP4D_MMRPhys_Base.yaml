@@ -7,18 +7,18 @@ TRAIN:
   MODEL_FILE_NAME: BP4D_MMRPhys_Base
   PLOT_LOSSES_AND_LR: True
   DATA:
-    FS: 30
+    FS: 25
     DATASET: BP4D
     DO_PREPROCESS: True            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_Raw_180_72x72"
+    EXP_DATA_NAME: "BP4D_RGBT_180_72x72"
     BEGIN: 0.0
     END: 0.7
     PREPROCESS:
       PREPROCESS_FRAMES: True
-      DATA_TYPE: ['Raw']         #if use FactorizePhys, should be Raw
+      DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -32,7 +32,7 @@ TRAIN:
         LARGE_BOX_COEF: 1.5
         DETECTION:
           DO_DYNAMIC_DETECTION: True
-          DYNAMIC_DETECTION_FREQUENCY : 30
+          DYNAMIC_DETECTION_FREQUENCY : 25
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       BP4D:
         DATA_MODE: RGBT
@@ -41,18 +41,18 @@ TRAIN:
         W: 72
 VALID:
   DATA:
-    FS: 30
+    FS: 25
     DATASET: BP4D
     DO_PREPROCESS: True            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_Raw_180_72x72"
+    EXP_DATA_NAME: "BP4D_RGBT_180_72x72"
     BEGIN: 0.5
     END: 0.7
     PREPROCESS:
       PREPROCESS_FRAMES: True
-      DATA_TYPE: ['Raw']         #if use FactorizePhys, should be Raw
+      DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -66,7 +66,7 @@ VALID:
         LARGE_BOX_COEF: 1.5
         DETECTION:
           DO_DYNAMIC_DETECTION: True
-          DYNAMIC_DETECTION_FREQUENCY : 30
+          DYNAMIC_DETECTION_FREQUENCY : 25
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       BP4D:
         DATA_MODE: RGBT
@@ -77,18 +77,18 @@ TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
   USE_LAST_EPOCH: True                   # to use provided validation dataset to find the best epoch, should be false
   DATA:
-    FS: 30
+    FS: 25
     DATASET: BP4D
     DO_PREPROCESS: True            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_Raw_180_72x72"
+    EXP_DATA_NAME: "BP4D_RGBT_180_72x72"
     BEGIN: 0.7
     END: 1.0
     PREPROCESS:
       PREPROCESS_FRAMES: True
-      DATA_TYPE: ['Raw']         #if use FactorizePhys, should be Raw
+      DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -102,7 +102,7 @@ TEST:
         LARGE_BOX_COEF: 1.5
         DETECTION:
           DO_DYNAMIC_DETECTION: True
-          DYNAMIC_DETECTION_FREQUENCY : 30
+          DYNAMIC_DETECTION_FREQUENCY : 25
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       BP4D:
         DATA_MODE: RGBT
@@ -125,5 +125,5 @@ INFERENCE:
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
-    WINDOW_SIZE: 30        # In seconds
+    WINDOW_SIZE: 25        # In seconds
   MODEL_PATH: ""
