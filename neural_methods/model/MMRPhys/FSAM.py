@@ -410,7 +410,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             rbf_shape2 = rbfs.shape[2]
 
         else:
-            print("Invalid Smooth NMF option specified... Exiting...")
+            print("Invalid SNMF option specified... Exiting...")
             exit()
 
         if self.debug:
@@ -477,7 +477,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
         self.bases = F.normalize(self.bases, dim=1)
 
 
-class Smooth_NMF(_SmoothMatrixDecompositionBase):
+class SNMF(_SmoothMatrixDecompositionBase):
     def __init__(self, device, md_config, debug=False, dim="3D"):
         super().__init__(device, md_config, debug=debug, dim=dim)
         self.device = device
@@ -713,8 +713,8 @@ class FeaturesFactorizationModule(nn.Module):
         else:
             print("Dimension not supported")
 
-        if "smooth_nmf" in md_type.lower():
-            self.md_block = Smooth_NMF(self.device, md_config, dim=self.dim, debug=debug)
+        if "snmf" in md_type.lower():
+            self.md_block = SNMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "nmf" in md_type.lower():
             self.md_block = NMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "vq" in md_type.lower():
