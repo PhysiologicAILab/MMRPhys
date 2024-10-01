@@ -412,7 +412,7 @@ class BaseLoader(Dataset):
             face_region_median = np.median(face_region_all, axis=0).astype('int')
 
         # Frame Resizing
-        total_frames, _, _, channels = frames.shape
+        total_frames, wt, ht, channels = frames.shape
         resized_frames = np.zeros((total_frames, height, width, channels))
         for i in range(0, total_frames):
             frame = frames[i]
@@ -427,7 +427,10 @@ class BaseLoader(Dataset):
                     face_region = face_region_all[reference_index]
                 frame = frame[max(face_region[1], 0):min(face_region[1] + face_region[3], frame.shape[0]),
                         max(face_region[0], 0):min(face_region[0] + face_region[2], frame.shape[1])]
-            resized_frames[i] = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+            if (wt != width) or (ht != height):
+                resized_frames[i] = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+            else:
+                resized_frames[i] = frame
         return resized_frames
 
     def chunk(self, frames, bvps, chunk_length, resps=None, process_frames=True):

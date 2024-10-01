@@ -114,6 +114,8 @@ if __name__ == "__main__":
             train_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
         elif config.TRAIN.DATA.DATASET == "BP4DPlusBigSmall":
             train_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
+        elif config.TRAIN.DATA.DATASET == "BP4D":
+            train_loader = data_loader.BP4DLoader.BP4DLoader
         elif config.TRAIN.DATA.DATASET == "UBFC-PHYS":
             train_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
         elif config.TRAIN.DATA.DATASET == "iBVP":
@@ -157,6 +159,8 @@ if __name__ == "__main__":
             valid_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
         elif config.VALID.DATA.DATASET == "BP4DPlusBigSmall":
             valid_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
+        elif config.VALID.DATA.DATASET == "BP4D":
+            valid_loader = data_loader.BP4DLoader.BP4DLoader
         elif config.VALID.DATA.DATASET == "UBFC-PHYS":
             valid_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
         elif config.VALID.DATA.DATASET == "iBVP":
@@ -203,6 +207,8 @@ if __name__ == "__main__":
             test_loader = data_loader.BP4DPlusLoader.BP4DPlusLoader
         elif config.TEST.DATA.DATASET == "BP4DPlusBigSmall":
             test_loader = data_loader.BP4DPlusBigSmallLoader.BP4DPlusBigSmallLoader
+        elif config.TEST.DATA.DATASET == "BP4D":
+            test_loader = data_loader.BP4DLoader.BP4DLoader
         elif config.TEST.DATA.DATASET == "UBFC-PHYS":
             test_loader = data_loader.UBFCPHYSLoader.UBFCPHYSLoader
         elif config.TEST.DATA.DATASET == "iBVP":

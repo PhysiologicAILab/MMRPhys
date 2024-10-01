@@ -108,7 +108,7 @@ MODEL:
     MD_TYPE: "SNMF_Label"
     MD_R: 1
     MD_S: 1
-    MD_STEPS: 6
+    MD_STEPS: 4
     MD_RESIDUAL: True
     MD_INFERENCE: False
 INFERENCE:

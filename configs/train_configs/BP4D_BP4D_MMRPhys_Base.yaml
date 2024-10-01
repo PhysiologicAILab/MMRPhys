@@ -34,6 +34,8 @@ TRAIN:
           DO_DYNAMIC_DETECTION: True
           DYNAMIC_DETECTION_FREQUENCY : 30
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BP4D:
+        DATA_MODE: RGBT
       RESIZE:
         H: 72
         W: 72
@@ -66,6 +68,8 @@ VALID:
           DO_DYNAMIC_DETECTION: True
           DYNAMIC_DETECTION_FREQUENCY : 30
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BP4D:
+        DATA_MODE: RGBT
       RESIZE:
         H: 72
         W: 72
@@ -100,6 +104,8 @@ TEST:
           DO_DYNAMIC_DETECTION: True
           DYNAMIC_DETECTION_FREQUENCY : 30
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BP4D:
+        DATA_MODE: RGBT
       RESIZE:
         H: 72
         W: 72
