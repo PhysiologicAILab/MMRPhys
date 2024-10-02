@@ -111,9 +111,9 @@ MODEL:
   DROP_RATE: 0.1
   NAME: MMRPhys
   MMRPhys:
-    CHANNELS: 4
+    CHANNELS: 1
     FRAME_NUM: 180
-    TASKS: ["BVP", "RSP"]
+    TASKS: ["RSP"]
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"

@@ -19,7 +19,7 @@ def calculate_bvp_metrics(predictions, labels, config):
     print('')
 
 
-# Resp Metrics
+# RSP Metrics
 def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
     """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
     resp_signal = np.expand_dims(resp_signal, 0)
@@ -41,7 +41,7 @@ def _calculate_peak_rr(resp_signal, fs):
 
 def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
     """Calculate video-level RR"""
-    if diff_flag:  # if the predictions and labels are 1st derivative of Resp signal.
+    if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
         predictions = _detrend(np.cumsum(predictions), 100)
         labels = _detrend(np.cumsum(labels), 100)
     else:
@@ -69,7 +69,7 @@ def calculate_resp_metrics(predictions, labels, config):
     """Calculate Respiration Metrics (MAE, RMSE, MAPE, Pearson Coef., SNR)."""
 
     print('=====================')
-    print('==== Resp Metrics ===')
+    print('==== RSP Metrics ===')
     print('=====================')
 
     predict_rr_fft_all = list()

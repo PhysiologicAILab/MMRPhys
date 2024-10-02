@@ -24,7 +24,7 @@ TRAIN:
       DO_CHUNK: True
       CHUNK_LENGTH: 160
       SCAMPS:
-        LABELS: BVP_Resp
+        LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
         BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face
@@ -56,7 +56,7 @@ VALID:
       DO_CHUNK: True
       CHUNK_LENGTH: 160
       SCAMPS:
-        LABELS: BVP_Resp
+        LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
         BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face
@@ -90,7 +90,7 @@ TEST:
       DO_CHUNK: True
       CHUNK_LENGTH: 160
       SCAMPS:
-        LABELS: BVP_Resp
+        LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
         BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face

@@ -194,9 +194,9 @@ class rBr_FeatureExtractor(nn.Module):
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
         return voxel_embeddings
 
-class Resp_Head(nn.Module):
+class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
-        super(Resp_Head, self).__init__()
+        super(RSP_Head, self).__init__()
         self.debug = debug
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -232,7 +232,7 @@ class Resp_Head(nn.Module):
     def forward(self, voxel_embeddings, batch, length):
 
         if self.debug:
-            print("Resp Head")
+            print("RSP Head")
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
 
         voxel_embeddings = self.conv_block(voxel_embeddings)
@@ -301,6 +301,7 @@ class MMRPhys(nn.Module):
                 md_config[key] = model_config[key]
 
         self.use_fsam = False
+        self.use_lgam = False
         self.md_infer = False
 
         if md_config["MD_FSAM"]:
@@ -322,30 +323,26 @@ class MMRPhys(nn.Module):
             self.rppg_feature_extractor = rPPG_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)
             self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
-        if "Resp" in self.tasks:
+        if "RSP" in self.tasks:
             self.rbr_feature_extractor = rBr_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)        
-            self.rBr_head = Resp_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+            self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
         
     def forward(self, x, label_bvp=None, label_resp=None): # [batch, Features=3, Temp=frames, Width=32, Height=32]
         
-        [batch, channel, length, width, height] = x.shape
-        
-        # if self.in_channels == 1:
-        #     x = x[:, :, :-1, :, :]
-        # else:
-        #     x = torch.diff(x, dim=2)
-        
-        x = torch.diff(x, dim=2)
+        [batch, channel, length, width, height] = x.shape        
 
         if self.debug:
             print("Input.shape", x.shape)
 
         if self.in_channels == 1:
-            x = self.norm(x[:, -1:, :, :, :])
+            # x = torch.diff(x, dim=2)
+            x = self.norm(x[:, -1:, :-1, :, :])
         elif self.in_channels == 3:
+            x = torch.diff(x, dim=2)
             x = self.norm(x[:, :3, :, :, :])
         elif self.in_channels == 4:
+            x = torch.diff(x, dim=2)
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
             thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
             x = torch.concat([rgb_x, thermal_x], dim = 1)
@@ -367,23 +364,23 @@ class MMRPhys(nn.Module):
         if "BVP" in self.tasks:
             rppg_voxel_embeddings = self.rppg_feature_extractor(x)
     
-        if "Resp" in self.tasks:
+        if "RSP" in self.tasks:
             rbr_voxel_embeddings = self.rbr_feature_extractor(x)
         
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "BVP" in self.tasks:
                 rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
-            if "Resp" in self.tasks:
+            if "RSP" in self.tasks:
                 rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
         elif (self.training or self.debug) and self.use_lgam:
             if "BVP" in self.tasks:
                 rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
-            if "Resp" in self.tasks:
+            if "RSP" in self.tasks:
                 rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1, label_resp)
         else:
             if "BVP" in self.tasks:
                 rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
-            if "Resp" in self.tasks:
+            if "RSP" in self.tasks:
                 rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
 
         # if self.debug:
@@ -394,20 +391,20 @@ class MMRPhys(nn.Module):
         if self.debug:
             if "BVP" in self.tasks:
                 print("rPPG.shape", rPPG.shape)
-            if "Resp" in self.tasks:
+            if "RSP" in self.tasks:
                 print("rBr.shape", rBr.shape)
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks and "Resp" in self.tasks:
+            if "BVP" in self.tasks and "RSP" in self.tasks:
                 return rPPG, rBr, rppg_voxel_embeddings, factorized_embeddings, appx_error, factorized_embeddings_br, appx_error_br
             elif "BVP" in self.tasks:
                 return rPPG, rppg_voxel_embeddings, factorized_embeddings, appx_error
-            elif "Resp" in self.tasks:
+            elif "RSP" in self.tasks:
                 return rBr, rbr_voxel_embeddings, factorized_embeddings_br, appx_error_br
         else:
-            if "BVP" in self.tasks and "Resp" in self.tasks:
+            if "BVP" in self.tasks and "RSP" in self.tasks:
                 return rPPG, rBr, rppg_voxel_embeddings
             elif "BVP" in self.tasks:
                 return rPPG, rppg_voxel_embeddings
-            elif "Resp" in self.tasks:
+            elif "RSP" in self.tasks:
                 return rBr, rbr_voxel_embeddings
