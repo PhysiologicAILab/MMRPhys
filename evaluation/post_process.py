@@ -49,11 +49,32 @@ def _calculate_peak_hr(ppg_signal, fs):
     hr_peak = 60 / (np.mean(np.diff(ppg_peaks)) / fs)
     return hr_peak
 
+
+# RSP Metrics
+def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
+    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
+    resp_signal = np.expand_dims(resp_signal, 0)
+    N = _next_power_of_2(resp_signal.shape[1])
+    f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
+    fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
+    mask_resp = np.take(f_resp, fmask_resp)
+    mask_pxx = np.take(pxx_resp, fmask_resp)
+    fft_rr = np.take(mask_resp, np.argmax(mask_pxx, 0))[0] * 60
+    return fft_rr
+
+
+def _calculate_peak_rr(resp_signal, fs):
+    """Calculate heart rate based on PPG using peak detection."""
+    resp_peaks, _ = scipy.signal.find_peaks(resp_signal)
+    rr_peak = 60 / (np.mean(np.diff(resp_peaks)) / fs)
+    return rr_peak
+
+
 def _compute_macc(pred_signal, gt_signal):
     """Calculate maximum amplitude of cross correlation (MACC) by computing correlation at all time lags.
         Args:
-            pred_ppg_signal(np.array): predicted PPG signal 
-            label_ppg_signal(np.array): ground truth, label PPG signal
+            pred_signal(np.array): predicted signal 
+            label_signal(np.array): ground truth, label signal
         Returns:
             MACC(float): Maximum Amplitude of Cross-Correlation
     """
@@ -72,6 +93,7 @@ def _compute_macc(pred_signal, gt_signal):
         tlcc_list.append(cross_corr)
     macc = max(tlcc_list)
     return macc
+
 
 def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3):
     """Calculate SNR as the ratio of the area under the curve of the frequency spectrum around the first and second harmonics 
@@ -151,3 +173,32 @@ def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=True, use_b
         raise ValueError('Please use FFT or Peak to calculate your HR.')
     SNR = _calculate_SNR(predictions, hr_label, fs=fs)
     return hr_label, hr_pred, SNR, macc
+
+
+def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
+    """Calculate video-level RR"""
+    if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
+        predictions = _detrend(np.cumsum(predictions), 100)
+        labels = _detrend(np.cumsum(labels), 100)
+    else:
+        predictions = _detrend(predictions, 100)
+        labels = _detrend(labels, 100)
+    if use_bandpass:
+        # bandpass filter between [0.13, 0.5] Hz
+        # equals [8, 30] breaths per min
+        [b, a] = butter(1, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
+        labels = scipy.signal.filtfilt(b, a, np.double(labels))
+    
+    macc = _compute_macc(predictions, labels)
+    
+    if rr_method == 'FFT':
+        rr_pred = _calculate_fft_rr(predictions, fs=fs)
+        rr_label = _calculate_fft_rr(labels, fs=fs)
+    elif rr_method == 'Peak':
+        rr_pred = _calculate_peak_rr(predictions, fs=fs)
+        rr_label = _calculate_peak_rr(labels, fs=fs)
+    else:
+        raise ValueError('Please use FFT or Peak to calculate your RR.')
+    SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.13, high_pass=0.5)
+    return rr_label, rr_pred, SNR, macc

@@ -3,7 +3,7 @@ import os
 import numpy as np
 import torch
 import torch.optim as optim
-from evaluation.metrics import calculate_metrics
+from evaluation.metrics import calculate_metrics, calculate_resp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 from neural_methods.trainer.BaseTrainer import BaseTrainer
@@ -466,17 +466,16 @@ class MMRPhysTrainer(BaseTrainer):
                         predictions_resp_dict[subj_index][sort_index] = pred_resp_test[idx]
                         labels_resp_dict[subj_index][sort_index] = label_resp[idx]
 
-
         print('')
         if "BVP" in self.tasks:
             calculate_metrics(predictions_bvp_dict, labels_bvp_dict, self.config)
         if "RSP" in self.tasks:
-            calculate_metrics(predictions_resp_dict, labels_resp_dict, self.config)
+            calculate_resp_metrics(predictions_resp_dict, labels_resp_dict, self.config)
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs 
             if "BVP" in self.tasks:
                 self.save_test_outputs(predictions_bvp_dict, labels_bvp_dict, self.config, suff="_bvp")
             if "RSP" in self.tasks:
-                self.save_test_outputs(predictions_resp_dict, labels_resp_dict, self.config, suff="_resp")
+                self.save_test_outputs(predictions_resp_dict, labels_resp_dict, self.config, suff="_rsp")
 
     def save_model(self, index):
         if not os.path.exists(self.model_dir):

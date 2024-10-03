@@ -336,8 +336,9 @@ class MMRPhys(nn.Module):
             print("Input.shape", x.shape)
 
         if self.in_channels == 1:
-            # x = torch.diff(x, dim=2)
-            x = self.norm(x[:, -1:, :-1, :, :])
+            x = torch.diff(x, dim=2)
+            x = self.norm(x[:, -1:, :, :, :])
+            # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
         elif self.in_channels == 3:
             x = torch.diff(x, dim=2)
             x = self.norm(x[:, :3, :, :, :])
