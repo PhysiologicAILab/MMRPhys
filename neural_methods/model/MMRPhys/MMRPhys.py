@@ -5,16 +5,14 @@ MMRPhys: Remote Extraction of Multiple Physiological Signals using Label Guided 
 import torch
 import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
-from neural_methods.model.MMRPhys.LGAM import LGAM
 # from copy import deepcopy
 
 nf = [8, 12, 16]
 
 model_config = {
-    "TASKS": ["BVP"],
-    "LGAM": True,
+    "TASKS": ["RSP"],
     "MD_FSAM": False,
-    "MD_TYPE": "NMF",
+    "MD_TYPE": "SNMF_Label",
     "MD_R": 1,
     "MD_S": 1,
     "MD_STEPS": 4,
@@ -86,7 +84,6 @@ class BVP_Head(nn.Module):
         self.debug = debug
 
         self.use_fsam = md_config["MD_FSAM"]
-        self.use_lgam = md_config["LGAM"]
         self.md_type = md_config["MD_TYPE"]
         self.md_infer = md_config["MD_INFERENCE"]
         self.md_res = md_config["MD_RESIDUAL"]
@@ -102,11 +99,6 @@ class BVP_Head(nn.Module):
             inC = nf[2]
             self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
             self.fsam_norm = nn.InstanceNorm3d(inC)
-            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
-        elif self.use_lgam:
-            inC = nf[2]
-            self.lgam = LGAM(device, debug=debug)
-            self.lgam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
         else:
             inC = nf[2]
@@ -146,14 +138,7 @@ class BVP_Head(nn.Module):
                 factorized_embeddings = self.fsam_norm(x)            
 
             x = self.final_layer(factorized_embeddings)
-        
-        # elif (self.training or self.debug) and self.use_lgam:
-        elif self.use_lgam:
-            att_mask = self.lgam(voxel_embeddings, label_bvp)
-            x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-            lg_embeddings = self.lgam_norm(x)
-            lg_embeddings = voxel_embeddings + lg_embeddings
-            x = self.final_layer(lg_embeddings)
+
         else:
             x = self.final_layer(voxel_embeddings)
 
@@ -177,6 +162,252 @@ class rBr_FeatureExtractor(nn.Module):
         #                                                        Input: #B, inCh, 160, 72, 72
         self.FeatureExtractor = nn.Sequential(
             ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 160, 72, 72
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [2, 2, 2], [1, 0, 0]), #B, nf[1], 80, 35, 35
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 80, 33, 33
+            nn.Dropout3d(p=dropout_rate),
+
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 80, 31, 31
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [2, 2, 2], [1, 0, 0]), #B, nf[2], 40, 15, 15
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 40, 13, 13
+            nn.Dropout3d(p=dropout_rate),
+        )
+
+    def forward(self, x):
+        voxel_embeddings = self.FeatureExtractor(x)
+        if self.debug:
+            print("rBr Feature Extractor")
+            print("     voxel_embeddings.shape", voxel_embeddings.shape)
+        return voxel_embeddings
+
+class RSP_Head(nn.Module):
+    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+        super(RSP_Head, self).__init__()
+        self.debug = debug
+
+        self.use_fsam = md_config["MD_FSAM"]
+        self.md_type = md_config["MD_TYPE"]
+        self.md_infer = md_config["MD_INFERENCE"]
+        self.md_res = md_config["MD_RESIDUAL"]
+
+        # md_config = deepcopy(md_config)
+        # md_config["MD_R"] = 4
+        # md_config["MD_S"] = 1
+        # md_config["MD_STEPS"] = 6
+
+        self.conv_block = nn.Sequential(
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 40, 11, 11
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [3, 1, 1], [1, 0, 0]), #B, nf[2], 20, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 20, 7, 7
+            nn.Dropout3d(p=dropout_rate),            
+        )
+
+        if self.use_fsam:
+            inC = nf[2]
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
+            self.fsam_norm = nn.InstanceNorm3d(inC)
+            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
+        else:
+            inC = nf[2]
+
+        self.upsample = nn.Upsample(scale_factor=(12, 1, 1))
+
+        self.final_layer = nn.Sequential(
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[0], 160, 5, 5
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 160, 3, 3
+            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 160, 1, 1
+        )
+
+    def forward(self, voxel_embeddings, batch, length):
+
+        if self.debug:
+            print("RSP Head")
+            print("     voxel_embeddings.shape", voxel_embeddings.shape)
+
+        voxel_embeddings = self.conv_block(voxel_embeddings)
+
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            if "NMF" in self.md_type:
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min()) # to make it positive (>= 0)
+            else:
+                att_mask, appx_error = self.fsam(voxel_embeddings)
+
+            if self.debug:
+                print("att_mask.shape", att_mask.shape)
+
+            # # directly use att_mask   ---> difficult to converge without Residual connection. Needs high rank
+            # factorized_embeddings = self.fsam_norm(att_mask)
+
+            # # Residual connection: 
+            # factorized_embeddings = voxel_embeddings + self.fsam_norm(att_mask)
+
+            if self.md_res:
+                # Multiplication with Residual connection
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)
+                factorized_embeddings = voxel_embeddings + factorized_embeddings
+            else:
+                # Multiplication
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)            
+
+            # # Concatenate
+            # factorized_embeddings = torch.cat([voxel_embeddings, self.fsam_norm(x)], dim=1)
+            factorized_embeddings = self.upsample(factorized_embeddings)
+            x = self.final_layer(factorized_embeddings)
+        
+        else:
+            if self.debug:
+                print("voxel_embeddings.shape", voxel_embeddings.shape)
+            voxel_embeddings = self.upsample(voxel_embeddings)
+            if self.debug:
+                print("voxel_embeddings.shape", voxel_embeddings.shape)
+            x = self.final_layer(voxel_embeddings)
+            if self.debug:
+                print("x.shape", x.shape)
+
+        rBr = x.view(-1, length)
+
+        if self.debug:
+            print("     rBr.shape", rBr.shape)
+        
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            return rBr, factorized_embeddings, appx_error
+        else:
+            return rBr
+
+
+
+class MMRPhys(nn.Module):
+    def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
+        super(MMRPhys, self).__init__()
+        self.debug = debug
+
+        self.in_channels = in_channels
+        if self.in_channels == 1 or self.in_channels == 3:
+            self.norm = nn.InstanceNorm3d(self.in_channels)
+        elif self.in_channels == 4:
+            self.rgb_norm = nn.InstanceNorm3d(3)
+            self.thermal_norm = nn.InstanceNorm3d(1)
+        else:
+            print("Unsupported input channels")
+
+        for key in model_config:
+            if key not in md_config:
+                md_config[key] = model_config[key]
+
+        self.use_fsam = False
+        self.md_infer = False
+
+        if md_config["MD_FSAM"]:
+            self.use_fsam = True
+            self.md_infer = md_config["MD_INFERENCE"]
+            
+        else:
+            pass
+        
+        self.tasks = md_config["TASKS"]
+
+        if self.debug:
+            print("nf:", nf)
+
+        if "BVP" in self.tasks:
+            self.rppg_feature_extractor = rPPG_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)
+            self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+
+        if "RSP" in self.tasks:
+            self.rbr_feature_extractor = rBr_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)        
+            self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+
+        
+    def forward(self, x, label_bvp=None, label_resp=None): # [batch, Features=3, Temp=frames, Width=32, Height=32]
+        
+        [batch, channel, length, width, height] = x.shape        
+
+        if self.debug:
+            print("Input.shape", x.shape)
+
+        if self.in_channels == 1:
+            x = torch.diff(x, dim=2)
+            x = self.norm(x[:, -1:, :, :, :])
+            # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
+        elif self.in_channels == 3:
+            x = torch.diff(x, dim=2)
+            x = self.norm(x[:, :3, :, :, :])
+        elif self.in_channels == 4:
+            x = torch.diff(x, dim=2)
+            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
+            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
+            x = torch.concat([rgb_x, thermal_x], dim = 1)
+        else:
+            try:
+                print("Specified input channels:", self.in_channels)
+                print("Data channels", channel)
+                assert self.in_channels <= channel
+            except:
+                print("Incorrectly preprocessed data provided as input. Number of channels exceed the specified or default channels")
+                print("Default or specified channels:", self.in_channels)
+                print("Data channels [B, C, N, W, H]", x.shape)
+                print("Exiting")
+                exit()
+
+        if self.debug:
+            print("Diff Normalized shape", x.shape)
+
+        if "BVP" in self.tasks:
+            rppg_voxel_embeddings = self.rppg_feature_extractor(x)
+    
+        if "RSP" in self.tasks:
+            rbr_voxel_embeddings = self.rbr_feature_extractor(x)
+        
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            if "BVP" in self.tasks:
+                rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
+            if "RSP" in self.tasks:
+                rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rbr_voxel_embeddings, batch, length-1, label_resp)
+        else:
+            if "BVP" in self.tasks:
+                rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
+            if "RSP" in self.tasks:
+                rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
+
+        # if self.debug:
+        #     print("rppg_feats.shape", rppg_feats.shape)
+
+        # rPPG = rppg_feats.view(-1, length-1)
+
+        if self.debug:
+            if "BVP" in self.tasks:
+                print("rPPG.shape", rPPG.shape)
+            if "RSP" in self.tasks:
+                print("rBr.shape", rBr.shape)
+
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            if "BVP" in self.tasks and "RSP" in self.tasks:
+                return rPPG, rBr, rppg_voxel_embeddings, factorized_embeddings, appx_error, factorized_embeddings_br, appx_error_br
+            elif "BVP" in self.tasks:
+                return rPPG, rppg_voxel_embeddings, factorized_embeddings, appx_error
+            elif "RSP" in self.tasks:
+                return rBr, rbr_voxel_embeddings, factorized_embeddings_br, appx_error_br
+        else:
+            if "BVP" in self.tasks and "RSP" in self.tasks:
+                return rPPG, rBr, rppg_voxel_embeddings
+            elif "BVP" in self.tasks:
+                return rPPG, rppg_voxel_embeddings
+            elif "RSP" in self.tasks:
+                return rBr, rbr_voxel_embeddings
+
+
+
+
+class old_rBr_FeatureExtractor(nn.Module):
+    def __init__(self, inCh, dropout_rate=0.1, debug=False):
+        super(old_rBr_FeatureExtractor, self).__init__()
+        # inCh, out_channel, kernel_size, stride, padding
+
+        self.debug = debug
+        #                                                        Input: #B, inCh, 160, 72, 72
+        self.FeatureExtractor = nn.Sequential(
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 160, 72, 72
             ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 160, 35, 35
             ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 160, 33, 33
             nn.Dropout3d(p=dropout_rate),
@@ -194,9 +425,9 @@ class rBr_FeatureExtractor(nn.Module):
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
         return voxel_embeddings
 
-class RSP_Head(nn.Module):
+class old_RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
-        super(RSP_Head, self).__init__()
+        super(old_RSP_Head, self).__init__()
         self.debug = debug
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -281,131 +512,3 @@ class RSP_Head(nn.Module):
             return rBr
 
 
-
-class MMRPhys(nn.Module):
-    def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhys, self).__init__()
-        self.debug = debug
-
-        self.in_channels = in_channels
-        if self.in_channels == 1 or self.in_channels == 3:
-            self.norm = nn.InstanceNorm3d(self.in_channels)
-        elif self.in_channels == 4:
-            self.rgb_norm = nn.InstanceNorm3d(3)
-            self.thermal_norm = nn.InstanceNorm3d(1)
-        else:
-            print("Unsupported input channels")
-
-        for key in model_config:
-            if key not in md_config:
-                md_config[key] = model_config[key]
-
-        self.use_fsam = False
-        self.use_lgam = False
-        self.md_infer = False
-
-        if md_config["MD_FSAM"]:
-            self.use_fsam = True
-            self.md_infer = md_config["MD_INFERENCE"]
-
-        elif md_config["LGAM"]:
-            self.use_lgam = True
-            
-        else:
-            pass
-        
-        self.tasks = md_config["TASKS"]
-
-        if self.debug:
-            print("nf:", nf)
-
-        if "BVP" in self.tasks:
-            self.rppg_feature_extractor = rPPG_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)
-            self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
-
-        if "RSP" in self.tasks:
-            self.rbr_feature_extractor = rBr_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)        
-            self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
-
-        
-    def forward(self, x, label_bvp=None, label_resp=None): # [batch, Features=3, Temp=frames, Width=32, Height=32]
-        
-        [batch, channel, length, width, height] = x.shape        
-
-        if self.debug:
-            print("Input.shape", x.shape)
-
-        if self.in_channels == 1:
-            x = torch.diff(x, dim=2)
-            x = self.norm(x[:, -1:, :, :, :])
-            # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
-        elif self.in_channels == 3:
-            x = torch.diff(x, dim=2)
-            x = self.norm(x[:, :3, :, :, :])
-        elif self.in_channels == 4:
-            x = torch.diff(x, dim=2)
-            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
-            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
-            x = torch.concat([rgb_x, thermal_x], dim = 1)
-        else:
-            try:
-                print("Specified input channels:", self.in_channels)
-                print("Data channels", channel)
-                assert self.in_channels <= channel
-            except:
-                print("Incorrectly preprocessed data provided as input. Number of channels exceed the specified or default channels")
-                print("Default or specified channels:", self.in_channels)
-                print("Data channels [B, C, N, W, H]", x.shape)
-                print("Exiting")
-                exit()
-
-        if self.debug:
-            print("Diff Normalized shape", x.shape)
-
-        if "BVP" in self.tasks:
-            rppg_voxel_embeddings = self.rppg_feature_extractor(x)
-    
-        if "RSP" in self.tasks:
-            rbr_voxel_embeddings = self.rbr_feature_extractor(x)
-        
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks:
-                rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
-            if "RSP" in self.tasks:
-                rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
-        elif (self.training or self.debug) and self.use_lgam:
-            if "BVP" in self.tasks:
-                rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
-            if "RSP" in self.tasks:
-                rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1, label_resp)
-        else:
-            if "BVP" in self.tasks:
-                rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
-            if "RSP" in self.tasks:
-                rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
-
-        # if self.debug:
-        #     print("rppg_feats.shape", rppg_feats.shape)
-
-        # rPPG = rppg_feats.view(-1, length-1)
-
-        if self.debug:
-            if "BVP" in self.tasks:
-                print("rPPG.shape", rPPG.shape)
-            if "RSP" in self.tasks:
-                print("rBr.shape", rBr.shape)
-
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                return rPPG, rBr, rppg_voxel_embeddings, factorized_embeddings, appx_error, factorized_embeddings_br, appx_error_br
-            elif "BVP" in self.tasks:
-                return rPPG, rppg_voxel_embeddings, factorized_embeddings, appx_error
-            elif "RSP" in self.tasks:
-                return rBr, rbr_voxel_embeddings, factorized_embeddings_br, appx_error_br
-        else:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                return rPPG, rBr, rppg_voxel_embeddings
-            elif "BVP" in self.tasks:
-                return rPPG, rppg_voxel_embeddings
-            elif "RSP" in self.tasks:
-                return rBr, rbr_voxel_embeddings

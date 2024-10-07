@@ -45,15 +45,13 @@ class MMRPhysTrainer(BaseTrainer):
         md_config["MD_R"] = self.config.MODEL.MMRPhys.MD_R
         md_config["MD_STEPS"] = self.config.MODEL.MMRPhys.MD_STEPS
         md_config["MD_INFERENCE"] = self.config.MODEL.MMRPhys.MD_INFERENCE
-        md_config["MD_RESIDUAL"] = self.config.MODEL.MMRPhys.MD_RESIDUAL
-        
-        md_config["LGAM"] = self.config.MODEL.MMRPhys.LGAM
+        md_config["MD_RESIDUAL"] = self.config.MODEL.MMRPhys.MD_RESIDUAL        
         md_config["TASKS"] = self.config.MODEL.MMRPhys.TASKS
 
         self.md_infer = self.config.MODEL.MMRPhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.MMRPhys.MD_FSAM
         self.tasks = self.config.MODEL.MMRPhys.TASKS
-        self.use_lgam = self.config.MODEL.MMRPhys.LGAM
+        self.use_label = True if "label" in self.config.MODEL.MMRPhys.MD_TYPE.lower() else False
         if "BVP" in self.tasks or "RSP" in self.tasks:
             pass
         else:
@@ -113,16 +111,16 @@ class MMRPhysTrainer(BaseTrainer):
 
                 if len(labels.shape) == 3:
                     label_bvp = labels[..., 0]
-                    label_resp = labels[..., 1]
+                    label_rsp = labels[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
-                    label_resp = labels
+                    label_rsp = labels
 
                 if "BVP" in self.tasks:
                     label_bvp = (label_bvp - torch.mean(label_bvp)) / torch.std(label_bvp)  # normalize
                 if "RSP" in self.tasks:
-                    label_resp = (label_resp - torch.mean(label_resp)) / torch.std(label_resp)  # normalize
+                    label_rsp = (label_rsp - torch.mean(label_rsp)) / torch.std(label_rsp)  # normalize
                 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -136,25 +134,31 @@ class MMRPhysTrainer(BaseTrainer):
                 self.optimizer.zero_grad()
                 if self.model.training and self.use_fsam:
                     if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp, pred_resp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
+                        if self.use_label:
+                            pred_bvp, pred_resp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp, label_rsp)
+                        else:
+                            pred_bvp, pred_resp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
                     elif "BVP" in self.tasks:
-                        pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp)
-                    else:
-                        pred_resp, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
-                elif self.model.training and self.use_lgam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp, pred_resp, vox_embed = self.model(data, label_bvp, label_resp)
-                    elif "BVP" in self.tasks:
-                        pred_bvp, vox_embed = self.model(data, label_bvp)
-                    else:
-                        pred_resp, vox_embed = self.model(data, label_resp)
+                        if self.use_label:
+                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp)
+                        else:
+                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data)
+                    elif "RSP" in self.tasks:
+                        if self.use_label:
+                            pred_resp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp)
+                        else:
+                            pred_resp, vox_embed, factorized_embed, appx_error = self.model(data)
+                    # else:
+                    #     pred_resp, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
                 else:
                     if "BVP" in self.tasks and "RSP" in self.tasks:
                         pred_bvp, pred_resp, vox_embed = self.model(data)
                     elif "BVP" in self.tasks:
                         pred_bvp, vox_embed = self.model(data)
-                    else:
+                    elif "RSP" in self.tasks:
                         pred_resp, vox_embed = self.model(data)
+                    # else:
+                    #     pred_resp, vox_embed = self.model(data)
                 
                 if "BVP" in self.tasks:
                     pred_bvp = (pred_bvp - torch.mean(pred_bvp)) / torch.std(pred_bvp)  # normalize
@@ -162,7 +166,7 @@ class MMRPhysTrainer(BaseTrainer):
 
                 if "RSP" in self.tasks:
                     pred_resp = (pred_resp - torch.mean(pred_resp)) / torch.std(pred_resp)  # normalize
-                    loss_resp = self.criterion2(pred_resp, label_resp)
+                    loss_resp = self.criterion2(pred_resp, label_rsp)
                 
                 if "BVP" in self.tasks and "RSP" in self.tasks:
                     loss = loss_bvp + loss_resp
@@ -284,16 +288,16 @@ class MMRPhysTrainer(BaseTrainer):
                 data, labels = valid_batch[0].to(self.device), valid_batch[1].to(self.device)
                 if len(labels.shape) == 3:
                     label_bvp = labels[..., 0]
-                    label_resp = labels[..., 1]
+                    label_rsp = labels[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
-                    label_resp = labels
+                    label_rsp = labels
 
                 if "BVP" in self.tasks:
                     label_bvp = (label_bvp - torch.mean(label_bvp)) / torch.std(label_bvp)  # normalize
                 if "RSP" in self.tasks:
-                    label_resp = (label_resp - torch.mean(label_resp)) / torch.std(label_resp)  # normalize                
+                    label_rsp = (label_rsp - torch.mean(label_rsp)) / torch.std(label_rsp)  # normalize                
 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -325,7 +329,7 @@ class MMRPhysTrainer(BaseTrainer):
                     valid_loss_bvp.append(loss_bvp.item())
                 if "RSP" in self.tasks:
                     pred_resp = (pred_resp - torch.mean(pred_resp)) / torch.std(pred_resp)  # normalize
-                    loss_resp = self.criterion2(pred_resp, label_resp)
+                    loss_resp = self.criterion2(pred_resp, label_rsp)
                     valid_loss_resp.append(loss_resp.item())
                 
                 if "BVP" in self.tasks and "RSP" in self.tasks:
@@ -402,16 +406,16 @@ class MMRPhysTrainer(BaseTrainer):
 
                 if len(labels_test.shape) == 3:
                     label_bvp = labels_test[..., 0]
-                    label_resp = labels_test[..., 1]
+                    label_rsp = labels_test[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels_test
                 elif "RSP" in self.tasks:
-                    label_resp = labels_test
+                    label_rsp = labels_test
 
                 if "BVP" in self.tasks:
                     label_bvp = (label_bvp - torch.mean(label_bvp)) / torch.std(label_bvp)  # normalize
                 if "RSP" in self.tasks:
-                    label_resp = (label_resp - torch.mean(label_resp)) / torch.std(label_resp)  # normalize
+                    label_rsp = (label_rsp - torch.mean(label_rsp)) / torch.std(label_rsp)  # normalize
 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -447,7 +451,7 @@ class MMRPhysTrainer(BaseTrainer):
                         label_bvp = label_bvp.cpu()
                         pred_bvp_test = pred_bvp_test.cpu()
                     if "RSP" in self.tasks:
-                        label_resp = label_resp.cpu()
+                        label_rsp = label_rsp.cpu()
                         pred_resp_test = pred_resp_test.cpu()
 
                 for idx in range(batch_size):
@@ -464,7 +468,7 @@ class MMRPhysTrainer(BaseTrainer):
                         labels_bvp_dict[subj_index][sort_index] = label_bvp[idx]
                     if "RSP" in self.tasks:
                         predictions_resp_dict[subj_index][sort_index] = pred_resp_test[idx]
-                        labels_resp_dict[subj_index][sort_index] = label_resp[idx]
+                        labels_resp_dict[subj_index][sort_index] = label_rsp[idx]
 
         print('')
         if "BVP" in self.tasks:

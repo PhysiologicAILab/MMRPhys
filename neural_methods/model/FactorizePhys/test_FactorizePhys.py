@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from neural_methods.model.FactorizePhys.FactorizePhys import FactorizePhys
+# from ptflops import get_model_complexity_info
 # from torch.utils.tensorboard import SummaryWriter
 
 model_config = {
@@ -143,6 +144,11 @@ class TestFactorizePhysBig(object):
             self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
         else:
             self.pred, self.vox_embed = self.net(self.test_data)
+
+        # macs, params = get_model_complexity_info(self.net(self.test_data), (self.batch_size, self.data_channels, self.frames + 1, self.height, self.width), as_strings=False,
+        #                                         print_per_layer_stat=True, verbose=True)
+        # print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
+        # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
 
         if self.assess_latency:
             t1 = time.time()

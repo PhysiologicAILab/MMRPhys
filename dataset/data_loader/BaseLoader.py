@@ -175,7 +175,7 @@ class BaseLoader(Dataset):
         self.load_preprocessed_data()  # load all data and corresponding labels (sorted for consistency)
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
-    def preprocess(self, frames, bvps, config_preprocess, phys_axis=[], resps=None, process_frames=True):
+    def preprocess(self, frames, bvps, config_preprocess, phys_axis=[], process_frames=True):
         """Preprocesses a pair of data.
 
         Args:
@@ -216,32 +216,20 @@ class BaseLoader(Dataset):
         if config_preprocess.LABEL_TYPE == "Raw":
             pass
         elif config_preprocess.LABEL_TYPE == "DiffNormalized":
-            bvps = BaseLoader.diff_normalize_label(bvps)
-            if np.all(resps) != None:
-                resps = BaseLoader.diff_normalize_label(resps)
+            bvps = BaseLoader.diff_normalize_label(bvps, axis=phys_axis)
 
         elif config_preprocess.LABEL_TYPE == "Standardized":
             bvps = BaseLoader.standardized_label(bvps, axis=phys_axis)
-            if np.all(resps) != None:
-                resps = BaseLoader.standardized_label(resps)
 
         else:
             raise ValueError("Unsupported label type!")
 
         if config_preprocess.DO_CHUNK:  # chunk data into snippets
-            if np.all(resps) == None:
-                if process_frames:
-                    frames_clips, bvps_clips = self.chunk(data, bvps, config_preprocess.CHUNK_LENGTH)
-                else:
-                    frames_clips, bvps_clips = self.chunk(np.empty(
-                        0), bvps, config_preprocess.CHUNK_LENGTH, process_frames=process_frames)
-                resp_clips = np.empty(0)
+            if process_frames:
+                frames_clips, bvps_clips = self.chunk(data, bvps, config_preprocess.CHUNK_LENGTH)
             else:
-                if process_frames:
-                    frames_clips, bvps_clips, resp_clips = self.chunk(data, bvps, config_preprocess.CHUNK_LENGTH, resps,)
-                else:
-                    frames_clips, bvps_clips, resp_clips = self.chunk(np.empty(
-                        0), bvps, config_preprocess.CHUNK_LENGTH, resps, process_frames=process_frames)
+                frames_clips, bvps_clips = self.chunk(np.empty(
+                    0), bvps, config_preprocess.CHUNK_LENGTH, process_frames=process_frames)
 
         else:
             if process_frames:
@@ -251,15 +239,7 @@ class BaseLoader(Dataset):
     
             bvps_clips = np.array([bvps])
 
-            if np.all(resps) != None:
-                resp_clips = np.array([resps])
-            else:
-                resp_clips = np.empty(0)
-
-        if np.all(resps) == None:
-            return frames_clips, bvps_clips
-        else:
-            return frames_clips, bvps_clips, resp_clips
+        return frames_clips, bvps_clips
 
     def face_detection(self, frame, backend, use_larger_box=False, larger_box_coef=1.0):
         """Face detection on a single frame.
@@ -433,7 +413,7 @@ class BaseLoader(Dataset):
                 resized_frames[i] = frame
         return resized_frames
 
-    def chunk(self, frames, bvps, chunk_length, resps=None, process_frames=True):
+    def chunk(self, frames, bvps, chunk_length, process_frames=True):
         """Chunk the data into small chunks.
 
         Args:
@@ -455,15 +435,7 @@ class BaseLoader(Dataset):
         
         # print("bvps.shape", bvps.shape)
         # print("len(bvps_clips)", len(bvps_clips))
-        if np.all(resps) != None:
-            resp_clips = [resps[i * chunk_length:(i + 1) * chunk_length] for i in range(clip_num)]
-            # print("resps.shape", resps.shape)
-            # print("len(resp_clips)", len(resp_clips))
-            # print("np.array(bvps_clips).shape, np.array(resp_clips).shape", [np.array(bvps_clips).shape, np.array(resp_clips).shape])
-            # exit()
-            return np.array(frames_clips), np.array(bvps_clips), np.array(resp_clips)
-        else:
-            return np.array(frames_clips), np.array(bvps_clips)
+        return np.array(frames_clips), np.array(bvps_clips)
 
     def save(self, frames_clips, bvps_clips, filename):
         """Save all the chunked data.
@@ -659,13 +631,23 @@ class BaseLoader(Dataset):
         return diffnormalized_data
 
     @staticmethod
-    def diff_normalize_label(label):
+    def diff_normalize_label(label, axis=[]):
         """Calculate discrete difference in labels along the time-axis and normalize by its standard deviation."""
-        diff_label = np.diff(label, axis=0)
-        diffnormalized_label = diff_label / np.std(diff_label)
-        diffnormalized_label = np.append(diffnormalized_label, np.zeros(1), axis=0)
-        diffnormalized_label[np.isnan(diffnormalized_label)] = 0
-        return diffnormalized_label
+        if len(label.shape) <= 1:
+            diff_label = np.diff(label, axis=0)
+            label = diff_label / np.std(diff_label)
+            label = np.append(label, np.zeros(1), axis=0)
+            label[np.isnan(label)] = 0
+        else:
+            N = label.shape[-1]
+            if axis == []:
+                axis = range(N)
+            for ax in axis:
+                diff_label = np.diff(label[:, ax], axis=0)
+                label[:, ax] = diff_label / np.std(diff_label)
+                label[:, ax] = np.append(label[:, ax], np.zeros(1), axis=0)
+                label[:, ax][np.isnan(label[:, ax])] = 0
+        return label
 
     @staticmethod
     def standardized_data(data):

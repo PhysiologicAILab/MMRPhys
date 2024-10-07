@@ -14,10 +14,9 @@ import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 
 model_config = {
-    "TASKS": ["BVP"],
-    "LGAM": True,
+    "TASKS": ["RSP"],
     "MD_FSAM": False,
-    "MD_TYPE": "NMF",
+    "MD_TYPE": "SNMF",
     "MD_R": 1,
     "MD_S": 1,
     "MD_STEPS": 4,
@@ -28,7 +27,7 @@ model_config = {
     "height": 72,
     "weight": 72,
     "batch_size": 2,
-    "frames": 160,
+    "frames": 180,
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
@@ -46,8 +45,8 @@ class TestMMRPhys(object):
         self.label_path = Path(model_config["label_path"])
 
         self.tasks = model_config["TASKS"]
-        self.use_lgam = model_config["LGAM"]
         self.use_fsam = model_config["MD_FSAM"]
+        self.use_label = True if "label" in model_config["MD_TYPE"].lower() else False
         self.md_infer = model_config["MD_INFERENCE"]
 
         self.batch_size = model_config["batch_size"]
@@ -92,8 +91,6 @@ class TestMMRPhys(object):
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
 
-        md_config["LGAM"] = model_config["LGAM"]
-
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
@@ -118,10 +115,8 @@ class TestMMRPhys(object):
             self.np_label = np.expand_dims(self.np_label, 0)
             self.np_label = torch.tensor(self.np_label)
 
-
             # bvp_label
             # resp_label
-
             # print("Chunk data shape", self.np_data.shape)
             # print("Chunk label shape", self.np_label.shape)
             # print("Min Max of input data:", np.min(self.np_data), np.max(self.np_data))
@@ -149,21 +144,21 @@ class TestMMRPhys(object):
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
             if "BVP" in self.tasks and "RSP" in self.tasks:
-                self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
+                if not self.use_label:
+                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
+                else:
+                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(
+                        self.test_data, self.bvp_label, self.resp_label)
             elif "BVP" in self.tasks:
-                self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
+                if not self.use_label:
+                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
+                else:
+                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data, self.bvp_label)
             elif "RSP" in self.tasks:
-                self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-            else:
-                print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
-                exit()
-        elif (self.net.training or self.debug) and self.use_lgam:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                self.pred, self.pred_rBr, self.vox_embed = self.net(self.test_data, self.bvp_label, self.resp_label)
-            elif "BVP" in self.tasks:
-                self.pred, self.vox_embed = self.net(self.test_data, self.bvp_label)
-            elif "RSP" in self.tasks:
-                self.pred_rBr, self.vox_embed = self.net(self.test_data, self.resp_label)
+                if not self.use_label:
+                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
+                else:
+                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data, self.resp_label)
             else:
                 print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
                 exit()
@@ -183,7 +178,13 @@ class TestMMRPhys(object):
             self.time_vec.append(t1-t0)
 
         if self.debug:
-            print("pred.shape", self.pred.shape)
+            if "BVP" in self.tasks and "RSP" in self.tasks:
+                print("pred.shape", self.pred.shape, self.pred_rBr.shape)
+            elif "BVP" in self.tasks:
+                print("pred.shape", self.pred.shape)
+            elif "RSP" in self.tasks:
+                print("pred.shape", self.pred_rBr.shape)
+            
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
                 self.appx_error_list.append(self.appx_error.item())
 

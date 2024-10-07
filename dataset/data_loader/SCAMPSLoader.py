@@ -86,22 +86,16 @@ class SCAMPSLoader(BaseLoader):
             bvps = self.generate_pos_psuedo_labels(frames, fs=self.config_data.FS)
         else:
             if "rsp" in config_preprocess.SCAMPS.LABELS.lower():
-                bvps, resps = self.read_wave(matfile_path, opt="bvp_rsp")
+                bvps = self.read_wave(matfile_path, opt="bvp_rsp")
             else:
                 bvps = self.read_wave(matfile_path, opt="bvp")
 
-        frames_clips, bvps_clips, resp_clips = self.preprocess(
-            frames, bvps, config_preprocess, resps=resps, process_frames=process_frames)
-
         if "rsp" in config_preprocess.SCAMPS.LABELS.lower():
-            clips = []
-            for i in range(bvps_clips.shape[0]):
-                clips.append(np.concatenate([bvps_clips[i,:].reshape(1, -1), resp_clips[i, :].reshape(1, -1)]).T)
-            bvps_clips = np.array(clips)
+            frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, phys_axis=[0, 1], process_frames=process_frames)
+        else:
+            frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, phys_axis=[0], process_frames=process_frames)
 
-        input_name_list, label_name_list = self.save_multi_process(
-            frames_clips, bvps_clips, saved_filename, process_frames=process_frames)
-        
+        input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename, process_frames=process_frames)
         file_list_dict[i] = input_name_list
 
     def preprocess_dataset_backup(self, data_dirs, config_preprocess):
@@ -137,9 +131,12 @@ class SCAMPSLoader(BaseLoader):
         mat = mat73.loadmat(wave_file)
         ppg = mat['d_ppg']  # load ppg signal
         ppg = np.asarray(ppg)
-        if "RSP" in opt:
+        ppg = np.expand_dims(ppg, axis=1)
+        if "rsp" in opt.lower():
             resp = mat['d_br']  # load resp signal
             resp = np.asarray(resp)
-            return ppg, resp
+            resp = np.expand_dims(resp, axis=1)
+            data = np.concatenate([ppg, resp], axis=1)
+            return data
         else:
             return ppg
