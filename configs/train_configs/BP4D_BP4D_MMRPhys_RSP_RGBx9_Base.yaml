@@ -4,16 +4,16 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 5
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhys_RSP_Tx144_Base
+  MODEL_FILE_NAME: BP4D_MMRPhys_RSP_RGBx9_Base
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_144x144"          # Raw dataset path, need to be updated
+    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_180_144x144"
+    EXP_DATA_NAME: "BP4D_RGBT_180_9x9"
     BEGIN: 0.0
     END: 0.7
     PREPROCESS:
@@ -35,17 +35,17 @@ TRAIN:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 144
-        W: 144
+        H: 9
+        W: 9
 VALID:
   DATA:
     FS: 25
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_144x144"          # Raw dataset path, need to be updated
+    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_180_144x144"
+    EXP_DATA_NAME: "BP4D_RGBT_180_9x9"
     BEGIN: 0.5
     END: 0.7
     PREPROCESS:
@@ -67,8 +67,8 @@ VALID:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 144
-        W: 144
+        H: 9
+        W: 9
 TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
   USE_LAST_EPOCH: True                   # to use provided validation dataset to find the best epoch, should be false
@@ -77,9 +77,9 @@ TEST:
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_144x144"          # Raw dataset path, need to be updated
+    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_180_144x144"
+    EXP_DATA_NAME: "BP4D_RGBT_180_9x9"
     BEGIN: 0.7
     END: 1.0
     PREPROCESS:
@@ -101,9 +101,9 @@ TEST:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 144
-        W: 144
-DEVICE: cuda:2
+        H: 9
+        W: 9
+DEVICE: cuda:1
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -111,9 +111,9 @@ MODEL:
   DROP_RATE: 0.1
   NAME: MMRPhys
   MMRPhys:
-    CHANNELS: 1
+    CHANNELS: 3
     FRAME_NUM: 180
-    TYPE: "Big"
+    TYPE: "Small"
     TASKS: ["RSP"]
 INFERENCE:
   BATCH_SIZE: 4
@@ -121,4 +121,4 @@ INFERENCE:
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 25        # In seconds
-  MODEL_PATH: "./runs/exp/BP4D_RGBT_180_144x144/PreTrainedModels/BP4D_MMRPhys_Base_Epoch4.pth"
+  MODEL_PATH: "./runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhys_Base_Epoch4.pth"
