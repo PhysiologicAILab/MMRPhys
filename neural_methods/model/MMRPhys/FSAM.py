@@ -401,18 +401,21 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             rbf_shape2 = rbfs.shape[2]
 
         elif "label" in self.md_type.lower():
-            rbfs = torch.zeros((15, B, P)).to(self.device)
+            rbfs = torch.zeros((30, B, P)).to(self.device)
             # print("y.shape", y.shape)
-            # y_min = torch.min(y[...])
-            # y_max = torch.max(y[...])
+            y_min = torch.min(y[...])
+            y_neg = -1 * y
+            y_neg_min = torch.min(y_neg[...])
 
             for shift in range(15):
                 shifted_y = y.roll(shift - 7)
-                rbfs[shift, ...] = shifted_y
+                # rbfs[shift, ...] = shifted_y
                 # rbfs[shift, ...] = shifted_y - y_min
-                # rbfs[2*shift, ...] = shifted_y - y_min
-                # rbfs[2*shift + 1, ...] = (-1 * shifted_y) + y_max
 
+                rbfs[2*shift, ...] = shifted_y  # - y_min
+
+                shifted_y_neg = y_neg.roll(shift - 7)
+                rbfs[2*shift + 1, ...] = shifted_y_neg  # - y_neg_min
 
             rbfs = rbfs.permute(1, 2, 0)
             # print("rbfs.shape", rbfs.shape)   #4, 160, 30 #4, 160, 15

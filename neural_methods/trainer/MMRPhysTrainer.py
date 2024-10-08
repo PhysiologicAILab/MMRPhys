@@ -6,6 +6,8 @@ import torch.optim as optim
 from evaluation.metrics import calculate_metrics, calculate_resp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
+from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
 
@@ -36,6 +38,8 @@ class MMRPhysTrainer(BaseTrainer):
 
         frames = self.config.MODEL.MMRPhys.FRAME_NUM
         in_channels = self.config.MODEL.MMRPhys.CHANNELS
+        model_type = self.config.MODEL.MMRPhys.TYPE
+        model_type = model_type.lower()
 
         md_config = {}
         md_config["FRAME_NUM"] = self.config.MODEL.MMRPhys.FRAME_NUM
@@ -59,7 +63,18 @@ class MMRPhysTrainer(BaseTrainer):
             exit()
 
         self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels,
-                                dropout=self.dropout_rate, device=self.device)  # [3, T, 128,128]
+                                dropout=self.dropout_rate, device=self.device)  # [3, T, 72, 72]
+
+        if model_type == "standard":
+            self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 72, 72]
+        elif model_type == "big":
+            self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 144, 144]
+        elif model_type == "small":
+            self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 9, 9]
+        else:
+            print("Unexpected model type specified. Should be standard or big, but specified:", model_type)
+            exit()
+
 
         if torch.cuda.device_count() > 0 and self.num_of_gpu > 0:  # distribute model across GPUs
             self.model = torch.nn.DataParallel(self.model, device_ids=[self.device])  # data parallel model

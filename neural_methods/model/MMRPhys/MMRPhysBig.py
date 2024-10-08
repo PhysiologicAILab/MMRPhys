@@ -24,8 +24,8 @@ model_config = {
     "in_channels": 3,
     "data_channels": 4,
     "align_channels": nf[2] // 2,
-    "height": 72,
-    "weight": 72,
+    "height": 144,
+    "weight": 144,
     "batch_size": 4,
     "frames": 180,
     "debug": False,
@@ -57,16 +57,16 @@ class rPPG_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
+        #                                                        Input: #B, inCh, 180, 144, 144
         self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[1], 180, 35, 35
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 33, 33
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 144, 144
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[1], 180, 72, 72
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 70, 70
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 31, 31
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 180, 15, 15
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 13, 13
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[1], 180, 34, 34
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 32, 32
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 30, 30
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -89,9 +89,9 @@ class BVP_Head(nn.Module):
         self.md_res = md_config["MD_RESIDUAL"]
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 11, 11
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 7, 7
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 180, 14, 14
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 12, 12
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 10, 10
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -104,8 +104,8 @@ class BVP_Head(nn.Module):
             inC = nf[2]
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 5, 5
-            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 8, 8
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 2, 2], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
             nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
         )
 
@@ -159,16 +159,16 @@ class rBr_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
+        #                                                        Input: #B, inCh, 180, 144, 144
         self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [2, 2, 2], [1, 0, 0]), #B, nf[1], 90, 35, 35
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 33, 33
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 144, 144
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [2, 2, 2], [1, 0, 0]), #B, nf[1], 90, 72, 72
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 70, 70
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 31, 31
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [3, 2, 2], [1, 0, 0]), #B, nf[2], 30, 15, 15
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 13, 13
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [3, 2, 2], [1, 0, 0]), #B, nf[1], 30, 34, 34
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 32, 32
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 30, 30
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -195,9 +195,9 @@ class RSP_Head(nn.Module):
         # md_config["MD_STEPS"] = 6
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 11, 11
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 7, 7
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 30, 14, 14
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 12, 12
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 10, 10
             nn.Dropout3d(p=dropout_rate),            
         )
 
@@ -212,8 +212,8 @@ class RSP_Head(nn.Module):
         self.upsample = nn.Upsample(scale_factor=(6, 1, 1))
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[0], 180, 5, 5
-            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[0], 180, 8, 8
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 2, 2], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
             nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
         )
 
@@ -277,9 +277,9 @@ class RSP_Head(nn.Module):
 
 
 
-class MMRPhys(nn.Module):
+class MMRPhysBig(nn.Module):
     def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhys, self).__init__()
+        super(MMRPhysBig, self).__init__()
         self.debug = debug
 
         self.in_channels = in_channels
@@ -405,9 +405,9 @@ class old_rBr_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
+        #                                                        Input: #B, inCh, 180, 144, 144
         self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 144, 144
             ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 35, 35
             ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 33, 33
             nn.Dropout3d(p=dropout_rate),
