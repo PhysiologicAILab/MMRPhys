@@ -90,6 +90,7 @@ class TestMMRPhys(object):
         md_config["MD_TYPE"] = model_config["MD_TYPE"]
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
+        md_config["TASKS"] = model_config["TASKS"]
 
         if self.visualize:
             self.net = nn.DataParallel(MMRPhysSmall(frames=self.frames, md_config=md_config,

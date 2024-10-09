@@ -7,6 +7,7 @@ from evaluation.metrics import calculate_metrics, calculate_resp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
+from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
@@ -69,6 +70,8 @@ class MMRPhysTrainer(BaseTrainer):
             self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 72, 72]
         elif model_type == "big":
             self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 144, 144]
+        elif model_type == "medium":
+            self.model = MMRPhysMedium(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 36, 36]
         elif model_type == "small":
             self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 9, 9]
         else:

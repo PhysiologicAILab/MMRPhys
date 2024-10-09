@@ -11,7 +11,7 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 
 model_config = {
     "TASKS": ["RSP"],
@@ -24,8 +24,8 @@ model_config = {
     "MD_RESIDUAL": True,
     "in_channels": 3,
     "data_channels": 4,
-    "height": 72,
-    "weight": 72,
+    "height": 36,
+    "weight": 36,
     "batch_size": 2,
     "frames": 180,
     "debug": True,
@@ -93,11 +93,11 @@ class TestMMRPhys(object):
         md_config["TASKS"] = model_config["TASKS"]
 
         if self.visualize:
-            self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
+            self.net = nn.DataParallel(MMRPhysMedium(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
             self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
         else:
-            self.net = MMRPhys(frames=self.frames, md_config=md_config,
+            self.net = MMRPhysMedium(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
 
         self.net.eval()

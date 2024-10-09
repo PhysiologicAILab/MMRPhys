@@ -24,8 +24,8 @@ model_config = {
     "in_channels": 3,
     "data_channels": 4,
     "align_channels": nf[2] // 2,
-    "height": 72,
-    "weight": 72,
+    "height": 36,
+    "weight": 36,
     "batch_size": 4,
     "frames": 180,
     "debug": False,
@@ -57,16 +57,16 @@ class rPPG_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
+        #                                                        Input: #B, inCh, 180, 36, 36
         self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[1], 180, 35, 35
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 33, 33
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),  #B, nf[0], 180, 34, 34
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 32, 32
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 30, 30
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 31, 31
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 180, 15, 15
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 13, 13
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 180, 28, 28
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 26, 26
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 24, 24
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -89,9 +89,9 @@ class BVP_Head(nn.Module):
         self.md_res = md_config["MD_RESIDUAL"]
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 11, 11
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 7, 7
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 22, 22
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 180, 10, 10
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 180, 8, 8
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -104,9 +104,9 @@ class BVP_Head(nn.Module):
             inC = nf[2]
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 5, 5
-            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
-            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 6, 6
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 4, 4
+            nn.Conv3d(nf[0], 1, (3, 4, 4), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
         )
 
 
@@ -159,16 +159,16 @@ class rBr_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
+        #                                                        Input: #B, inCh, 180, 36, 36
         self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [2, 2, 2], [1, 0, 0]), #B, nf[1], 90, 35, 35
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 33, 33
+            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),  #B, nf[0], 180, 34, 34
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [2, 1, 1], [1, 0, 0]), #B, nf[1], 90, 32, 32
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 30, 30
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 31, 31
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [3, 2, 2], [1, 0, 0]), #B, nf[2], 30, 15, 15
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 13, 13
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[1], 90, 28, 28
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [3, 1, 1], [1, 0, 0]), #B, nf[2], 30, 26, 26
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 24, 24
             nn.Dropout3d(p=dropout_rate),
         )
 
@@ -195,10 +195,10 @@ class RSP_Head(nn.Module):
         # md_config["MD_STEPS"] = 6
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 11, 11
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 7, 7
-            nn.Dropout3d(p=dropout_rate),            
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 22, 22
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf[2], 30, 10, 10
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf[2], 30, 8, 8
+            nn.Dropout3d(p=dropout_rate),
         )
 
         if self.use_fsam:
@@ -212,9 +212,9 @@ class RSP_Head(nn.Module):
         self.upsample = nn.Upsample(scale_factor=(6, 1, 1))
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 5, 5
-            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
-            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf[1], 180, 6, 6
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 4, 4
+            nn.Conv3d(nf[0], 1, (3, 4, 4), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
         )
 
     def forward(self, voxel_embeddings, batch, length):
@@ -277,9 +277,9 @@ class RSP_Head(nn.Module):
 
 
 
-class MMRPhys(nn.Module):
+class MMRPhysMedium(nn.Module):
     def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhys, self).__init__()
+        super(MMRPhysMedium, self).__init__()
         self.debug = debug
 
         self.in_channels = in_channels
@@ -395,120 +395,3 @@ class MMRPhys(nn.Module):
                 return rPPG, rppg_voxel_embeddings
             elif "RSP" in self.tasks:
                 return rBr, rbr_voxel_embeddings
-
-
-
-
-class old_rBr_FeatureExtractor(nn.Module):
-    def __init__(self, inCh, dropout_rate=0.1, debug=False):
-        super(old_rBr_FeatureExtractor, self).__init__()
-        # inCh, out_channel, kernel_size, stride, padding
-
-        self.debug = debug
-        #                                                        Input: #B, inCh, 180, 72, 72
-        self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),  #B, nf[0], 180, 72, 72
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 35, 35
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 33, 33
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 31, 31
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 29, 29
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 27, 27
-            nn.Dropout3d(p=dropout_rate),
-        )
-
-    def forward(self, x):
-        voxel_embeddings = self.FeatureExtractor(x)
-        if self.debug:
-            print("rBr Feature Extractor")
-            print("     voxel_embeddings.shape", voxel_embeddings.shape)
-        return voxel_embeddings
-
-class old_RSP_Head(nn.Module):
-    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
-        super(old_RSP_Head, self).__init__()
-        self.debug = debug
-
-        self.use_fsam = md_config["MD_FSAM"]
-        self.md_type = md_config["MD_TYPE"]
-        self.md_infer = md_config["MD_INFERENCE"]
-        self.md_res = md_config["MD_RESIDUAL"]
-
-        # md_config = deepcopy(md_config)
-        # md_config["MD_R"] = 4
-        # md_config["MD_S"] = 1
-        # md_config["MD_STEPS"] = 6
-
-        self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 13, 13
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 11, 11
-            nn.Dropout3d(p=dropout_rate),            
-        )
-
-        if self.use_fsam:
-            inC = nf[2]
-            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
-            self.fsam_norm = nn.InstanceNorm3d(inC)
-            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
-        else:
-            inC = nf[2]
-
-        self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 2, 2], [1, 0, 0]),                         #B, nf[0], 180, 5, 5
-            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                       #B, nf[0], 180, 3, 3
-            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, 180, 1, 1
-        )
-
-    def forward(self, voxel_embeddings, batch, length):
-
-        if self.debug:
-            print("RSP Head")
-            print("     voxel_embeddings.shape", voxel_embeddings.shape)
-
-        voxel_embeddings = self.conv_block(voxel_embeddings)
-
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "NMF" in self.md_type:
-                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min()) # to make it positive (>= 0)
-            else:
-                att_mask, appx_error = self.fsam(voxel_embeddings)
-
-            if self.debug:
-                print("att_mask.shape", att_mask.shape)
-
-            # # directly use att_mask   ---> difficult to converge without Residual connection. Needs high rank
-            # factorized_embeddings = self.fsam_norm(att_mask)
-
-            # # Residual connection: 
-            # factorized_embeddings = voxel_embeddings + self.fsam_norm(att_mask)
-
-            if self.md_res:
-                # Multiplication with Residual connection
-                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-                factorized_embeddings = self.fsam_norm(x)
-                factorized_embeddings = voxel_embeddings + factorized_embeddings
-            else:
-                # Multiplication
-                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-                factorized_embeddings = self.fsam_norm(x)            
-
-            # # Concatenate
-            # factorized_embeddings = torch.cat([voxel_embeddings, self.fsam_norm(x)], dim=1)
-
-            x = self.final_layer(factorized_embeddings)
-        
-        else:
-            x = self.final_layer(voxel_embeddings)
-
-        rBr = x.view(-1, length)
-
-        if self.debug:
-            print("     rBr.shape", rBr.shape)
-        
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            return rBr, factorized_embeddings, appx_error
-        else:
-            return rBr
-
-

@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 5
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhys_Base
+  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RGBx72_Base
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -103,7 +103,7 @@ TEST:
       RESIZE:
         H: 72
         W: 72
-DEVICE: cuda:3
+DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -111,9 +111,9 @@ MODEL:
   DROP_RATE: 0.1
   NAME: MMRPhys
   MMRPhys:
-    CHANNELS: 4
+    CHANNELS: 3
     FRAME_NUM: 180
-    TASKS: ["BVP", "RSP"]
+    TASKS: ["BVP"]
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
