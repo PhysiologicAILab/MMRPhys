@@ -8,6 +8,36 @@ import torch.nn.functional as F
 from torch.nn.modules.batchnorm import _BatchNorm
 import numpy as np
 import neurokit2 as nk
+from scipy.signal import periodogram
+
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+
+def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
+    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
+    ppg_signal = np.expand_dims(ppg_signal, 0)
+    N = _next_power_of_2(ppg_signal.shape[1])
+    f_ppg, pxx_ppg = periodogram(ppg_signal, fs=fs, nfft=N, detrend=False)
+
+    fmask_ppg = np.argwhere((f_ppg >= low_pass) & (f_ppg <= high_pass))
+    mask_ppg = np.take(f_ppg, fmask_ppg)
+    mask_pxx = np.take(pxx_ppg, fmask_ppg)
+    fft_hr = np.take(mask_ppg, np.argmax(mask_pxx, 0))[0] * 60
+    return fft_hr
+
+
+def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
+    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
+    resp_signal = np.expand_dims(resp_signal, 0)
+    N = _next_power_of_2(resp_signal.shape[1])
+    f_resp, pxx_resp = periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
+    fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
+    mask_resp = np.take(f_resp, fmask_resp)
+    mask_pxx = np.take(pxx_resp, fmask_resp)
+    fft_rr = np.take(mask_resp, np.argmax(mask_pxx, 0))[0] * 60
+    return fft_rr
 
 
 class _MatrixDecompositionBase(nn.Module):
@@ -401,25 +431,62 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             rbf_shape2 = rbfs.shape[2]
 
         elif "label" in self.md_type.lower():
-            rbfs = torch.zeros((30, B, P)).to(self.device)
+            '''
+            rbfs = torch.zeros((1, B, P)).to(self.device)
             # print("y.shape", y.shape)
             y_min = torch.min(y[...])
-            y_neg = -1 * y
-            y_neg_min = torch.min(y_neg[...])
+            # y_neg = -1 * y
+            # y_neg_min = torch.min(y_neg[...])
 
-            for shift in range(15):
-                shifted_y = y.roll(shift - 7)
+            for shift in range(1):
+                shifted_y = y.roll(shift - 0)
                 # rbfs[shift, ...] = shifted_y
-                # rbfs[shift, ...] = shifted_y - y_min
+                rbfs[shift, ...] = shifted_y - y_min
 
-                rbfs[2*shift, ...] = shifted_y  # - y_min
+                # rbfs[2*shift, ...] = shifted_y  # - y_min
 
-                shifted_y_neg = y_neg.roll(shift - 7)
-                rbfs[2*shift + 1, ...] = shifted_y_neg  # - y_neg_min
+                # shifted_y_neg = y_neg.roll(shift - 0)
+                # rbfs[2*shift + 1, ...] = shifted_y_neg  # - y_neg_min
 
             rbfs = rbfs.permute(1, 2, 0)
             # print("rbfs.shape", rbfs.shape)   #4, 160, 30 #4, 160, 15
             # exit()
+            rbf_shape2 = rbfs.shape[2]
+            '''
+            ppg = []
+            fs = 30
+            duration = 20
+            seg_len = 180
+            st_max = fs * duration - seg_len
+            hr = _calculate_fft_hr(y.cpu().numpy(), fs=fs)
+            print("HR:", hr)
+
+            for iter in range(seg_len):
+                sig = nk.ppg_simulate(
+                    duration=20,
+                    sampling_rate=25,
+                    heart_rate=hr,
+                    frequency_modulation=0.1,
+                    ibi_randomness=0.03,
+                    drift=0,
+                    motion_amplitude=0.1,
+                    powerline_amplitude=0.01,
+                    burst_number=0,
+                    burst_amplitude=1,
+                    random_state=None,
+                    show=False,
+                )
+                start = int(np.random.randint(0, st_max))
+                sig_seg = sig[start: start + seg_len]
+                mx = np.max(sig_seg)
+                mn = np.min(sig_seg)
+                sig_seg = (sig_seg - mn)/(mx - mn)
+                ppg.append(sig_seg)
+
+            ppg = np.asarray(ppg).T
+            rbfs = torch.FloatTensor(ppg)
+
+            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
             rbf_shape2 = rbfs.shape[2]
 
         else:

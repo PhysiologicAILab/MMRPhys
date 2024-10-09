@@ -119,5 +119,5 @@ INFERENCE:
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
-    WINDOW_SIZE: 25        # In seconds
+    WINDOW_SIZE: 30        # In seconds
   MODEL_PATH: "./runs/exp/BP4D_RGBT_180_72x72/PreTrainedModels/BP4D_MMRPhys_Base_Epoch4.pth"
