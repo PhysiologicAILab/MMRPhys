@@ -127,6 +127,8 @@ class MMRPhysTrainer(BaseTrainer):
                 data = batch[0].to(self.device)
                 labels = batch[1].to(self.device)
 
+                # hr = _calculate_fft_hr(y.cpu().numpy(), fs=fs)
+
                 if len(labels.shape) == 3:
                     label_bvp = labels[..., 0]
                     label_rsp = labels[..., 1]

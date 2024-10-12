@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 5
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RGBTx36_Base
+  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RGBTx36_Base_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -14,8 +14,9 @@ TRAIN:
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180_36x36"
-    BEGIN: 0.0
-    END: 0.7
+    FOLD:
+      FOLD_NAME: 'Fold1_Train'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv'
     PREPROCESS:
       PREPROCESS_FRAMES: True
       DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
@@ -46,8 +47,9 @@ VALID:
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180_36x36"
-    BEGIN: 0.5
-    END: 0.7
+    FOLD:
+      FOLD_NAME: 'Fold1_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
     PREPROCESS:
       PREPROCESS_FRAMES: True
       DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
@@ -80,8 +82,9 @@ TEST:
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/mnt/sda/data/prep/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180_36x36"
-    BEGIN: 0.7
-    END: 1.0
+    FOLD:
+      FOLD_NAME: 'Fold1_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
     PREPROCESS:
       PREPROCESS_FRAMES: True
       DATA_TYPE: ['Raw']         #if use MMRPhys, should be Raw
@@ -103,7 +106,7 @@ TEST:
       RESIZE:
         H: 36
         W: 36
-DEVICE: cuda:2
+DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp

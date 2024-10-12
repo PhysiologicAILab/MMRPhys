@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 
 model_config = {
-    "TASKS": ["RSP"],
+    "TASKS": ["BVP"],
     "MD_FSAM": False,
     "MD_TYPE": "SNMF",
     "MD_R": 1,

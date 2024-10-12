@@ -457,14 +457,12 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             fs = 30
             duration = 20
             seg_len = 180
-            st_max = fs * duration - seg_len
-            hr = _calculate_fft_hr(y.cpu().numpy(), fs=fs)
-            print("HR:", hr)
+            st_max = seg_len
 
             for iter in range(seg_len):
                 sig = nk.ppg_simulate(
-                    duration=20,
-                    sampling_rate=25,
+                    duration=duration,
+                    sampling_rate=fs,
                     heart_rate=hr,
                     frequency_modulation=0.1,
                     ibi_randomness=0.03,
