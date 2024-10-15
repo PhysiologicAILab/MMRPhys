@@ -307,7 +307,12 @@ class _SmoothMatrixDecompositionBase(nn.Module):
     def forward(self, x, y=None, return_bases=False):
 
         if self.debug:
+            print("\n*****************")
             print("Org x.shape", x.shape)
+            print("y.shape:", y.shape)
+            print("MD_Type:", self.md_type)
+            print("FS:", self.fs)
+            print("*****************")
 
         if self.dim == "3D":        # (B, C, T, H, W) -> (B * S, D, N)
             B, C, T, H, W = x.shape
@@ -335,6 +340,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             exit()
 
         P = D
+
         if "rbf" in self.md_type.lower():
             sig0 = torch.tensor(6.0)
             sig1 = torch.tensor(8.0)
@@ -393,8 +399,15 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                 print("Terminating")
                 print("*****************")
                 exit()
-            
-            SNMF_estimators = torch.zeros((B, total_estimators, P)).to(self.device)
+
+            if self.debug:
+                print("\n*****************")
+                print("P:", P)
+                print("Duration:", duration)
+                print("Total estimators:", total_estimators)
+                print("*****************")
+
+            SNMF_estimators = torch.zeros((B, P, total_estimators)).to(self.device)
             
             for bt in range(B):
                 for iter in iters:
@@ -408,20 +421,20 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                     mx = np.max(sig_seg)
                     mn = np.min(sig_seg)
                     sig_seg = (sig_seg - mn)/(mx - mn)
-                    SNMF_estimators[bt, iter, :] = torch.FloatTensor(sig_seg)
+                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg)
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 
 
         elif "label" in self.md_type.lower():
 
-            SNMF_estimators = torch.zeros((B, 1, P)).to(self.device)    #only label as estimator
+            SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
             for bt in range(B):
                 sig = y[bt, :]
                 mx = torch.max(sig)
                 mn = torch.min(sig)
                 sig = (sig - mn)/(mx - mn)
-                SNMF_estimators[bt, 0, :] = sig
+                SNMF_estimators[bt, :, 0] = sig
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 

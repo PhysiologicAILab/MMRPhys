@@ -105,7 +105,7 @@ MODEL:
     FRAME_NUM: 160
     TASKS: ["BVP"]
     MD_FSAM: True
-    MD_TYPE: "SNMF_Sim"
+    MD_TYPE: "SNMF_Sim_HR"
     MD_R: 1
     MD_S: 1
     MD_STEPS: 4
