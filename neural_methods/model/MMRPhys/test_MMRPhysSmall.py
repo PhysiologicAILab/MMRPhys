@@ -15,6 +15,7 @@ from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 
 model_config = {
     "TASKS": ["BVP"],
+    "FS": 30,
     "MD_FSAM": False,
     "MD_TYPE": "SNMF",
     "MD_R": 1,
@@ -83,6 +84,7 @@ class TestMMRPhys(object):
 
         md_config = {}
         md_config["FRAME_NUM"] = model_config["frames"]
+        md_config["FS"] = model_config["FS"]
         md_config["MD_S"] = model_config["MD_S"]
         md_config["MD_R"] = model_config["MD_R"]
         md_config["MD_STEPS"] = model_config["MD_STEPS"]

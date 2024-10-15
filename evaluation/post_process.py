@@ -52,7 +52,7 @@ def _calculate_peak_hr(ppg_signal, fs):
 
 # RSP Metrics
 def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
-    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
+    """Calculate respiration rate based on PPG using Fast Fourier transform (FFT)."""
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
     f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
@@ -64,7 +64,7 @@ def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
 
 
 def _calculate_peak_rr(resp_signal, fs):
-    """Calculate heart rate based on PPG using peak detection."""
+    """Calculate respiration rate based on PPG using peak detection."""
     resp_peaks, _ = scipy.signal.find_peaks(resp_signal)
     rr_peak = 60 / (np.mean(np.diff(resp_peaks)) / fs)
     return rr_peak
@@ -149,15 +149,18 @@ def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3
 def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, hr_method='FFT'):
     """Calculate video-level HR and SNR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of PPG signal.
-        predictions = _detrend(np.cumsum(predictions), 100)
-        labels = _detrend(np.cumsum(labels), 100)
+        # predictions = _detrend(np.cumsum(predictions), 100)
+        predictions = np.cumsum(predictions)
+        # labels = _detrend(np.cumsum(labels), 100)
+        labels = np.cumsum(labels)
     else:
-        predictions = _detrend(predictions, 100)
-        labels = _detrend(labels, 100)
+        # predictions = _detrend(predictions, 100)
+        # labels = _detrend(labels, 100)
+        pass
     if use_bandpass:
         # bandpass filter between [0.75, 2.5] Hz, equals [45, 150] beats per min
         # bandpass filter between [0.6, 3.3] Hz, equals [36, 198] beats per min
-        [b, a] = butter(1, [0.6 / fs * 2, 3.3 / fs * 2], btype='bandpass')
+        [b, a] = butter(2, [0.6 / fs * 2, 3.3 / fs * 2], btype='bandpass')
         predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
         labels = scipy.signal.filtfilt(b, a, np.double(labels))
     
@@ -175,18 +178,21 @@ def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=True, use_b
     return hr_label, hr_pred, SNR, macc
 
 
-def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
+def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
     """Calculate video-level RR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
-        predictions = _detrend(np.cumsum(predictions), 100)
-        labels = _detrend(np.cumsum(labels), 100)
+        # predictions = _detrend(np.cumsum(predictions), 100)
+        # labels = _detrend(np.cumsum(labels), 100)
+        predictions = np.cumsum(predictions)
+        labels = np.cumsum(labels)
     else:
-        predictions = _detrend(predictions, 100)
-        labels = _detrend(labels, 100)
+        # predictions = _detrend(predictions, 100)
+        # labels = _detrend(labels, 100)
+        pass
     if use_bandpass:
         # bandpass filter between [0.13, 0.5] Hz
         # equals [8, 30] breaths per min
-        [b, a] = butter(1, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
         predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
         labels = scipy.signal.filtfilt(b, a, np.double(labels))
     

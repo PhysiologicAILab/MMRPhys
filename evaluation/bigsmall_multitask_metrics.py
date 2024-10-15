@@ -42,15 +42,18 @@ def _calculate_peak_rr(resp_signal, fs):
 def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
     """Calculate video-level RR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
-        predictions = _detrend(np.cumsum(predictions), 100)
-        labels = _detrend(np.cumsum(labels), 100)
+        # predictions = _detrend(np.cumsum(predictions), 100)
+        # labels = _detrend(np.cumsum(labels), 100)
+        predictions = np.cumsum(predictions)
+        labels = np.cumsum(labels)
     else:
-        predictions = _detrend(predictions, 100)
-        labels = _detrend(labels, 100)
+        # predictions = _detrend(predictions, 100)
+        # labels = _detrend(labels, 100)
+        pass
     if use_bandpass:
         # bandpass filter between [0.13, 0.5] Hz
         # equals [8, 30] breaths per min
-        [b, a] = butter(1, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
         predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
         labels = scipy.signal.filtfilt(b, a, np.double(labels))
     if rr_method == 'FFT':

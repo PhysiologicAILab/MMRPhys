@@ -209,7 +209,7 @@ def calculate_metrics(predictions, labels, config):
         raise ValueError("Inference evaluation method name wrong!")
 
 
-def calculate_resp_metrics(predictions, labels, config):
+def calculate_rsp_metrics(predictions, labels, config):
     """Calculate Respiration Metrics (MAE, RMSE, MAPE, Pearson Coef., SNR)."""
 
     print('=====================')
@@ -251,14 +251,14 @@ def calculate_resp_metrics(predictions, labels, config):
                 raise ValueError("Unsupported label type in testing!")
             
             if config.INFERENCE.EVALUATION_METHOD == "peak detection":
-                gt_rr_peak, pred_rr_peak, SNR, macc = calculate_resp_metrics_per_video(
+                gt_rr_peak, pred_rr_peak, SNR, macc = calculate_rsp_metrics_per_video(
                     prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='Peak')
                 gt_rr_peak_all.append(gt_rr_peak)
                 predict_rr_peak_all.append(pred_rr_peak)
                 SNR_all.append(SNR)
                 MACC_all.append(macc)
             elif config.INFERENCE.EVALUATION_METHOD == "FFT":
-                gt_rr_fft, pred_rr_fft, SNR, macc = calculate_resp_metrics_per_video(
+                gt_rr_fft, pred_rr_fft, SNR, macc = calculate_rsp_metrics_per_video(
                     prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='FFT')
                 gt_rr_fft_all.append(gt_rr_fft)
                 predict_rr_fft_all.append(pred_rr_fft)

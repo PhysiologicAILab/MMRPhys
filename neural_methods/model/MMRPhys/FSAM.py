@@ -8,36 +8,6 @@ import torch.nn.functional as F
 from torch.nn.modules.batchnorm import _BatchNorm
 import numpy as np
 import neurokit2 as nk
-from scipy.signal import periodogram
-
-def _next_power_of_2(x):
-    """Calculate the nearest power of 2."""
-    return 1 if x == 0 else 2 ** (x - 1).bit_length()
-
-
-def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
-    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
-    ppg_signal = np.expand_dims(ppg_signal, 0)
-    N = _next_power_of_2(ppg_signal.shape[1])
-    f_ppg, pxx_ppg = periodogram(ppg_signal, fs=fs, nfft=N, detrend=False)
-
-    fmask_ppg = np.argwhere((f_ppg >= low_pass) & (f_ppg <= high_pass))
-    mask_ppg = np.take(f_ppg, fmask_ppg)
-    mask_pxx = np.take(pxx_ppg, fmask_ppg)
-    fft_hr = np.take(mask_ppg, np.argmax(mask_pxx, 0))[0] * 60
-    return fft_hr
-
-
-def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
-    """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
-    resp_signal = np.expand_dims(resp_signal, 0)
-    N = _next_power_of_2(resp_signal.shape[1])
-    f_resp, pxx_resp = periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
-    fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
-    mask_resp = np.take(f_resp, fmask_resp)
-    mask_pxx = np.take(pxx_resp, fmask_resp)
-    fft_rr = np.take(mask_resp, np.argmax(mask_pxx, 0))[0] * 60
-    return fft_rr
 
 
 class _MatrixDecompositionBase(nn.Module):
@@ -291,6 +261,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
         self.md_type = md_config["MD_TYPE"]
         self.S = md_config["MD_S"]
         self.R = md_config["MD_R"]
+        self.fs = md_config["FS"]
         self.debug = debug
 
         self.train_steps = md_config["MD_STEPS"]
@@ -319,18 +290,18 @@ class _SmoothMatrixDecompositionBase(nn.Module):
         raise NotImplementedError
 
     @torch.no_grad()
-    def local_inference(self, x, rbfs, bases):
+    def local_inference(self, x, SNMF_estimators, bases):
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
-        coef = torch.bmm(x.transpose(1, 2), torch.bmm(rbfs, bases))
+        coef = torch.bmm(x.transpose(1, 2), torch.bmm(SNMF_estimators, bases))
         coef = F.softmax(self.inv_t * coef, dim=-1)
 
         steps = self.train_steps if self.training else self.eval_steps
         for _ in range(steps):
-            bases, coef = self.local_step(x, rbfs, bases, coef)
+            bases, coef = self.local_step(x, SNMF_estimators, bases, coef)
 
         return bases, coef
 
-    def compute_coef(self, x, rbfs, bases, coef):
+    def compute_coef(self, x, SNMF_estimators, bases, coef):
         raise NotImplementedError
 
     def forward(self, x, y=None, return_bases=False):
@@ -385,7 +356,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             rbf5 = torch.exp((-0.5 * dd)/(2 * torch.pow(sig5, 2)))
             rbfN = torch.ones(P, 1)
 
-            rbfs = torch.cat([
+            SNMF_estimators = torch.cat([
                 rbf0[:, torch.arange(0, P, 1)],
                 rbf1[:, torch.arange(0, P, 1)],
                 rbf2[:, torch.arange(0, P, 2)],
@@ -395,97 +366,64 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                 rbfN,
             ], dim=1)
 
-            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
-            rbf_shape2 = rbfs.shape[2]
+            SNMF_estimators = SNMF_estimators.repeat(B * self.S, 1, 1).to(self.device)
+            SNMF_est_shape2 = SNMF_estimators.shape[2]
+
 
         elif "sim" in self.md_type.lower():
-            hr_range = np.arange(30, 180)
-            ppg = []
-            for iter in range(5):
-                for hr in hr_range:
-                    sig = nk.ppg_simulate(
-                        duration=20,
-                        sampling_rate=30,
-                        heart_rate=hr,
-                        frequency_modulation=0.1,
-                        ibi_randomness=0.03,
-                        drift=0,
-                        motion_amplitude=0.1,
-                        powerline_amplitude=0.01,
-                        burst_number=0,
-                        burst_amplitude=1,
-                        random_state=None,
-                        show=False,
-                    )
-                    start = int(np.random.randint(100, 300))
-                    sig_seg = sig[start: start + P]
+            if "hr" in self.md_type.lower():
+                hr = torch.mean(y, dim=1).cpu().numpy()
+                max_samples_in_lowest_hr = 2*self.fs     #30 BPM
+                max_samples = 4 * max_samples_in_lowest_hr
+                iters = np.arange(0, max_samples, 1)
+                duration = ((max_samples + P) // self.fs) + 1
+                total_estimators = len(iters)
+
+            elif "rr" in self.md_type.lower():
+                rr = torch.mean(y, dim=1).cpu().numpy()
+                max_samples_in_lowest_rr = 10*self.fs  # 6 BPM
+                max_samples = 4 * max_samples_in_lowest_rr
+                iters = np.arange(0, max_samples, 5)
+                duration = ((max_samples + P) // self.fs) + 1
+                total_estimators = len(iters)
+
+            else:
+                print("\n*****************")
+                print("Invalid MD_Type for SIM - Should be SIM_HR or SIM_RR")
+                print("Terminating")
+                print("*****************")
+                exit()
+            
+            SNMF_estimators = torch.zeros((B, total_estimators, P)).to(self.device)
+            
+            for bt in range(B):
+                for iter in iters:
+                    if "hr" in self.md_type.lower():
+                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr[bt], frequency_modulation=0.1, ibi_randomness=0.03)
+                    else:
+                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr)
+                    # start = int(np.random.randint(0, P))
+                    # sig_seg = sig[start: start + P]
+                    sig_seg = sig[iter: iter + P]
                     mx = np.max(sig_seg)
                     mn = np.min(sig_seg)
                     sig_seg = (sig_seg - mn)/(mx - mn)
-                    ppg.append(sig_seg)
+                    SNMF_estimators[bt, iter, :] = torch.FloatTensor(sig_seg)
 
-            ppg = np.asarray(ppg).T
-            rbfs = torch.FloatTensor(ppg)
+            SNMF_est_shape2 = SNMF_estimators.shape[2]
 
-            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
-            rbf_shape2 = rbfs.shape[2]
 
         elif "label" in self.md_type.lower():
-            '''
-            rbfs = torch.zeros((1, B, P)).to(self.device)
-            # print("y.shape", y.shape)
-            y_min = torch.min(y[...])
-            # y_neg = -1 * y
-            # y_neg_min = torch.min(y_neg[...])
 
-            for shift in range(1):
-                shifted_y = y.roll(shift - 0)
-                # rbfs[shift, ...] = shifted_y
-                rbfs[shift, ...] = shifted_y - y_min
+            SNMF_estimators = torch.zeros((B, 1, P)).to(self.device)    #only label as estimator
+            for bt in range(B):
+                sig = y[bt, :]
+                mx = torch.max(sig)
+                mn = torch.min(sig)
+                sig = (sig - mn)/(mx - mn)
+                SNMF_estimators[bt, 0, :] = sig
 
-                # rbfs[2*shift, ...] = shifted_y  # - y_min
-
-                # shifted_y_neg = y_neg.roll(shift - 0)
-                # rbfs[2*shift + 1, ...] = shifted_y_neg  # - y_neg_min
-
-            rbfs = rbfs.permute(1, 2, 0)
-            # print("rbfs.shape", rbfs.shape)   #4, 160, 30 #4, 160, 15
-            # exit()
-            rbf_shape2 = rbfs.shape[2]
-            '''
-            ppg = []
-            fs = 30
-            duration = 20
-            seg_len = 180
-            st_max = seg_len
-
-            for iter in range(seg_len):
-                sig = nk.ppg_simulate(
-                    duration=duration,
-                    sampling_rate=fs,
-                    heart_rate=hr,
-                    frequency_modulation=0.1,
-                    ibi_randomness=0.03,
-                    drift=0,
-                    motion_amplitude=0.1,
-                    powerline_amplitude=0.01,
-                    burst_number=0,
-                    burst_amplitude=1,
-                    random_state=None,
-                    show=False,
-                )
-                start = int(np.random.randint(0, st_max))
-                sig_seg = sig[start: start + seg_len]
-                mx = np.max(sig_seg)
-                mn = np.min(sig_seg)
-                sig_seg = (sig_seg - mn)/(mx - mn)
-                ppg.append(sig_seg)
-
-            ppg = np.asarray(ppg).T
-            rbfs = torch.FloatTensor(ppg)
-
-            rbfs = rbfs.repeat(B * self.S, 1, 1).to(self.device)
-            rbf_shape2 = rbfs.shape[2]
+            SNMF_est_shape2 = SNMF_estimators.shape[2]
 
         else:
             print("Invalid SNMF option specified... Exiting...")
@@ -500,24 +438,24 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             print("MD_TRAIN_STEPS", self.train_steps)
             print("MD_EVAL_STEPS", self.eval_steps)
             print("x.view(B * self.S, D, N)", x.shape)
-            print("rbfs.shape", rbfs.shape)
+            print("SNMF_estimators.shape", SNMF_estimators.shape)
 
         if not self.rand_init and not hasattr(self, 'bases'):
-            bases = self._build_bases(1, self.S, rbf_shape2, self.R)
+            bases = self._build_bases(1, self.S, SNMF_est_shape2, self.R)
             self.register_buffer('bases', bases)
 
         # (S, D, R) -> (B * S, D, R)
         if self.rand_init:
-            bases = self._build_bases(B, self.S, rbf_shape2, self.R)
+            bases = self._build_bases(B, self.S, SNMF_est_shape2, self.R)
         else:
             bases = self.bases.repeat(B, 1, 1).to(self.device)
 
-        bases, coef = self.local_inference(x, rbfs, bases)
+        bases, coef = self.local_inference(x, SNMF_estimators, bases)
 
         # (B * S, N, R)
-        coef = self.compute_coef(x, rbfs, bases, coef)
+        coef = self.compute_coef(x, SNMF_estimators, bases, coef)
 
-        bases_prod = torch.bmm(rbfs, bases)
+        bases_prod = torch.bmm(SNMF_estimators, bases)
 
         # (B * S, D, R) @ (B * S, N, R)^T -> (B * S, D, N)
         x = torch.bmm(bases_prod, coef.transpose(1, 2))
@@ -534,9 +472,9 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             x = x.view(B, C, L)
 
         # (B * L, D, R) -> (B, L, N, D)
-        # bases_prod_updated = torch.bmm(rbfs, bases)
-        bases = torch.bmm(rbfs.transpose(1, 2), bases_prod)
-        bases = bases.view(B, self.S, rbf_shape2, self.R)
+        # bases_prod_updated = torch.bmm(SNMF_estimators, bases)
+        bases = torch.bmm(SNMF_estimators.transpose(1, 2), bases_prod)
+        bases = bases.view(B, self.S, SNMF_est_shape2, self.R)
 
         if not self.rand_init and not self.training and not return_bases:
             print("it comes here")
@@ -569,10 +507,10 @@ class SNMF(_SmoothMatrixDecompositionBase):
         return bases
 
     @torch.no_grad()
-    def local_step(self, x, rbfs, bases, coef):
+    def local_step(self, x, SNMF_estimators, bases, coef):
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
 
-        bases_prod = torch.bmm(rbfs, bases)
+        bases_prod = torch.bmm(SNMF_estimators, bases)
 
         numerator = torch.bmm(x.transpose(1, 2), bases_prod)
         # (B * S, N, R) @ [(B * S, D, R)^T @ (B * S, D, R)] -> (B * S, N, R)
@@ -587,15 +525,15 @@ class SNMF(_SmoothMatrixDecompositionBase):
         # Multiplicative Update
 
         # bases = (bases_prod * numerator / (denominator + 1e-6))
-        bases = torch.bmm(rbfs.transpose(1, 2), (bases_prod * numerator /
+        bases = torch.bmm(SNMF_estimators.transpose(1, 2), (bases_prod * numerator /
                           (denominator + 1e-6)))
         # print(bases.shape)
         # exit()
 
         return bases, coef
 
-    def compute_coef(self, x, rbfs, bases, coef):
-        bases_prod = torch.bmm(rbfs, bases)
+    def compute_coef(self, x, SNMF_estimators, bases, coef):
+        bases_prod = torch.bmm(SNMF_estimators, bases)
 
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
         numerator = torch.bmm(x.transpose(1, 2), bases_prod)

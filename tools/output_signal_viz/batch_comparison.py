@@ -113,13 +113,15 @@ def _process_signal(signal, fs=30, diff_flag=True):
     # Detrend and filter
     use_bandpass = True
     if diff_flag:  # if the predictions and labels are 1st derivative of PPG signal.
-        signal = _detrend(np.cumsum(signal), 100)
+        # signal = _detrend(np.cumsum(signal), 100)
+        signal = np.cumsum(signal)
     else:
-        signal = _detrend(signal, 100)
+        # signal = _detrend(signal, 100)
+        pass
     if use_bandpass:
         # bandpass filter between [0.75, 2.5] Hz
         # equals [45, 150] beats per min
-        [b, a] = butter(1, [0.5 / fs * 2, 2.5 / fs * 2], btype='bandpass')
+        [b, a] = butter(2, [0.6 / fs * 2, 3.3 / fs * 2], btype='bandpass')
         signal = filtfilt(b, a, np.double(signal))
     return signal
 
