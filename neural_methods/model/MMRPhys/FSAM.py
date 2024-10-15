@@ -421,7 +421,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                     mx = np.max(sig_seg)
                     mn = np.min(sig_seg)
                     sig_seg = (sig_seg - mn)/(mx - mn)
-                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg)
+                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg, device=self.device)
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 
@@ -430,11 +430,11 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
             SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
             for bt in range(B):
-                sig = y[bt, :]
-                mx = torch.max(sig)
-                mn = torch.min(sig)
-                sig = (sig - mn)/(mx - mn)
-                SNMF_estimators[bt, :, 0] = sig
+                # sig = y[bt, :]
+                # mx = torch.max(sig)
+                # mn = torch.min(sig)
+                # sig = (sig - mn)/(mx - mn)
+                SNMF_estimators[bt, :, 0] = y[bt, :]
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 

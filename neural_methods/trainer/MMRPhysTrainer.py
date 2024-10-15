@@ -489,16 +489,16 @@ class MMRPhysTrainer(BaseTrainer):
                         pred_rsp_test, vox_embed = self.model(data)
 
                 if "BVP" in self.tasks:
-                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1)
-                    std_label_bvp_test = torch.std(label_bvp_test, dim=1).unsqueeze(1)
-                    mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1).unsqueeze(1)
-                    std_pred_bvp_test = torch.std(pred_bvp_test, dim=1).unsqueeze(1)
+                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1).cpu()
+                    std_label_bvp_test = torch.std(label_bvp_test, dim=1).unsqueeze(1).cpu()
+                    mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1).unsqueeze(1).cpu()
+                    std_pred_bvp_test = torch.std(pred_bvp_test, dim=1).unsqueeze(1).cpu()
                     # pred_bvp_test = (pred_bvp_test - mean_pred_bvp_test) / std_pred_bvp_test  # normalize
                 if "RSP" in self.tasks:
-                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1).unsqueeze(1)
-                    std_label_rsp_test = torch.std(label_rsp_test, dim=1).unsqueeze(1)
-                    mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1).unsqueeze(1)
-                    std_pred_rsp_test = torch.std(pred_rsp_test, dim=1).unsqueeze(1)
+                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1).unsqueeze(1).cpu()
+                    std_label_rsp_test = torch.std(label_rsp_test, dim=1).unsqueeze(1).cpu()
+                    mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1).unsqueeze(1).cpu()
+                    std_pred_rsp_test = torch.std(pred_rsp_test, dim=1).unsqueeze(1).cpu()
                     # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
 
                 if self.config.TEST.OUTPUT_SAVE_DIR:
@@ -519,26 +519,26 @@ class MMRPhysTrainer(BaseTrainer):
                         label_rsp_dict[subj_index] = dict()
 
                     if "BVP" in self.tasks:
-                        if std_pred_bvp_test[idx] > 0.001:
-                            pred_bvp_dict[subj_index][sort_index] = (pred_bvp_test[idx] - mean_pred_bvp_test[idx]) / std_pred_bvp_test[idx]   #pred_bvp_test[idx]    # standardize
-                        else:
-                            pred_bvp_dict[subj_index][sort_index] = pred_bvp_test[idx]
-
                         if std_label_bvp_test[idx] > 0.001:
                             label_bvp_dict[subj_index][sort_index] = (label_bvp_test[idx] - mean_label_bvp_test[idx]) / std_label_bvp_test[idx]   #label_bvp_test[idx]    # standardize
                         else:
                             label_bvp_dict[subj_index][sort_index] = label_bvp_test[idx]
                         
-                    if "RSP" in self.tasks:
-                        if std_pred_rsp_test[idx] > 0.001:
-                            pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / std_pred_rsp_test[idx]   #pred_rsp_test[idx]    # standardize
+                        if std_pred_bvp_test[idx] > 0.001:
+                            pred_bvp_dict[subj_index][sort_index] = (pred_bvp_test[idx] - mean_pred_bvp_test[idx]) / std_pred_bvp_test[idx]   #pred_bvp_test[idx]    # standardize
                         else:
-                            pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
+                            pred_bvp_dict[subj_index][sort_index] = pred_bvp_test[idx]
 
+                    if "RSP" in self.tasks:
                         if std_label_rsp_test[idx] > 0.001:
                             label_rsp_dict[subj_index][sort_index] = (label_rsp_test[idx] - mean_label_rsp_test[idx]) / std_label_rsp_test[idx]   #label_rsp_test[idx]    # standardize
                         else:
                             label_rsp_dict[subj_index][sort_index] = label_rsp_test[idx]
+
+                        if std_pred_rsp_test[idx] > 0.001:
+                            pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / std_pred_rsp_test[idx]   #pred_rsp_test[idx]    # standardize
+                        else:
+                            pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
 
         print('')
         if "BVP" in self.tasks:
