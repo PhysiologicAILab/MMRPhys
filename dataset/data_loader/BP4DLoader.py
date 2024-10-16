@@ -151,6 +151,9 @@ class BP4DLoader(BaseLoader):
         # phys = np.delete(phys, del_idx, axis=0)
         # sq_vec = np.delete(sq_vec, del_idx, axis=0)
 
+        # TODO: Add a code to resample and then filter appropriately all the signals. For metrics = rounding of values may be needed.
+        # bvps = BaseLoader.resample_ppg(bvps, target_length)
+
         frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess, phys_axis=[0, 1, 2, 3], process_frames=process_frames)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)
         file_list_dict[i] = input_name_list

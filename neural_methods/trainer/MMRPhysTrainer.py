@@ -129,15 +129,17 @@ class MMRPhysTrainer(BaseTrainer):
                 labels = batch[1].to(self.device)
 
                 if len(labels.shape) == 3:
-                    if labels.shape[-1] > 2:
+                    if labels.shape[-1] > 4:       # BP4D dataset 
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
-                    else:
+                    elif labels.shape[-1] == 4:     #SCAMPS dataset
+                        label_bvp = labels[..., 0]
+                        label_rsp = labels[..., 1]
+                        label_hr = labels[..., 2]
+                        # label_rr = labels[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
+                    else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
                         label_bvp = labels[..., 0]
                         label_hr = labels[..., 1]
-                        # hr = torch.mean(labels[..., 1], dim=1)
-                        # print("HR:", hr)
-                        # exit()
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
@@ -321,8 +323,17 @@ class MMRPhysTrainer(BaseTrainer):
 
                 data, labels = valid_batch[0].to(self.device), valid_batch[1].to(self.device)
                 if len(labels.shape) == 3:
-                    label_bvp = labels[..., 0]
-                    label_rsp = labels[..., 1]
+                    if labels.shape[-1] > 4:       # BP4D dataset 
+                        label_bvp = labels[..., 0]
+                        label_rsp = labels[..., 1]
+                    elif labels.shape[-1] == 4:     #SCAMPS dataset
+                        label_bvp = labels[..., 0]
+                        label_rsp = labels[..., 1]
+                        label_hr = labels[..., 2]
+                        # label_rr = labels[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
+                    else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
+                        label_bvp = labels[..., 0]
+                        label_hr = labels[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
@@ -448,8 +459,18 @@ class MMRPhysTrainer(BaseTrainer):
                 data, labels_test = test_batch[0].to(self.device), test_batch[1].to(self.device)
 
                 if len(labels_test.shape) == 3:
-                    label_bvp_test = labels_test[..., 0]
-                    label_rsp_test = labels_test[..., 1]
+                    if labels_test.shape[-1] > 4:       # BP4D dataset 
+                        label_bvp_test = labels_test[..., 0]
+                        label_rsp_test = labels_test[..., 1]
+                    elif labels_test.shape[-1] == 4:     #SCAMPS dataset
+                        label_bvp_test = labels_test[..., 0]
+                        label_rsp_test = labels_test[..., 1]
+                        label_hr_test = labels_test[..., 2]
+                        # label_rr = labels_test[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
+                    else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
+                        label_bvp_test = labels_test[..., 0]
+                        label_hr_test = labels_test[..., 1]
+
                 elif "BVP" in self.tasks:
                     label_bvp_test = labels_test
                 elif "RSP" in self.tasks:
