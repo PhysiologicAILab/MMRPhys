@@ -132,7 +132,7 @@ class MMRPhysTrainer(BaseTrainer):
                     if labels.shape[-1] > 4:       # BP4D dataset 
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
-                    elif labels.shape[-1] == 4:     #SCAMPS dataset
+                    elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
                         label_hr = labels[..., 2]
@@ -326,7 +326,7 @@ class MMRPhysTrainer(BaseTrainer):
                     if labels.shape[-1] > 4:       # BP4D dataset 
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
-                    elif labels.shape[-1] == 4:     #SCAMPS dataset
+                    elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
                         label_hr = labels[..., 2]
@@ -462,7 +462,7 @@ class MMRPhysTrainer(BaseTrainer):
                     if labels_test.shape[-1] > 4:       # BP4D dataset 
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]
-                    elif labels_test.shape[-1] == 4:     #SCAMPS dataset
+                    elif labels_test.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]
                         label_hr_test = labels_test[..., 2]

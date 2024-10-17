@@ -421,7 +421,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                     mx = np.max(sig_seg)
                     mn = np.min(sig_seg)
                     sig_seg = (sig_seg - mn)/(mx - mn)
-                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg, device=self.device)
+                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg)
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 
