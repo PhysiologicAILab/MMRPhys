@@ -130,8 +130,16 @@ class MMRPhysTrainer(BaseTrainer):
 
                 if len(labels.shape) == 3:
                     if labels.shape[-1] > 4:       # BP4D dataset 
+                        # bvp, rsp, eda, ecg, hr, rr, sysBP, avgBP, diaBP
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
+                        label_eda = labels[..., 2]
+                        label_hr = labels[..., 4]
+                        label_rr = labels[..., 5]
+                        label_sysBP = labels[..., 6]
+                        label_avgBP = labels[..., 7]
+                        label_diaBP = labels[..., 8]
+
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
@@ -326,6 +334,13 @@ class MMRPhysTrainer(BaseTrainer):
                     if labels.shape[-1] > 4:       # BP4D dataset 
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
+                        label_eda = labels[..., 2]
+                        label_hr = labels[..., 4]
+                        label_rr = labels[..., 5]
+                        label_sysBP = labels[..., 6]
+                        label_avgBP = labels[..., 7]
+                        label_diaBP = labels[..., 8]
+
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
@@ -462,6 +477,13 @@ class MMRPhysTrainer(BaseTrainer):
                     if labels_test.shape[-1] > 4:       # BP4D dataset 
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]
+                        label_eda_test = labels_test[..., 2]
+                        label_hr_test = labels_test[..., 4]
+                        label_rr_test = labels_test[..., 5]
+                        label_sysBP_test = labels_test[..., 6]
+                        label_avgBP_test = labels_test[..., 7]
+                        label_diaBP_test = labels_test[..., 8]
+
                     elif labels_test.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]

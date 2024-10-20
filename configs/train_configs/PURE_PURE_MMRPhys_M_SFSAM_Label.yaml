@@ -9,7 +9,7 @@ TRAIN:
   DATA:
     FS: 30
     DATASET: PURE
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated
@@ -38,7 +38,7 @@ VALID:
   DATA:
     FS: 30
     DATASET: PURE
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated
@@ -69,7 +69,7 @@ TEST:
   DATA:
     FS: 30
     DATASET: PURE
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated

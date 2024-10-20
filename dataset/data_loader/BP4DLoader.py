@@ -142,27 +142,59 @@ class BP4DLoader(BaseLoader):
         else:
             target_length = frames.shape[0]
 
-        # # print(type(frames), frames.shape)
-        # # print(type(phys), phys.shape)
-        # # exit()
+        bvp = phys[:, 0]
+        rsp = phys[:, 1]
+        eda = phys[:, 2]
+        ecg = phys[:, 3]
+        hr = phys[:, 4]
+        rr = phys[:, 5]
+        sysBP = phys[:, 6]
+        avgBP = phys[:, 7]
+        diaBP = phys[:, 8]
+        rawBP = phys[:, 9]
+
+        # print("filename:", filename)
+        # print("eda:", np.min(eda), np.max(eda), np.mean(eda))
+        # print("hr:", np.min(hr), np.max(hr), np.mean(hr))
+        # print("rr:", np.min(rr), np.max(rr), np.mean(rr))
+        # print("sysBP:", np.min(sysBP), np.max(sysBP), np.mean(sysBP))
+        # print("avgBP:", np.min(avgBP), np.max(avgBP), np.mean(avgBP))
+        # print("diaBP:", np.min(diaBP), np.max(diaBP), np.mean(diaBP))
+        # print("rawBP:", np.min(rawBP), np.max(rawBP), np.mean(rawBP))
+        
+        # REMOVE BP OUTLIERS
+        sysBP[sysBP < 5] = 5
+        sysBP[sysBP > 250] = 250
+        avgBP[avgBP < 5] = 5
+        avgBP[avgBP > 250] = 250
+        diaBP[diaBP < 5] = 5
+        diaBP[diaBP > 200] = 200
+
+        # REMOVE EDA OUTLIERS
+        eda[eda < 1] = 1
+        eda[eda > 40] = 40
+
+        bvp = np.expand_dims(bvp, 1)
+        rsp = np.expand_dims(rsp, 1)
+        eda = np.expand_dims(eda, 1)
+        ecg = np.expand_dims(ecg, 1)
+        hr = np.expand_dims(hr, 1)
+        rr = np.expand_dims(rr, 1)
+        sysBP = np.expand_dims(sysBP, 1)
+        avgBP = np.expand_dims(avgBP, 1)
+        diaBP = np.expand_dims(diaBP, 1)
+        rawBP = np.expand_dims(rawBP, 1)
+
+        phys = np.concatenate([bvp, rsp, eda, ecg, hr, rr, sysBP, avgBP, diaBP, rawBP], axis=1)
+        # print(type(frames), frames.shape)
+        # print(type(phys), phys.shape)
+        # exit()
+
         # # Discard frames based on Signal Quality
         # del_idx = sq_vec <= 0.3
         # frames = np.delete(frames, del_idx, axis=0)
         # phys = np.delete(phys, del_idx, axis=0)
         # sq_vec = np.delete(sq_vec, del_idx, axis=0)
-
-        # TODO: Add a code to resample and then filter appropriately all the signals. For metrics = rounding of values may be needed.
-        # bvps = BaseLoader.resample_ppg(bvps, target_length)
-
-        # # REMOVE BP OUTLIERS
-        # bp_sys[bp_sys < 5] = 5
-        # bp_sys[bp_sys > 250] = 250
-        # bp_dia[bp_dia < 5] = 5
-        # bp_dia[bp_dia > 200] = 200
-
-        # # REMOVE EDA OUTLIERS
-        # eda[eda < 1] = 1
-        # eda[eda > 40] = 40
 
         frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess, phys_axis=[0, 1, 2, 3], process_frames=process_frames)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)

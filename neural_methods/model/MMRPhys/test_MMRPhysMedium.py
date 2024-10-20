@@ -28,7 +28,7 @@ model_config = {
     "height": 36,
     "weight": 36,
     "batch_size": 2,
-    "frames": 180,
+    "frames": 300,
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
