@@ -20,7 +20,7 @@ def calculate_bvp_metrics(predictions, labels, config):
 
 
 # RSP Metrics
-def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
+def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.05, high_pass=0.7):
     """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
@@ -51,9 +51,9 @@ def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True,
         # labels = _detrend(labels, 100)
         pass
     if use_bandpass:
-        # bandpass filter between [0.13, 0.5] Hz
-        # equals [8, 30] breaths per min
-        [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        # bandpass filter between [0.05, 0.7] Hz
+        # equals [3, 42] breaths per min
+        [b, a] = butter(2, [0.05 / fs * 2, 0.7 / fs * 2], btype='bandpass')
         predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
         labels = scipy.signal.filtfilt(b, a, np.double(labels))
     if rr_method == 'FFT':
@@ -64,7 +64,7 @@ def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True,
         rr_label = _calculate_peak_rr(labels, fs=fs)
     else:
         raise ValueError('Please use FFT or Peak to calculate your RR.')
-    SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.13, high_pass=0.5)
+    SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.05, high_pass=0.7)
     return rr_label, rr_pred, SNR
 
 

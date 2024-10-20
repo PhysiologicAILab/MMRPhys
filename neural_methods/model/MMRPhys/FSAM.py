@@ -379,16 +379,18 @@ class _SmoothMatrixDecompositionBase(nn.Module):
         elif "sim" in self.md_type.lower():
             if "hr" in self.md_type.lower():
                 hr = torch.mean(y, dim=1).cpu().numpy()
-                max_samples_in_lowest_hr = 2*self.fs     #30 BPM
-                max_samples = 4 * max_samples_in_lowest_hr
+                # max_samples_in_lowest_hr = 2*self.fs     #30 BPM
+                # max_samples = 4 * max_samples_in_lowest_hr
+                max_samples = 1
                 iters = np.arange(0, max_samples, 1)
                 duration = ((max_samples + P) // self.fs) + 1
                 total_estimators = len(iters)
 
             elif "rr" in self.md_type.lower():
                 rr = torch.mean(y, dim=1).cpu().numpy()
-                max_samples_in_lowest_rr = 10*self.fs  # 6 BPM
-                max_samples = 4 * max_samples_in_lowest_rr
+                # max_samples_in_lowest_rr = 10*self.fs  # 6 BPM
+                # max_samples = 4 * max_samples_in_lowest_rr
+                max_samples = 1
                 iters = np.arange(0, max_samples, 5)
                 duration = ((max_samples + P) // self.fs) + 1
                 total_estimators = len(iters)

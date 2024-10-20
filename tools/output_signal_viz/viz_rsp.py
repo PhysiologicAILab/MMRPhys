@@ -71,7 +71,7 @@ def _process_signal(signal, fs=25, diff_flag=True):
         # signal = _detrend(signal, 100)
         pass
     if use_bandpass:
-        [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        [b, a] = butter(2, [0.05 / fs * 2, 0.7 / fs * 2], btype='bandpass')
         signal = filtfilt(b, a, np.double(signal))
     return signal
 
@@ -96,7 +96,7 @@ def _next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
 
-def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
+def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.05, high_pass=0.7):
     """Calculate respiration rate based on RSP using Fast Fourier transform (FFT)."""
     rsp_signal = np.expand_dims(rsp_signal, 0)
     N = _next_power_of_2(rsp_signal.shape[1])

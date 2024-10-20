@@ -154,6 +154,16 @@ class BP4DLoader(BaseLoader):
         # TODO: Add a code to resample and then filter appropriately all the signals. For metrics = rounding of values may be needed.
         # bvps = BaseLoader.resample_ppg(bvps, target_length)
 
+        # # REMOVE BP OUTLIERS
+        # bp_sys[bp_sys < 5] = 5
+        # bp_sys[bp_sys > 250] = 250
+        # bp_dia[bp_dia < 5] = 5
+        # bp_dia[bp_dia > 200] = 200
+
+        # # REMOVE EDA OUTLIERS
+        # eda[eda < 1] = 1
+        # eda[eda > 40] = 40
+
         frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess, phys_axis=[0, 1, 2, 3], process_frames=process_frames)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)
         file_list_dict[i] = input_name_list
