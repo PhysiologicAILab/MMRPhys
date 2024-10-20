@@ -66,7 +66,7 @@ class rPPG_FeatureExtractor(nn.Module):
             nn.Dropout3d(p=dropout_rate),
 
             ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[1], 180, 32, 32
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 15, 15
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 15, 15
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 13, 13
             nn.Dropout3d(p=dropout_rate),
         )
@@ -163,12 +163,12 @@ class rBr_FeatureExtractor(nn.Module):
         #                                                        Input: #B, inCh, 180, 36, 36
         self.FeatureExtractor = nn.Sequential(
             ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf[0], 180, 36, 36
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[1], 180, 36, 36
+            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[1], 180, 36, 36
             ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[1], 180, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[1], 180, 32, 32
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 15, 15
+            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[1], 180, 32, 32
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 15, 15
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 13, 13
             nn.Dropout3d(p=dropout_rate),
         )
@@ -196,8 +196,8 @@ class RSP_Head(nn.Module):
         # md_config["MD_STEPS"] = 6
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 11, 11
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], 180, 11, 11
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 9, 9
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], 180, 7, 7
             nn.Dropout3d(p=dropout_rate),
         )
