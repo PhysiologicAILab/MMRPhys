@@ -146,7 +146,7 @@ def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3
         SNR = 0
     return SNR
 
-def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, hr_method='FFT'):
+def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=False, use_bandpass=True, hr_method='FFT'):
     """Calculate video-level HR and SNR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of PPG signal.
         # predictions = _detrend(np.cumsum(predictions), 100)
@@ -178,7 +178,7 @@ def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=True, use_b
     return hr_label, hr_pred, SNR, macc
 
 
-def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
+def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=False, use_bandpass=True, rr_method='FFT'):
     """Calculate video-level RR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
         # predictions = _detrend(np.cumsum(predictions), 100)

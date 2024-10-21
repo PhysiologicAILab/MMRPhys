@@ -9,7 +9,7 @@ TRAIN:
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
@@ -42,7 +42,7 @@ VALID:
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
@@ -77,7 +77,7 @@ TEST:
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated

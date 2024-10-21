@@ -8,6 +8,7 @@ from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
+from neural_methods.model.MMRPhys.MMRPhysFuseM import MMRPhysFuseM
 from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
@@ -57,24 +58,35 @@ class MMRPhysTrainer(BaseTrainer):
         self.md_infer = self.config.MODEL.MMRPhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.MMRPhys.MD_FSAM
         self.tasks = self.config.MODEL.MMRPhys.TASKS
-        self.use_label = True #if "label" in self.config.MODEL.MMRPhys.MD_TYPE.lower() else False
         if "BVP" in self.tasks or "RSP" in self.tasks:
             pass
         else:
             print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
             exit()
 
+        md_type = self.config.MODEL.MMRPhys.MD_TYPE.lower()
+        self.use_bvp_hr = 0
+        self.use_rsp_rr = 0
+
+        if "snmf" in md_type:
+            if "BVP" in self.tasks:
+                self.use_bvp_hr = 1 if "label" in md_type else 2
+            if "RSP" in self.tasks:
+                self.use_rsp_rr = 1 if "label" in md_type else 2
+
         self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels,
-                                dropout=self.dropout_rate, device=self.device)  # [3, T, 72, 72]
+                                dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
 
         if model_type == "standard":
-            self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 72, 72]
+            self.model = MMRPhys(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "big":
-            self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 144, 144]
+            self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 144, 144]
         elif model_type == "medium":
-            self.model = MMRPhysMedium(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 36, 36]
+            self.model = MMRPhysMedium(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
+        elif model_type == "fusem":
+            self.model = MMRPhysFuseM(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
         elif model_type == "small":
-            self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [3, T, 9, 9]
+            self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
         else:
             print("Unexpected model type specified. Should be standard or big, but specified:", model_type)
             exit()
@@ -174,20 +186,27 @@ class MMRPhysTrainer(BaseTrainer):
                 self.optimizer.zero_grad()
                 if self.model.training and self.use_fsam:
                     if "BVP" in self.tasks and "RSP" in self.tasks:
-                        if self.use_label:
-                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp, label_rsp)
-                        else:
+                        if self.use_bvp_hr == 0:
                             pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
+                        elif self.use_bvp_hr == 1:
+                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
+                        elif self.use_bvp_hr == 2:
+                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
                     elif "BVP" in self.tasks:
-                        if self.use_label:
-                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_hr) #label_bvp)
-                        else:
+                        if self.use_bvp_hr == 0:
                             pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data)
+                        elif self.use_bvp_hr == 1:
+                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp=label_bvp)
+                        elif self.use_bvp_hr == 2:
+                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp=label_hr)
                     elif "RSP" in self.tasks:
-                        if self.use_label:
-                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp)
-                        else:
+                        if self.use_rsp_rr == 0:
                             pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data)
+                        elif self.use_rsp_rr == 1:
+                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp=label_rsp)
+                        elif self.use_rsp_rr == 2:
+                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp=label_rr)
+                            
                     # else:
                     #     pred_rsp, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
                 else:

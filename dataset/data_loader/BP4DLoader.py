@@ -169,10 +169,20 @@ class BP4DLoader(BaseLoader):
         avgBP[avgBP > 250] = 250
         diaBP[diaBP < 5] = 5
         diaBP[diaBP > 200] = 200
+        rawBP[rawBP < 5] = 5
+        rawBP[rawBP > 200] = 200
 
         # REMOVE EDA OUTLIERS
         eda[eda < 1] = 1
         eda[eda > 40] = 40
+
+        # REMOVE HR OUTLIERS
+        hr[hr < 30] = 30
+        hr[hr > 200] = 200
+
+        # REMOVE RR OUTLIERS
+        rr[rr < 3] = 3
+        rr[rr > 42] = 42
 
         bvp = np.expand_dims(bvp, 1)
         rsp = np.expand_dims(rsp, 1)

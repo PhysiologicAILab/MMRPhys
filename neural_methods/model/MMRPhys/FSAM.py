@@ -254,11 +254,12 @@ class NMF(_MatrixDecompositionBase):
 
 
 class _SmoothMatrixDecompositionBase(nn.Module):
-    def __init__(self, device, md_config, debug=False, dim="3D"):
+    def __init__(self, device, md_config, debug=False, dim="3D", sig_type=""):
         super().__init__()
 
         self.dim = dim
         self.md_type = md_config["MD_TYPE"]
+        self.sig_type = sig_type
         self.S = md_config["MD_S"]
         self.R = md_config["MD_R"]
         self.fs = md_config["FS"]
@@ -377,7 +378,7 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
 
         elif "sim" in self.md_type.lower():
-            if "hr" in self.md_type.lower():
+            if "bvp" in self.sig_type.lower():
                 hr = torch.mean(y, dim=1).cpu().numpy()
                 # max_samples_in_lowest_hr = 2*self.fs     #30 BPM
                 # max_samples = 4 * max_samples_in_lowest_hr
@@ -386,13 +387,13 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                 duration = ((max_samples + P) // self.fs) + 1
                 total_estimators = len(iters)
 
-            elif "rr" in self.md_type.lower():
+            elif "rsp" in self.sig_type.lower():
                 rr = torch.mean(y, dim=1).cpu().numpy()
                 # max_samples_in_lowest_rr = 10*self.fs  # 6 BPM
                 # max_samples = 4 * max_samples_in_lowest_rr
                 max_samples = 1
                 iters = np.arange(0, max_samples, 5)
-                duration = ((max_samples + P) // self.fs) + 1
+                duration = ((max_samples + 10*P) // self.fs) + 1
                 total_estimators = len(iters)
 
             else:
@@ -413,10 +414,17 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             
             for bt in range(B):
                 for iter in iters:
-                    if "hr" in self.md_type.lower():
-                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr[bt], frequency_modulation=0.1, ibi_randomness=0.03)
+                    if "bvp" in self.sig_type.lower():
+                        hr_bpm = int(round(hr[bt]))
+                        hr_bpm = 30 if hr_bpm < 30 else hr_bpm
+                        hr_bpm = 200 if hr_bpm > 200 else hr_bpm
+                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr_bpm, frequency_modulation=0.1, ibi_randomness=0.03, random_state=100, random_state_distort=100)
                     else:
-                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr)
+                        rr_bpm = int(round(rr[bt]))
+                        rr_bpm = 3 if rr_bpm < 3 else rr_bpm
+                        rr_bpm = 42 if rr_bpm > 42 else rr_bpm
+                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr_bpm, random_state=100, random_state_distort=100)
+
                     # start = int(np.random.randint(0, P))
                     # sig_seg = sig[start: start + P]
                     sig_seg = sig[iter: iter + P]
@@ -509,8 +517,8 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
 
 class SNMF(_SmoothMatrixDecompositionBase):
-    def __init__(self, device, md_config, debug=False, dim="3D"):
-        super().__init__(device, md_config, debug=debug, dim=dim)
+    def __init__(self, device, md_config, debug=False, dim="3D", sig_type=""):
+        super().__init__(device, md_config, debug=debug, dim=dim, sig_type=sig_type)
         self.device = device
         self.inv_t = 1
 
@@ -710,7 +718,7 @@ class ConvBNReLU(nn.Module):
 
 
 class FeaturesFactorizationModule(nn.Module):
-    def __init__(self, inC, device, md_config, dim="3D", debug=False):
+    def __init__(self, inC, device, md_config, dim="3D", sig_type="", debug=False):
         super().__init__()
 
         self.device = device
@@ -745,7 +753,7 @@ class FeaturesFactorizationModule(nn.Module):
             print("Dimension not supported")
 
         if "snmf" in md_type.lower():
-            self.md_block = SNMF(self.device, md_config, dim=self.dim, debug=debug)
+            self.md_block = SNMF(self.device, md_config, dim=self.dim, sig_type=sig_type, debug=debug)
         elif "nmf" in md_type.lower():
             self.md_block = NMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "vq" in md_type.lower():

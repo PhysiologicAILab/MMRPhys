@@ -11,10 +11,10 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
+from neural_methods.model.MMRPhys.MMRPhysFuseM import MMRPhysFuseM
 
 model_config = {
-    "TASKS": ["BVP"],
+    "TASKS": ["BVP", "RSP"],
     "FS": 30,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
@@ -23,7 +23,7 @@ model_config = {
     "MD_STEPS": 4,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 3,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 36,
     "weight": 36,
@@ -95,11 +95,11 @@ class TestMMRPhys(object):
         md_config["TASKS"] = model_config["TASKS"]
 
         if self.visualize:
-            self.net = nn.DataParallel(MMRPhysMedium(frames=self.frames, md_config=md_config,
+            self.net = nn.DataParallel(MMRPhysFuseM(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
             self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
         else:
-            self.net = MMRPhysMedium(frames=self.frames, md_config=md_config,
+            self.net = MMRPhysFuseM(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
 
         self.net.eval()
