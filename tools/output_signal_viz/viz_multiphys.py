@@ -159,7 +159,7 @@ def compare_estimated_phys_within_dataset():
     plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
     plot_dir.mkdir(parents=True, exist_ok=True)
 
-    chunk_size = 300  # size of chunk to visualize: -1 will plot the entire signal
+    chunk_size = 500 #300  # size of chunk to visualize: -1 will plot the entire signal
 
     for test_dataset in path_dict_within_dataset["test_datasets"]:
         print("*"*50)
@@ -209,18 +209,6 @@ def compare_estimated_phys_within_dataset():
             label_type = bvp_dict[model_names[0]]['label_type'] # RSP Signal Transformation: `DiffNormalized` or `Standardized`
             diff_flag = (label_type == 'DiffNormalized')
 
-            # bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-            # bvp_label = _process_bvp_signal(bvp_label, fs, diff_flag=diff_flag)
-            # hr_label = _calculate_fft_hr(bvp_label, fs=fs)
-            # hr_label = int(np.round(hr_label))
-            # print("hr_label:", hr_label)
-
-            # rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-            # rsp_label = _process_rsp_signal(rsp_label, fs, diff_flag=diff_flag)
-            # rr_label = _calculate_fft_rr(rsp_label, fs=fs)
-            # rr_label = int(np.round(rr_label))            
-            # print("rr_label:", rr_label)
-            
             bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
             rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
 

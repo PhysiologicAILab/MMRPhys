@@ -9,6 +9,7 @@ from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 from neural_methods.model.MMRPhys.MMRPhysFuseM import MMRPhysFuseM
+from neural_methods.model.MMRPhys.MMRPhysFuseS import MMRPhysFuseS
 from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
@@ -85,6 +86,8 @@ class MMRPhysTrainer(BaseTrainer):
             self.model = MMRPhysMedium(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
         elif model_type == "fusem":
             self.model = MMRPhysFuseM(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
+        elif model_type == "fuses":
+            self.model = MMRPhysFuseS(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
         elif model_type == "small":
             self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
         else:

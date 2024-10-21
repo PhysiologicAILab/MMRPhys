@@ -7,7 +7,7 @@ import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 # from copy import deepcopy
 
-nf = [8, 12, 16]
+nf = [8, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -28,7 +28,7 @@ model_config = {
     "height": 9,
     "weight": 9,
     "batch_size": 4,
-    "frames": 180,
+    "frames": 500,
     "debug": False,
     "assess_latency": False,
     "num_trials": 20,
@@ -52,10 +52,11 @@ class ConvBlock3D(nn.Module):
         return self.conv_block_3d(x)
 
 
-class rPPG_FeatureExtractor(nn.Module):
+
+class Base_FeatureExtractor(nn.Module):
     def __init__(self, inCh, dropout_rate=0.1, debug=False):
-        super(rPPG_FeatureExtractor, self).__init__()
-        # inCh, out_channel, kernel_size, stride, padding
+        super(Base_FeatureExtractor, self).__init__()
+        # inCh, outCh, kernel_size, stride, padding
 
         self.debug = debug
         #                                                        Input: #B, inCh, T, 9, 9
@@ -64,19 +65,58 @@ class rPPG_FeatureExtractor(nn.Module):
             ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[1], T, 9, 9
             ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[1], T, 9, 9
             nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[1], T, 9, 9
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
-            nn.Dropout3d(p=dropout_rate),
         )
 
     def forward(self, x):
         voxel_embeddings = self.FeatureExtractor(x)
         if self.debug:
-            print("rPPG Feature Extractor")
+            print("Base Feature Extractor")
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
         return voxel_embeddings
+
+
+class RGBTFeatureFusion_Fast(nn.Module):
+    def __init__(self, dropout_rate=0.1, debug=False):
+        super(RGBTFeatureFusion_Fast, self).__init__()
+
+        self.debug = debug
+        #                                                        Input: #B, 2*nf[1], T, 36, 36
+        self.FeatureFusion = nn.Sequential(
+            ConvBlock3D(2*nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            nn.Dropout3d(p=dropout_rate),
+        )
+
+    def forward(self, x, y):
+        x = torch.concat([x, y], dim=1)
+        fused_embeddings = self.FeatureFusion(x)
+        if self.debug:
+            print("RGBT Feature Fusion Fast")
+            print("     fused_embeddings.shape", fused_embeddings.shape)
+        return fused_embeddings
+
+
+class RGBTFeatureFusion_Slow(nn.Module):
+    def __init__(self, dropout_rate=0.1, debug=False):
+        super(RGBTFeatureFusion_Slow, self).__init__()
+
+        self.debug = debug
+        #                                                        Input: #B, 2*nf[1], T, 36, 36
+        self.FeatureFusion = nn.Sequential(
+            ConvBlock3D(2*nf[1], nf[2], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            nn.Dropout3d(p=dropout_rate),
+        )
+
+    def forward(self, x, y):
+        x = torch.cat([x, y], dim=1)
+        fused_embeddings = self.FeatureFusion(x)
+        if self.debug:
+            print("RGBT Feature Fusion Slow")
+            print("     fused_embeddings.shape", fused_embeddings.shape)
+        return fused_embeddings
 
 
 class BVP_Head(nn.Module):
@@ -98,7 +138,7 @@ class BVP_Head(nn.Module):
 
         if self.use_fsam:
             inC = nf[2]
-            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", sig_type="BVP", debug=debug)
             self.fsam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
         else:
@@ -154,32 +194,6 @@ class BVP_Head(nn.Module):
             return rPPG
 
 
-class rBr_FeatureExtractor(nn.Module):
-    def __init__(self, inCh, dropout_rate=0.1, debug=False):
-        super(rBr_FeatureExtractor, self).__init__()
-        # inCh, out_channel, kernel_size, stride, padding
-
-        self.debug = debug
-        #                                                        Input: #B, inCh, T, 9, 9
-        self.FeatureExtractor = nn.Sequential(
-            ConvBlock3D(inCh, nf[0], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]),  #B, nf[0], T, 9, 9
-            ConvBlock3D(nf[0], nf[1], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[1], T, 9, 9
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[1], T, 9, 9
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf[1], nf[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[1], T, 9, 9
-            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
-            nn.Dropout3d(p=dropout_rate),
-        )
-
-    def forward(self, x):
-        voxel_embeddings = self.FeatureExtractor(x)
-        if self.debug:
-            print("rBr Feature Extractor")
-            print("     voxel_embeddings.shape", voxel_embeddings.shape)
-        return voxel_embeddings
-
 class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
@@ -196,7 +210,7 @@ class RSP_Head(nn.Module):
         # md_config["MD_STEPS"] = 6
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]), #B, nf[2], T, 9, 9
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 7, 7
             nn.Dropout3d(p=dropout_rate),
@@ -204,7 +218,7 @@ class RSP_Head(nn.Module):
 
         if self.use_fsam:
             inC = nf[2]
-            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", sig_type="RSP", debug=debug)
             self.fsam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
         else:
@@ -278,9 +292,9 @@ class RSP_Head(nn.Module):
 
 
 
-class MMRPhysSmall(nn.Module):
+class MMRPhysFuseS(nn.Module):
     def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhysSmall, self).__init__()
+        super(MMRPhysFuseS, self).__init__()
         self.debug = debug
 
         self.in_channels = in_channels
@@ -311,16 +325,19 @@ class MMRPhysSmall(nn.Module):
         if self.debug:
             print("nf:", nf)
 
+        self.base_feature_extractor_rgb = Base_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
+        self.base_feature_extractor_t = Base_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
+
         if "BVP" in self.tasks:
-            self.rppg_feature_extractor = rPPG_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)
+            self.rppg_feature_fusion = RGBTFeatureFusion_Fast(dropout_rate=dropout, debug=debug)
             self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "RSP" in self.tasks:
-            self.rbr_feature_extractor = rBr_FeatureExtractor(self.in_channels, dropout_rate=dropout, debug=debug)        
+            self.rbr_feature_fusion = RGBTFeatureFusion_Slow(dropout_rate=dropout, debug=debug)        
             self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
         
-    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=9, Height=9]
+    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=4, Temp=frames, Width=9, Height=9]
         
         [batch, channel, length, width, height] = x.shape        
 
@@ -338,7 +355,7 @@ class MMRPhysSmall(nn.Module):
             x = torch.diff(x, dim=2)
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
             thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
-            x = torch.concat([rgb_x, thermal_x], dim = 1)
+            # x = torch.concat([rgb_x, thermal_x], dim = 1)
         else:
             try:
                 print("Specified input channels:", self.in_channels)
@@ -354,11 +371,14 @@ class MMRPhysSmall(nn.Module):
         if self.debug:
             print("Diff Normalized shape", x.shape)
 
+        base_embeddings_rgb = self.base_feature_extractor_rgb(rgb_x)
+        base_embeddings_t = self.base_feature_extractor_t(thermal_x)
+
         if "BVP" in self.tasks:
-            rppg_voxel_embeddings = self.rppg_feature_extractor(x)
+            rppg_voxel_embeddings = self.rppg_feature_fusion(base_embeddings_rgb, base_embeddings_t)
     
         if "RSP" in self.tasks:
-            rbr_voxel_embeddings = self.rbr_feature_extractor(x)
+            rbr_voxel_embeddings = self.rbr_feature_fusion(base_embeddings_rgb, base_embeddings_t)
         
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "BVP" in self.tasks:
