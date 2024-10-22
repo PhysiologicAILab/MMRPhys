@@ -28,7 +28,7 @@ model_config = {
     "height": 36,
     "weight": 36,
     "batch_size": 4,
-    "frames": 300,
+    "frames": 500,
     "debug": False,
     "assess_latency": False,
     "num_trials": 20,
@@ -80,7 +80,7 @@ class RGBTFeatureFusion_Fast(nn.Module):
         super(RGBTFeatureFusion_Fast, self).__init__()
 
         self.debug = debug
-        #                                                        Input: #B, 2*nf[1], T, 36, 36
+        #                                                        Input: #B, 2*nf[1], T, 34, 34
         self.FeatureFusion = nn.Sequential(
             ConvBlock3D(2*nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 32, 32
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 15, 15
@@ -88,7 +88,7 @@ class RGBTFeatureFusion_Fast(nn.Module):
             nn.Dropout3d(p=dropout_rate),
 
         )
-        #                                                        Input: #B, nf[1], T, 36, 36
+        #                                                        Input: #B, nf[1], T, 34, 34
         self.ConvBlock = nn.Sequential(
             ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 32, 32
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 15, 15
@@ -117,14 +117,14 @@ class RGBTFeatureFusion_Slow(nn.Module):
         super(RGBTFeatureFusion_Slow, self).__init__()
 
         self.debug = debug
-        #                                                        Input: #B, 2*nf[1], T, 36, 36
+        #                                                        Input: #B, 2*nf[1], T, 34, 34
         self.FeatureFusion = nn.Sequential(
             ConvBlock3D(2*nf[1], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 32, 32
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 15, 15
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 13, 13
             nn.Dropout3d(p=dropout_rate),
         )
-        #                                                        Input: #B, nf[1], T, 36, 36
+        #                                                        Input: #B, nf[1], T, 34, 34
         self.ConvBlock = nn.Sequential(
             ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 32, 32
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 15, 15
