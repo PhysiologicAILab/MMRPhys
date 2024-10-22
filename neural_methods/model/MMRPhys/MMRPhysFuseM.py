@@ -86,13 +86,28 @@ class RGBTFeatureFusion_Fast(nn.Module):
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 15, 15
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 13, 13
             nn.Dropout3d(p=dropout_rate),
+
+        )
+        #                                                        Input: #B, nf[1], T, 36, 36
+        self.ConvBlock = nn.Sequential(
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 32, 32
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 15, 15
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 13, 13
+            nn.Dropout3d(p=dropout_rate),
         )
 
-    def forward(self, x, y):
-        x = torch.concat([x, y], dim=1)
-        fused_embeddings = self.FeatureFusion(x)
+    def forward(self, rgb=None, thermal=None):
+        if rgb != None and thermal != None:
+            x = torch.concat([rgb, thermal], dim=1)
+            fused_embeddings = self.FeatureFusion(x)
+        else:
+            if rgb != None:
+                x = rgb
+            else:
+                x = thermal
+            fused_embeddings = self.ConvBlock(x)
         if self.debug:
-            print("RGBT Feature Fusion Fast")
+            print("Feature Fusion Fast")
             print("     fused_embeddings.shape", fused_embeddings.shape)
         return fused_embeddings
 
@@ -109,12 +124,26 @@ class RGBTFeatureFusion_Slow(nn.Module):
             ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 13, 13
             nn.Dropout3d(p=dropout_rate),
         )
+        #                                                        Input: #B, nf[1], T, 36, 36
+        self.ConvBlock = nn.Sequential(
+            ConvBlock3D(nf[1], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 32, 32
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 15, 15
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 13, 13
+            nn.Dropout3d(p=dropout_rate),
+        )
 
-    def forward(self, x, y):
-        x = torch.cat([x, y], dim=1)
-        fused_embeddings = self.FeatureFusion(x)
+    def forward(self, rgb=None, thermal=None):
+        if rgb != None and thermal != None:
+            x = torch.concat([rgb, thermal], dim=1)
+            fused_embeddings = self.FeatureFusion(x)
+        else:
+            if rgb != None:
+                x = rgb
+            else:
+                x = thermal
+            fused_embeddings = self.ConvBlock(x)
         if self.debug:
-            print("RGBT Feature Fusion Slow")
+            print("Feature Fusion Fast")
             print("     fused_embeddings.shape", fused_embeddings.shape)
         return fused_embeddings
 
@@ -345,12 +374,12 @@ class MMRPhysFuseM(nn.Module):
             print("Input.shape", x.shape)
 
         if self.in_channels == 1:
-            x = torch.diff(x, dim=2)
-            x = self.norm(x[:, -1:, :, :, :])
-            # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
+            thermal_x = torch.diff(x, dim=2)
+            thermal_x = self.norm(thermal_x[:, -1:, :, :, :])
+            # thermal_x = self.norm(thermal_x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
         elif self.in_channels == 3:
-            x = torch.diff(x, dim=2)
-            x = self.norm(x[:, :3, :, :, :])
+            rgb_x = torch.diff(x, dim=2)
+            rgb_x = self.norm(rgb_x[:, :3, :, :, :])
         elif self.in_channels == 4:
             x = torch.diff(x, dim=2)
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
@@ -371,15 +400,28 @@ class MMRPhysFuseM(nn.Module):
         if self.debug:
             print("Diff Normalized shape", x.shape)
 
-        base_embeddings_rgb = self.base_feature_extractor_rgb(rgb_x)
-        base_embeddings_t = self.base_feature_extractor_t(thermal_x)
+        if self.in_channels == 3 or self.in_channels == 4:
+            base_embeddings_rgb = self.base_feature_extractor_rgb(rgb_x)
+        
+        if self.in_channels == 1 or self.in_channels == 4:
+            base_embeddings_t = self.base_feature_extractor_t(thermal_x)
 
         if "BVP" in self.tasks:
-            rppg_voxel_embeddings = self.rppg_feature_fusion(base_embeddings_rgb, base_embeddings_t)
-    
+            if self.in_channels == 4:
+                rppg_voxel_embeddings = self.rppg_feature_fusion(rgb=base_embeddings_rgb, thermal=base_embeddings_t)
+            elif self.in_channels == 3:
+                rppg_voxel_embeddings = self.rppg_feature_fusion(rgb=base_embeddings_rgb)
+            elif self.in_channels == 1:
+                rppg_voxel_embeddings = self.rppg_feature_fusion(thermal=base_embeddings_t)
+
         if "RSP" in self.tasks:
-            rbr_voxel_embeddings = self.rbr_feature_fusion(base_embeddings_rgb, base_embeddings_t)
-        
+            if self.in_channels == 4:
+                rbr_voxel_embeddings = self.rbr_feature_fusion(rgb=base_embeddings_rgb, thermal=base_embeddings_t)
+            elif self.in_channels == 3:
+                rbr_voxel_embeddings = self.rbr_feature_fusion(rgb=base_embeddings_rgb)
+            elif self.in_channels == 1:
+                rbr_voxel_embeddings = self.rbr_feature_fusion(thermal=base_embeddings_t)
+
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "BVP" in self.tasks:
                 rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)

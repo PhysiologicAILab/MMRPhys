@@ -47,12 +47,14 @@ class DownSampleData(object):
         self.plotdir.mkdir(parents=True, exist_ok=True)
 
         [self.bvp_b, self.bvp_a] = butter(2, [0.6 / self.fps * 2, 3.3 / self.fps * 2], btype='bandpass')
-        [self.rsp_b, self.rsp_a] = butter(2, [0.05 / self.fps * 2, 0.7 / self.fps * 2], btype='bandpass')
+        # [self.rsp_b, self.rsp_a] = butter(2, [0.05 / self.fps * 2, 0.7 / self.fps * 2], btype='bandpass')
+        [self.rsp_b, self.rsp_a] = butter(2, [0.13 / self.fps * 2, 0.5 / self.fps * 2], btype='bandpass')
         [self.eda_b, self.eda_a] = butter(2, [0.02 / self.fps * 2, 5.0 / self.fps * 2], btype='bandpass')
 
         self.target_fps = fps // 2
         [self.bvp_b_target, self.bvp_a_target] = butter(2, [0.6 / self.target_fps * 2, 3.3 / self.target_fps * 2], btype='bandpass')
-        [self.rsp_b_target, self.rsp_a_target] = butter(2, [0.05 / self.target_fps * 2, 0.7 / self.target_fps * 2], btype='bandpass')
+        # [self.rsp_b_target, self.rsp_a_target] = butter(2, [0.05 / self.target_fps * 2, 0.7 / self.target_fps * 2], btype='bandpass')
+        [self.rsp_b_target, self.rsp_a_target] = butter(2, [0.13 / self.target_fps * 2, 0.5 / self.target_fps * 2], btype='bandpass')
         [self.eda_b_target, self.eda_a_target] = butter(2, [0.02 / self.target_fps * 2, 5.0 / self.target_fps * 2], btype='bandpass')
 
         if "ubfc" in datadir.lower():

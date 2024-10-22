@@ -4,16 +4,16 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 10
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RSP_RGBT_FuseSx500x9_SFSAM_Label_Fold1
+  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RSP_RGB_FuseMx500x36_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
+    DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_500_9x9"
+    EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Train'
       FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv'
@@ -36,17 +36,17 @@ TRAIN:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 9
-        W: 9
+        H: 36
+        W: 36
 VALID:
   DATA:
     FS: 25
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
+    DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_500_9x9"
+    EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Test'
       FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
@@ -69,8 +69,8 @@ VALID:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 9
-        W: 9
+        H: 36
+        W: 36
 TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
   USE_LAST_EPOCH: True                   # to use provided validation dataset to find the best epoch, should be false
@@ -79,9 +79,9 @@ TEST:
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sda/data/raw/BP4D_9x9"          # Raw dataset path, need to be updated
+    DATA_PATH: "/home/jitesh/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
-    EXP_DATA_NAME: "BP4D_RGBT_500_9x9"
+    EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Test'
       FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
@@ -104,9 +104,9 @@ TEST:
       BP4D:
         DATA_MODE: RGBT
       RESIZE:
-        H: 9
-        W: 9
-DEVICE: cuda:2
+        H: 36
+        W: 36
+DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -114,9 +114,9 @@ MODEL:
   DROP_RATE: 0.1
   NAME: MMRPhys
   MMRPhys:
-    CHANNELS: 4
+    CHANNELS: 3
     FRAME_NUM: 500
-    TYPE: "FuseS"
+    TYPE: "FuseM"
     TASKS: ["BVP", "RSP"]
     MD_FSAM: True
     MD_TYPE: "SNMF_Label"

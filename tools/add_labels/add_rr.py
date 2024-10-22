@@ -22,7 +22,8 @@ def _next_power_of_2(x):
 
 
 # RSP Metrics
-def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.05, high_pass=1.0):
+# def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.05, high_pass=1.0):
+def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
     """Calculate respiration rate based on PPG using Fast Fourier transform (FFT)."""
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
@@ -39,7 +40,8 @@ class AddRR2Labels(object):
         self.fps = fps
         self.file_filter = file_filter
         self.files = sorted(list(Path(datadir).glob(self.file_filter)))
-        [self.b, self.a] = butter(2, [0.05 / self.fps * 2, 1.0 / self.fps * 2], btype='bandpass')
+        # [self.b, self.a] = butter(2, [0.05 / self.fps * 2, 1.0 / self.fps * 2], btype='bandpass')
+        [self.b, self.a] = butter(2, [0.13 / self.fps * 2, 0.5 / self.fps * 2], btype='bandpass')
 
     def compute_and_add_rr(self):
         rr_vals = []
