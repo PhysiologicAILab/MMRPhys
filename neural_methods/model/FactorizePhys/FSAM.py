@@ -7,7 +7,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.batchnorm import _BatchNorm
 import numpy as np
-import neurokit2 as nk
 
 
 class _MatrixDecompositionBase(nn.Module):
@@ -62,7 +61,7 @@ class _MatrixDecompositionBase(nn.Module):
     def compute_coef(self, x, bases, coef):
         raise NotImplementedError
 
-    def forward(self, x, return_bases=False):
+    def forward(self, x, y=None, return_bases=False):
 
         if self.debug:
             print("Org x.shape", x.shape)
@@ -269,6 +268,220 @@ class NMF(_MatrixDecompositionBase):
         return coef
 
 
+class _SmoothMatrixDecompositionBase(nn.Module):
+    def __init__(self, device, md_config, debug=False, dim="3D"):
+        super().__init__()
+
+        self.dim = dim
+        self.md_type = md_config["MD_TYPE"]
+        self.S = md_config["MD_S"]
+        self.R = md_config["MD_R"]
+        self.debug = debug
+
+        self.train_steps = md_config["MD_STEPS"]
+        self.eval_steps = md_config["MD_STEPS"]
+
+        self.inv_t = md_config["INV_T"]
+        self.eta = md_config["ETA"]
+
+        self.rand_init = md_config["RAND_INIT"]
+        self.device = device
+
+        # print('Dimension:', self.dim)
+        # print('S', self.S)
+        # print('D', self.D)
+        # print('R', self.R)
+        # print('train_steps', self.train_steps)
+        # print('eval_steps', self.eval_steps)
+        # print('inv_t', self.inv_t)
+        # print('eta', self.eta)
+        # print('rand_init', self.rand_init)
+
+    def _build_bases(self, B, S, D, R):
+        raise NotImplementedError
+
+    def local_step(self, x, bases, coef):
+        raise NotImplementedError
+
+    @torch.no_grad()
+    def local_inference(self, x, SNMF_estimators, bases):
+        # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
+        coef = torch.bmm(x.transpose(1, 2), torch.bmm(SNMF_estimators, bases))
+        coef = F.softmax(self.inv_t * coef, dim=-1)
+
+        steps = self.train_steps if self.training else self.eval_steps
+        for _ in range(steps):
+            bases, coef = self.local_step(x, SNMF_estimators, bases, coef)
+
+        return bases, coef
+
+    def compute_coef(self, x, SNMF_estimators, bases, coef):
+        raise NotImplementedError
+
+    def forward(self, x, y=None, return_bases=False):
+
+        if self.debug:
+            print("\n*****************")
+            print("Org x.shape", x.shape)
+            print("y.shape:", y.shape)
+            print("MD_Type:", self.md_type)
+            print("*****************")
+
+        if self.dim == "3D":        # (B, C, T, H, W) -> (B * S, D, N)
+            B, C, T, H, W = x.shape
+
+            # # dimension of vector of our interest is T (rPPG signal as T dimension), so forming this as vector
+            # # From spatial and channel dimension, which are features, only 2-4 shall be enough to generate the approximated attention matrix
+            D = T // self.S
+            N = C * H * W
+            x = x.view(B * self.S, D, N)
+
+        elif self.dim == "2D":      # (B, C, H, W) -> (B * S, D, N)
+            B, C, H, W = x.shape
+            D = C // self.S
+            N = H * W
+            x = x.view(B * self.S, D, N)
+
+        elif self.dim == "1D":                       # (B, C, L) -> (B * S, D, N)
+            B, C, L = x.shape
+            D = L // self.S
+            N = C
+            x = x.view(B * self.S, D, N)
+
+        else:
+            print("Dimension not supported")
+            exit()
+
+        P = D
+
+        SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
+        for bt in range(B):
+            sig = y[bt, :]
+            mn = torch.min(sig)
+            # mx = torch.max(sig)
+            # sig = (sig - mn)/(mx - mn)
+            SNMF_estimators[bt, :, 0] = sig - mn
+            # SNMF_estimators[bt, :, 1] = 1 - sig
+
+        SNMF_est_shape2 = SNMF_estimators.shape[2]
+
+
+        if self.debug:
+            print("MD_Type", self.md_type)
+            print("MD_S", self.S)
+            print("MD_D", D)
+            print("MD_N", N)
+            print("MD_R", self.R)
+            print("MD_TRAIN_STEPS", self.train_steps)
+            print("MD_EVAL_STEPS", self.eval_steps)
+            print("x.view(B * self.S, D, N)", x.shape)
+            print("SNMF_estimators.shape", SNMF_estimators.shape)
+
+        if not self.rand_init and not hasattr(self, 'bases'):
+            bases = self._build_bases(1, self.S, SNMF_est_shape2, self.R)
+            self.register_buffer('bases', bases)
+
+        # (S, D, R) -> (B * S, D, R)
+        if self.rand_init:
+            bases = self._build_bases(B, self.S, SNMF_est_shape2, self.R)
+        else:
+            bases = self.bases.repeat(B, 1, 1).to(self.device)
+
+        bases, coef = self.local_inference(x, SNMF_estimators, bases)
+
+        # (B * S, N, R)
+        coef = self.compute_coef(x, SNMF_estimators, bases, coef)
+
+        bases_prod = torch.bmm(SNMF_estimators, bases)
+
+        # (B * S, D, R) @ (B * S, N, R)^T -> (B * S, D, N)
+        x = torch.bmm(bases_prod, coef.transpose(1, 2))
+
+
+        if self.dim == "3D":
+            # (B * S, D, N) -> (B, C, T, H, W)
+            x = x.view(B, C, T, H, W)
+        elif self.dim == "2D":
+            # (B * S, D, N) -> (B, C, H, W)
+            x = x.view(B, C, H, W)
+        else:
+            # (B * S, D, N) -> (B, C, L)
+            x = x.view(B, C, L)
+
+        # (B * L, D, R) -> (B, L, N, D)
+        # bases_prod_updated = torch.bmm(SNMF_estimators, bases)
+        bases = torch.bmm(SNMF_estimators.transpose(1, 2), bases_prod)
+        bases = bases.view(B, self.S, SNMF_est_shape2, self.R)
+
+        if not self.rand_init and not self.training and not return_bases:
+            print("it comes here")
+            self.online_update(bases)
+
+        # if not self.rand_init or return_bases:
+        #     return x, bases
+        # else:
+        return x
+
+    @torch.no_grad()
+    def online_update(self, bases):
+        # (B, S, D, R) -> (S, D, R)
+        update = bases.mean(dim=0)
+        self.bases += self.eta * (update - self.bases)
+        self.bases = F.normalize(self.bases, dim=1)
+
+
+class SNMF(_SmoothMatrixDecompositionBase):
+    def __init__(self, device, md_config, debug=False, dim="3D"):
+        super().__init__(device, md_config, debug=debug, dim=dim)
+        self.device = device
+        self.inv_t = 1
+
+    def _build_bases(self, B, S, D, R):
+        bases = torch.rand((B * S, D, R)).to(self.device)
+        # bases = torch.ones((B * S, D, R)).to(self.device)
+        bases = F.normalize(bases, dim=1)
+
+        return bases
+
+    @torch.no_grad()
+    def local_step(self, x, SNMF_estimators, bases, coef):
+        # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
+
+        bases_prod = torch.bmm(SNMF_estimators, bases)
+
+        numerator = torch.bmm(x.transpose(1, 2), bases_prod)
+        # (B * S, N, R) @ [(B * S, D, R)^T @ (B * S, D, R)] -> (B * S, N, R)
+        denominator = coef.bmm(bases_prod.transpose(1, 2).bmm(bases_prod))
+        # Multiplicative Update
+        coef = coef * numerator / (denominator + 1e-6)
+
+        # (B * S, D, N) @ (B * S, N, R) -> (B * S, D, R)
+        numerator = torch.bmm(x, coef)
+        # (B * S, D, R) @ [(B * S, N, R)^T @ (B * S, N, R)] -> (B * S, D, R)
+        denominator = bases_prod.bmm(coef.transpose(1, 2).bmm(coef))
+        # Multiplicative Update
+
+        # bases = (bases_prod * numerator / (denominator + 1e-6))
+        bases = torch.bmm(SNMF_estimators.transpose(1, 2), (bases_prod * numerator /
+                          (denominator + 1e-6)))
+        # print(bases.shape)
+        # exit()
+
+        return bases, coef
+
+    def compute_coef(self, x, SNMF_estimators, bases, coef):
+        bases_prod = torch.bmm(SNMF_estimators, bases)
+
+        # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
+        numerator = torch.bmm(x.transpose(1, 2), bases_prod)
+        # (B * S, N, R) @ (B * S, D, R)^T @ (B * S, D, R) -> (B * S, N, R)
+        denominator = coef.bmm(bases_prod.transpose(1, 2).bmm(bases_prod))
+        # multiplication update
+        coef = coef * numerator / (denominator + 1e-6)
+
+        return coef
+
+
 class VQ(_MatrixDecompositionBase):
     def __init__(self, device, md_config, debug=False, dim="3D"):
         super().__init__(device, md_config, debug=debug, dim=dim)
@@ -453,7 +666,9 @@ class FeaturesFactorizationModule(nn.Module):
         else:
             print("Dimension not supported")
 
-        if "nmf" in md_type.lower():
+        if "snmf" in md_type.lower():
+            self.md_block = SNMF(self.device, md_config, dim=self.dim, debug=debug)
+        elif "nmf" in md_type.lower():
             self.md_block = NMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "vq" in md_type.lower():
             self.md_block = VQ(self.device, md_config, dim=self.dim, debug=debug)
@@ -514,9 +729,9 @@ class FeaturesFactorizationModule(nn.Module):
                 if m.bias is not None:
                     m.bias.data.zero_()
 
-    def forward(self, x):
+    def forward(self, x, y=None):
         x = self.pre_conv_block(x)
-        att = self.md_block(x)
+        att = self.md_block(x, y)
         dist = torch.dist(x, att)
         att = self.post_conv_block(att)
 

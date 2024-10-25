@@ -53,6 +53,7 @@ class FactorizePhysTrainer(BaseTrainer):
 
         self.md_infer = self.config.MODEL.FactorizePhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.FactorizePhys.MD_FSAM
+        self.md_type = self.config.MODEL.FactorizePhys.MD_TYPE
 
         if model_type == "standard":
             self.model = FactorizePhys(frames=frames, md_config=md_config, in_channels=in_channels,
@@ -98,7 +99,7 @@ class FactorizePhysTrainer(BaseTrainer):
             train_loss = []
             appx_error_list = []
             self.model.train()
-            tbar = tqdm(data_loader["train"], ncols=80)
+            tbar = tqdm(data_loader["train"], ncols=120)
             for idx, batch in enumerate(tbar):
                 tbar.set_description("Train epoch %s" % epoch)
                 
@@ -119,7 +120,10 @@ class FactorizePhysTrainer(BaseTrainer):
 
                 self.optimizer.zero_grad()
                 if self.model.training and self.use_fsam:
-                    pred_ppg, vox_embed, factorized_embed, appx_error = self.model(data)
+                    if "snmf" in self.md_type.lower():
+                        pred_ppg, vox_embed, factorized_embed, appx_error = self.model(data, labels)
+                    else:
+                        pred_ppg, vox_embed, factorized_embed, appx_error = self.model(data)
                 else:
                     pred_ppg, vox_embed = self.model(data)
                 
@@ -187,7 +191,7 @@ class FactorizePhysTrainer(BaseTrainer):
         self.model.eval()
         valid_step = 0
         with torch.no_grad():
-            vbar = tqdm(data_loader["valid"], ncols=80)
+            vbar = tqdm(data_loader["valid"], ncols=120)
             for valid_idx, valid_batch in enumerate(vbar):
                 vbar.set_description("Validation")
 
@@ -256,7 +260,7 @@ class FactorizePhysTrainer(BaseTrainer):
         self.model.eval()
         print("Running model evaluation on the testing dataset!")
         with torch.no_grad():
-            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=80)):
+            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=120)):
                 batch_size = test_batch[0].shape[0]
                 data, labels_test = test_batch[0].to(self.device), test_batch[1].to(self.device)
 

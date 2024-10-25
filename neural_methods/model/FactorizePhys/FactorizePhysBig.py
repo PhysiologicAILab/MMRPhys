@@ -109,7 +109,7 @@ class BVP_Head(nn.Module):
         )
 
 
-    def forward(self, voxel_embeddings, batch, length):
+    def forward(self, voxel_embeddings, batch, length, label_bvp=None):
 
         if self.debug:
             print("BVP Head")
@@ -117,9 +117,9 @@ class BVP_Head(nn.Module):
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "NMF" in self.md_type:
-                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min()) # to make it positive (>= 0)
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_bvp) # to make it positive (>= 0)
             else:
-                att_mask, appx_error = self.fsam(voxel_embeddings)
+                att_mask, appx_error = self.fsam(voxel_embeddings, label_bvp)
 
             if self.debug:
                 print("att_mask.shape", att_mask.shape)
@@ -191,7 +191,7 @@ class FactorizePhysBig(nn.Module):
         self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
         
-    def forward(self, x): # [batch, Features=3, Temp=frames, Width=32, Height=32]
+    def forward(self, x, label_bvp=None): # [batch, Features=3, Temp=frames, Width=128, Height=128]
         
         [batch, channel, length, width, height] = x.shape
         
@@ -231,7 +231,7 @@ class FactorizePhysBig(nn.Module):
         voxel_embeddings = self.rppg_feature_extractor(x)
         
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            rPPG, factorized_embeddings, appx_error = self.rppg_head(voxel_embeddings, batch, length-1)
+            rPPG, factorized_embeddings, appx_error = self.rppg_head(voxel_embeddings, batch, length-1, label_bvp)
         else:
             rPPG = self.rppg_head(voxel_embeddings, batch, length-1)
 

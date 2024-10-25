@@ -3,7 +3,8 @@ import os
 import numpy as np
 import torch
 import torch.optim as optim
-from evaluation.metrics import calculate_metrics, calculate_rsp_metrics
+import neurokit2 as nk
+from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics, calculate_eda_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
@@ -60,10 +61,10 @@ class MMRPhysTrainer(BaseTrainer):
         self.md_infer = self.config.MODEL.MMRPhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.MMRPhys.MD_FSAM
         self.tasks = self.config.MODEL.MMRPhys.TASKS
-        if "BVP" in self.tasks or "RSP" in self.tasks:
+        if "BVP" in self.tasks or "RSP" in self.tasks or "BP" in self.tasks or "EDA" in self.tasks:
             pass
         else:
-            print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
+            print("Unknown estimation task... BVP, RSP, BP and EDA are supported. Exiting the code...")
             exit()
 
         md_type = self.config.MODEL.MMRPhys.MD_TYPE.lower()
@@ -105,8 +106,15 @@ class MMRPhysTrainer(BaseTrainer):
 
         if self.config.TOOLBOX_MODE == "train_and_test" or self.config.TOOLBOX_MODE == "only_train":
             self.num_train_batches = len(data_loader["train"])
-            self.criterion1 = Neg_Pearson()
-            self.criterion2 = Neg_Pearson()
+            self.criterion_bvp = Neg_Pearson() #BVP
+            self.criterion_rsp = Neg_Pearson() #RSP
+            self.criterion_bp1 = torch.nn.SmoothL1Loss()  # BP
+            # self.criterion_bp1 = torch.nn.MSELoss()  # BP
+            # self.criterion_bp1 = Neg_Pearson()  # BP
+            # self.criterion_bp2 = torch.nn.SmoothL1Loss()  # BP
+            # self.criterion_bp2 = torch.nn.MSELoss()  # BP
+            # self.criterion_eda = Neg_Pearson()  # EDA
+            self.criterion_eda = torch.nn.MSELoss()  # EDA
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
@@ -122,34 +130,52 @@ class MMRPhysTrainer(BaseTrainer):
         if data_loader["train"] is None:
             raise ValueError("No data for train")
 
-        mean_training_loss_bvp = []
-        mean_training_loss_rsp = []
-        mean_valid_loss_bvp = []
-        mean_valid_loss_rsp = []
-        mean_appx_error = []
+        avg_train_loss_bvp = []
+        avg_train_loss_rsp = []
+        avg_train_loss_bp = []
+        avg_train_loss_eda = []
+        avg_valid_loss_bvp = []
+        avg_valid_loss_rsp = []
+        avg_valid_loss_eda = []
+        avg_valid_loss_bp = []
+
         lrs = []
+        
         for epoch in range(self.max_epoch_num):
             print('')
             print(f"====Training Epoch: {epoch}====")
-            running_loss1 = 0.0
-            running_loss2 = 0.0
+            running_loss_bvp = 0.0
+            running_loss_rsp = 0.0
+            running_loss_bp = 0.0
+            running_loss_eda = 0.0
 
             train_loss = []
             train_loss_bvp = []
             train_loss_rsp = []
-            appx_error_list = []
+            train_loss_bp = []
+            train_loss_eda = []
+
+            appx_error_list_bvp = []
+            appx_error_list_rsp = []
+            appx_error_list_bp = []
+            appx_error_list_eda = []
             self.model.train()
-            tbar = tqdm(data_loader["train"], ncols=120)
+
+            tbar = tqdm(data_loader["train"], ncols=150)
+
             for idx, batch in enumerate(tbar):
                 tbar.set_description("Train epoch %s" % epoch)
                 
                 data = batch[0].to(self.device)
                 labels = batch[1].to(self.device)
+                label_bvp = label_rsp = label_bp = label_eda = None
+                label_hr = label_rr = label_sysBP = label_avgBP = label_diaBP = None
 
                 if len(labels.shape) == 3:
                     if labels.shape[-1] > 4:       # BP4D dataset 
                         # bvp, rsp, eda, ecg, hr, rr, sysBP, avgBP, diaBP
                         label_bvp = labels[..., 0]
+                        # label_bvp = labels[..., 11]
                         label_rsp = labels[..., 1]
                         label_eda = labels[..., 2]
                         label_hr = labels[..., 4]
@@ -157,6 +183,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
+                        # label_bp = labels[..., 9]
+                        label_bp = labels[..., 10]
 
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
@@ -191,133 +219,166 @@ class MMRPhysTrainer(BaseTrainer):
 
                 self.optimizer.zero_grad()
                 if self.model.training and self.use_fsam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        if self.use_bvp_hr == 0:
-                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
-                        elif self.use_bvp_hr == 1:
-                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
+                    if "BVP" in self.tasks or "RSP" in self.tasks:
+                        if self.use_bvp_hr <= 1:
+                            out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp, label_bp=label_bp, label_eda=label_eda)
                         elif self.use_bvp_hr == 2:
-                            pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
-                    elif "BVP" in self.tasks:
-                        if self.use_bvp_hr == 0:
-                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data)
-                        elif self.use_bvp_hr == 1:
-                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp=label_bvp)
-                        elif self.use_bvp_hr == 2:
-                            pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data, label_bvp=label_hr)
-                    elif "RSP" in self.tasks:
-                        if self.use_rsp_rr == 0:
-                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data)
-                        elif self.use_rsp_rr == 1:
-                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp=label_rsp)
-                        elif self.use_rsp_rr == 2:
-                            pred_rsp, vox_embed, factorized_embed, appx_error = self.model(data, label_rsp=label_rr)
-                            
-                    # else:
-                    #     pred_rsp, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
+                            out = self.model(data, label_bvp=label_hr, label_rsp=label_rr, label_bp=label_bp, label_eda=label_eda)
+                        else:
+                            out = self.model(data, label_bvp=label_hr, label_rsp=label_rr, label_bp=label_bp, label_eda=label_eda)
+                    else:
+                        out = self.model(data, label_bvp=label_hr, label_rsp=label_rr, label_bp=label_bp, label_eda=label_eda)
                 else:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp, pred_rsp, vox_embed = self.model(data)
-                    elif "BVP" in self.tasks:
-                        pred_bvp, vox_embed = self.model(data)
-                    elif "RSP" in self.tasks:
-                        pred_rsp, vox_embed = self.model(data)
-                    # else:
-                    #     pred_rsp, vox_embed = self.model(data)
+                    out = self.model(data, label_bvp=label_hr, label_rsp=label_rr, label_bp=label_bp, label_eda=label_eda)
                 
+                pred_bvp = out[0]
+                pred_rsp = out[1]
+                pred_bp = out[2]
+                pred_eda = out[3]
+
+                if self.model.training and self.use_fsam:
+                    appx_error_bvp = out[9]
+                    appx_error_rsp = out[11]
+                    appx_error_bp = out[13]
+                    appx_error_eda = out[15]
+
+                loss = 0
+
                 if "BVP" in self.tasks:
                     # mean_pred_bvp = torch.mean(pred_bvp, dim=1).unsqueeze(1)
                     # std_pred_bvp = torch.std(pred_bvp, dim=1).unsqueeze(1)
                     # pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
-                    loss_bvp = self.criterion1(pred_bvp, label_bvp)
+                    loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
+                    loss = loss + loss_bvp
 
                 if "RSP" in self.tasks:
                     # mean_pred_rsp = torch.mean(pred_rsp, dim=1).unsqueeze(1)
                     # std_pred_rsp = torch.std(pred_rsp, dim=1).unsqueeze(1)
                     # pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
-                    loss_rsp = self.criterion2(pred_rsp, label_rsp)
+                    loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
+                    loss = loss + loss_rsp
                 
-                if "BVP" in self.tasks and "RSP" in self.tasks:
-                    loss = loss_bvp + loss_rsp
-                elif "BVP" in self.tasks:
-                    loss = loss_bvp
-                else:
-                    loss = loss_rsp
-                
+                if "BP" in self.tasks:
+                    loss_bp = self.criterion_bp1(pred_bp, label_bp) # + self.criterion_bp2(pred_bp, label_bp) 
+                    # loss_bp = self.criterion_bp1(pred_bp[:, 0], torch.mean(
+                    #     label_sysBP, dim=1)) + self.criterion_bp1(pred_bp[:, 1], torch.mean(label_diaBP, dim=1))
+                    loss = loss + loss_bp
+
+                if "EDA" in self.tasks:
+                    loss_eda = self.criterion_eda(pred_eda, label_eda)
+                    loss = loss + loss_eda
+
                 loss.backward()
+
                 if "BVP" in self.tasks:
-                    running_loss1 += loss_bvp.item()
+                    running_loss_bvp += loss_bvp.item()
                 if "RSP" in self.tasks:
-                    running_loss2 += loss_rsp.item()
+                    running_loss_rsp += loss_rsp.item()
+                if "BP" in self.tasks:
+                    running_loss_bp += loss_bp.item()
+                if "EDA" in self.tasks:
+                    running_loss_eda += loss_eda.item()
+
                 if idx % 100 == 99:  # print every 100 mini-batches
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        print(f'[{epoch}, {idx + 1:5d}] loss_bvp: {running_loss1 / 100:.3f} loss_rsp: {running_loss2 / 100:.3f}')    
-                        running_loss1 = 0.0
-                        running_loss2 = 0.0
-                    elif "BVP" in self.tasks:
-                        print(f'[{epoch}, {idx + 1:5d}] loss_bvp: {running_loss1 / 100:.3f}')    
-                        running_loss1 = 0.0
-                    elif "RSP" in self.tasks:
-                        print(f'[{epoch}, {idx + 1:5d}] loss_rsp: {running_loss2 / 100:.3f}')    
-                        running_loss2 = 0.0
+                    print(f'[{epoch}, {idx + 1: 5d}]')
+                    if "BVP" in self.tasks:
+                        print(f'loss_bvp: {running_loss_bvp / 100:.3f}')    
+                        running_loss_bvp = 0.0
+                    if "RSP" in self.tasks:
+                        print(f'loss_rsp: {running_loss_rsp / 100:.3f}')    
+                        running_loss_rsp = 0.0
+                    if "BP" in self.tasks:
+                        print(f'loss_bp: {running_loss_bp / 100:.3f}')
+                        running_loss_bp = 0.0
+                    if "EDA" in self.tasks:
+                        print(f'loss_eda: {running_loss_eda / 100:.3f}')
+                        running_loss_eda = 0.0
 
                 train_loss.append(loss.item())
                 if "BVP" in self.tasks:
                     train_loss_bvp.append(loss_bvp.item())
                 if "RSP" in self.tasks:
                     train_loss_rsp.append(loss_rsp.item())
+                if "BP" in self.tasks:
+                    train_loss_bp.append(loss_bp.item())
+                if "EDA" in self.tasks:
+                    train_loss_eda.append(loss_eda.item())
+
                 if self.use_fsam:
-                    appx_error_list.append(appx_error.item())
+                    if "BVP" in self.tasks:
+                        appx_error_list_bvp.append(appx_error_bvp.item())
+                    if "RSP" in self.tasks:
+                        appx_error_list_rsp.append(appx_error_rsp.item())
+                    if "BP" in self.tasks:
+                        appx_error_list_bp.append(appx_error_bp.item())
+                    if "EDA" in self.tasks:
+                        appx_error_list_eda.append(appx_error_eda.item())
 
                 # Append the current learning rate to the list
                 lrs.append(self.scheduler.get_last_lr())
 
                 self.optimizer.step()
                 self.scheduler.step()
-                
-                if self.use_fsam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        tbar.set_postfix({"appx_error": appx_error.item(), "loss_bvp":loss_bvp.item(), "loss_rsp": loss_rsp.item()}, loss=loss.item())
-                    elif "BVP" in self.tasks:
-                        tbar.set_postfix({"appx_error": appx_error.item()}, loss=loss.item())
-                    elif "RSP" in self.tasks:
-                        tbar.set_postfix({"appx_error": appx_error.item()}, loss=loss.item())
-                else:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        tbar.set_postfix({"loss_bvp":loss_bvp.item(), "loss_rsp": loss_rsp.item()}, loss=loss.item())
-                    else:
-                        tbar.set_postfix(loss=loss.item())
+
+                bar_dict = {}
+                if "BVP" in self.tasks:
+                    bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
+                if "RSP" in self.tasks:
+                    bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
+                if "EDA" in self.tasks:
+                    bar_dict["loss_eda"] = round(loss_eda.item(), 2)
+                if "BP" in self.tasks:
+                    bar_dict["loss_bp"] = round(loss_bp.item(), 2)
+
+                tbar.set_postfix(bar_dict, loss=loss.item())
 
             # Append the mean training loss for the epoch
             if "BVP" in self.tasks:
-                mean_training_loss_bvp.append(np.mean(train_loss_bvp))
+                avg_train_loss_bvp.append(round(np.mean(train_loss_bvp), 2))
             if "RSP" in self.tasks:
-                mean_training_loss_rsp.append(np.mean(train_loss_rsp))
+                avg_train_loss_rsp.append(round(np.mean(train_loss_rsp), 2))
+            if "EDA" in self.tasks:
+                avg_train_loss_eda.append(round(np.mean(train_loss_eda), 2))
+            if "BP" in self.tasks:
+                avg_train_loss_bp.append(round(np.mean(train_loss_bp), 2))
+
+            print("Avg train loss: {}".format(np.round(np.mean(train_loss), 2)))
+            # TODO: It should ideally be possible to use FSAM selectively for each task. This is current limitation
             if self.use_fsam:
-                mean_appx_error.append(np.mean(appx_error_list))
-                print("Mean train loss: {}, Mean appx error: {}".format(np.round(np.mean(train_loss), 3), np.round(np.mean(appx_error_list), 3)))
-            else:
-                print("Mean train loss: {}".format(np.round(np.mean(train_loss), 3)))
+                if "BVP" in self.tasks:
+                    print("Avg appx error BVP: {}".format(np.round(np.mean(appx_error_list_bvp), 2)))
+                if "RSP" in self.tasks:
+                    print("Avg appx error RSP: {}".format(np.round(np.mean(appx_error_list_rsp), 2)))
+                if "BP" in self.tasks:
+                    print("Avg appx error BP: {}".format(np.round(np.mean(appx_error_list_bp), 2)))
+                if "EDA" in self.tasks:
+                    print("Avg appx error EDA: {}".format(np.round(np.mean(appx_error_list_eda), 2)))
 
             self.save_model(epoch)
-            if not self.config.TEST.USE_LAST_EPOCH:
-                if "BVP" in self.tasks and "RSP" in self.tasks:
-                    valid_loss_bvp, valid_loss_rsp = self.valid(data_loader)
-                    print('validation losses: ', valid_loss_bvp, valid_loss_rsp)
-                    total_valid_loss = valid_loss_bvp + valid_loss_rsp
-                elif "BVP" in self.tasks:
-                    valid_loss_bvp = self.valid(data_loader)
-                    print('validation loss: ', valid_loss_bvp)
-                    total_valid_loss = valid_loss_bvp
-                elif "RSP" in self.tasks:
-                    valid_loss_rsp = self.valid(data_loader)
-                    print('validation loss: ', valid_loss_rsp)
-                    total_valid_loss = valid_loss_rsp
 
+            if not self.config.TEST.USE_LAST_EPOCH:
+                
+                valid_loss_bvp, valid_loss_rsp, valid_loss_bp, valid_loss_eda = self.valid(data_loader)
+                total_valid_loss = 0
+                
                 if "BVP" in self.tasks:
-                    mean_valid_loss_bvp.append(valid_loss_bvp)
+                    print('Validation loss BVP: ', valid_loss_bvp)
+                    avg_valid_loss_bvp.append(valid_loss_bvp)
+                    total_valid_loss += valid_loss_bvp
                 if "RSP" in self.tasks:
-                    mean_valid_loss_rsp.append(valid_loss_rsp)
+                    print('Validation loss RSP: ', valid_loss_rsp)
+                    avg_valid_loss_rsp.append(valid_loss_rsp)
+                    total_valid_loss += valid_loss_rsp
+                if "BP" in self.tasks:
+                    print('Validation loss BP: ', valid_loss_bp)
+                    avg_valid_loss_bp.append(valid_loss_bp)
+                    total_valid_loss += valid_loss_bp
+                if "EDA" in self.tasks:
+                    print('Validation loss EDA: ', valid_loss_eda)
+                    avg_valid_loss_eda.append(valid_loss_eda)
+                    total_valid_loss += valid_loss_eda
+
+                print('Total validation loss: ', total_valid_loss)
 
                 if self.min_valid_loss is None:
                     self.min_valid_loss = total_valid_loss
@@ -327,16 +388,20 @@ class MMRPhysTrainer(BaseTrainer):
                     self.min_valid_loss = total_valid_loss
                     self.best_epoch = epoch
                     print("Update best model! Best epoch: {}".format(self.best_epoch))
+        
         if not self.config.TEST.USE_LAST_EPOCH: 
-            print("best trained epoch: {}, min_val_loss: {}".format(
-                self.best_epoch, self.min_valid_loss))
+            print("best trained epoch: {}, min_val_loss: {}".format(self.best_epoch, self.min_valid_loss))
+        
         if self.config.TRAIN.PLOT_LOSSES_AND_LR:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                self.plot_losses_and_lrs(mean_training_loss_bvp, mean_valid_loss_bvp, lrs, self.config, mean_training_loss_rsp, mean_valid_loss_rsp)
-            elif "BVP" in self.tasks:
-                self.plot_losses_and_lrs(mean_training_loss_bvp, mean_valid_loss_bvp, lrs, self.config)
-            elif "RSP" in self.tasks:
-                self.plot_losses_and_lrs(mean_training_loss_rsp, mean_valid_loss_rsp, lrs, self.config)
+            if "BVP" in self.tasks:
+                self.plot_losses_and_lrs(avg_train_loss_bvp, avg_valid_loss_bvp, lrs, self.config, suff="BVP")
+            if "RSP" in self.tasks:
+                self.plot_losses_and_lrs(avg_train_loss_rsp, avg_valid_loss_rsp, lrs, self.config, suff="RSP")
+            if "BP" in self.tasks:
+                self.plot_losses_and_lrs(avg_train_loss_bp, avg_valid_loss_bp, lrs, self.config, suff="BP")
+            if "EDA" in self.tasks:
+                self.plot_losses_and_lrs(avg_train_loss_eda, avg_valid_loss_eda, lrs, self.config, suff="EDA")
+
 
     def valid(self, data_loader):
         """ Runs the model on valid sets."""
@@ -347,17 +412,29 @@ class MMRPhysTrainer(BaseTrainer):
         print(" ====Validing===")
         valid_loss_bvp = []
         valid_loss_rsp = []
+        valid_loss_bp = []
+        valid_loss_eda = []
+        avg_valid_loss_bvp = 0
+        avg_valid_loss_rsp = 0
+        avg_valid_loss_bp = 0
+        avg_valid_loss_eda = 0
+
         self.model.eval()
         valid_step = 0
         with torch.no_grad():
-            vbar = tqdm(data_loader["valid"], ncols=120)
+            vbar = tqdm(data_loader["valid"], ncols=150)
             for valid_idx, valid_batch in enumerate(vbar):
                 vbar.set_description("Validation")
 
+                label_bvp = label_rsp = label_bp = label_eda = None
+                label_hr = label_rr = label_sysBP = label_avgBP = label_diaBP = None
+
                 data, labels = valid_batch[0].to(self.device), valid_batch[1].to(self.device)
+
                 if len(labels.shape) == 3:
                     if labels.shape[-1] > 4:       # BP4D dataset 
                         label_bvp = labels[..., 0]
+                        # label_bvp = labels[..., 11]
                         label_rsp = labels[..., 1]
                         label_eda = labels[..., 2]
                         label_hr = labels[..., 4]
@@ -365,6 +442,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
+                        # label_bp = labels[..., 9]
+                        label_bp = labels[..., 10]
 
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
@@ -397,66 +476,75 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels = labels/ torch.std(labels)  # normalize
                 # labels[torch.isnan(labels)] = 0
 
+                out = self.model(data)
+                
+                pred_bvp = out[0]
+                pred_rsp = out[1]
+                pred_bp = out[2]
+                pred_eda = out[3]
+
                 if self.md_infer and self.use_fsam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp, pred_rsp, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
-                    elif "BVP" in self.tasks:
-                        pred_bvp, vox_embed, factorized_embed, appx_error = self.model(data)
-                    else:
-                        pred_rsp, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
-                else:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp, pred_rsp, vox_embed = self.model(data)
-                    elif "BVP" in self.tasks:
-                        pred_bvp, vox_embed = self.model(data)
-                    else:
-                        pred_rsp, vox_embed = self.model(data)
+                    appx_error_bvp = out[9]
+                    appx_error_rsp = out[11]
+                    appx_error_bp = out[13]
+                    appx_error_eda = out[15]
+
+                loss = 0
 
                 if "BVP" in self.tasks:
                     # mean_pred_bvp = torch.mean(pred_bvp, dim=1).unsqueeze(1)
                     # std_pred_bvp = torch.std(pred_bvp, dim=1).unsqueeze(1)
                     # pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
-                    loss_bvp = self.criterion1(pred_bvp, label_bvp)
+                    loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
                     valid_loss_bvp.append(loss_bvp.item())
+                    loss += loss_bvp
 
                 if "RSP" in self.tasks:
                     # mean_pred_rsp = torch.mean(pred_rsp, dim=1).unsqueeze(1)
                     # std_pred_rsp = torch.std(pred_rsp, dim=1).unsqueeze(1)
                     # pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
-                    loss_rsp = self.criterion2(pred_rsp, label_rsp)
+                    loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
                     valid_loss_rsp.append(loss_rsp.item())
+                    loss += loss_rsp
                 
-                if "BVP" in self.tasks and "RSP" in self.tasks:
-                    loss = loss_bvp + loss_rsp
-                elif "BVP" in self.tasks:
-                    loss = loss_bvp
-                elif "RSP" in self.tasks:
-                    loss = loss_rsp
+                if "BP" in self.tasks:
+                    loss_bp = self.criterion_bp1(pred_bp, label_bp) #+ self.criterion_bp2(pred_bp, label_bp) 
+                    # loss_bp = self.criterion_bp1(pred_bp[:, 0], torch.mean(
+                    #     label_sysBP, dim=1)) + self.criterion_bp1(pred_bp[:, 1], torch.mean(label_diaBP, dim=1))
+                    valid_loss_bp.append(loss_bp.item())
+                    loss += loss_bp
+
+                if "EDA" in self.tasks:
+                    loss_eda = self.criterion_eda(pred_eda, label_eda)
+                    valid_loss_eda.append(loss_eda.item())
+                    loss += loss_eda
 
                 valid_step += 1
+
+                bar_dict = {}
+                if "BVP" in self.tasks:
+                    bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
+                if "RSP" in self.tasks:
+                    bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
+                if "EDA" in self.tasks:
+                    bar_dict["loss_eda"] = round(loss_eda.item(), 2)
+                if "BP" in self.tasks:
+                    bar_dict["loss_bp"] = round(loss_bp.item(), 2)
+
                 # vbar.set_postfix(loss=loss.item())
-                if self.md_infer and self.use_fsam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        vbar.set_postfix({"appx_error": appx_error.item(), "loss_bvp":loss_bvp.item(), "loss_rsp": loss_rsp.item()}, loss=loss.item())
-                    else:
-                        vbar.set_postfix(loss=loss.item())
-                else:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        vbar.set_postfix({"loss_bvp":loss_bvp.item(), "loss_rsp": loss_rsp.item()}, loss=loss.item())
-                    else:
-                        vbar.set_postfix(loss=loss.item())
+                vbar.set_postfix(bar_dict, loss=loss.item())
 
             if "BVP" in self.tasks:
-                valid_loss_bvp = np.asarray(valid_loss_bvp)
+                avg_valid_loss_bvp = np.mean(np.asarray(valid_loss_bvp))
             if "RSP" in self.tasks:
-                valid_loss_rsp = np.asarray(valid_loss_rsp)
-        
-        if "BVP" in self.tasks and "RSP" in self.tasks:
-            return np.mean(valid_loss_bvp), np.mean(valid_loss_rsp)
-        elif "BVP" in self.tasks:
-            return np.mean(valid_loss_bvp)
-        elif "RSP" in self.tasks:
-            return np.mean(valid_loss_rsp)
+                avg_valid_loss_rsp = np.mean(np.asarray(valid_loss_rsp))
+            if "BP" in self.tasks:
+                avg_valid_loss_bp = np.mean(np.asarray(valid_loss_bp))
+            if "EDA" in self.tasks:
+                avg_valid_loss_eda = np.mean(np.asarray(valid_loss_eda))
+
+        return avg_valid_loss_bvp, avg_valid_loss_rsp, avg_valid_loss_bp, avg_valid_loss_eda
+
 
     def test(self, data_loader):
         """ Runs the model on test sets."""
@@ -466,9 +554,14 @@ class MMRPhysTrainer(BaseTrainer):
         print('')
         print("===Testing===")
         pred_bvp_dict = dict()
-        label_bvp_dict = dict()
         pred_rsp_dict = dict()
+        pred_bp_dict = dict()
+        pred_eda_dict = dict()
+
+        label_bvp_dict = dict()
         label_rsp_dict = dict()
+        label_bp_dict = dict()
+        label_eda_dict = dict()
 
         if self.config.TOOLBOX_MODE == "only_test":
             if not os.path.exists(self.config.INFERENCE.MODEL_PATH):
@@ -494,13 +587,14 @@ class MMRPhysTrainer(BaseTrainer):
         self.model.eval()
         print("Running model evaluation on the testing dataset!")
         with torch.no_grad():
-            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=80)):
+            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=150)):
                 batch_size = test_batch[0].shape[0]
                 data, labels_test = test_batch[0].to(self.device), test_batch[1].to(self.device)
 
                 if len(labels_test.shape) == 3:
                     if labels_test.shape[-1] > 4:       # BP4D dataset 
                         label_bvp_test = labels_test[..., 0]
+                        # label_bvp_test = labels_test[..., 11]
                         label_rsp_test = labels_test[..., 1]
                         label_eda_test = labels_test[..., 2]
                         label_hr_test = labels_test[..., 4]
@@ -508,6 +602,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP_test = labels_test[..., 6]
                         label_avgBP_test = labels_test[..., 7]
                         label_diaBP_test = labels_test[..., 8]
+                        # label_bp_test = labels_test[..., 9]
+                        label_bp_test = labels_test[..., 10]
 
                     elif labels_test.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp_test = labels_test[..., 0]
@@ -540,21 +636,13 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels_test = torch.diff(labels_test, dim=0)
                 # labels_test = labels_test/ torch.std(labels_test)  # normalize
                 # labels_test[torch.isnan(labels_test)] = 0
+                
+                out = self.model(data)
 
-                if self.md_infer and self.use_fsam:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp_test, pred_rsp_test, vox_embed, factorized_embed, appx_error, factorized_embed_br, appx_error_br = self.model(data)
-                    elif "BVP" in self.tasks:
-                        pred_bvp_test, vox_embed, factorized_embed, appx_error = self.model(data)
-                    else:
-                        pred_rsp_test, vox_embed, factorized_embed_br, appx_error_br = self.model(data)
-                else:
-                    if "BVP" in self.tasks and "RSP" in self.tasks:
-                        pred_bvp_test, pred_rsp_test, vox_embed = self.model(data)
-                    elif "BVP" in self.tasks:
-                        pred_bvp_test, vox_embed = self.model(data)
-                    else:
-                        pred_rsp_test, vox_embed = self.model(data)
+                pred_bvp_test = out[0]
+                pred_rsp_test = out[1]
+                pred_bp_test = out[2]
+                pred_eda_test = out[3]
 
                 if "BVP" in self.tasks:
                     mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1).cpu()
@@ -568,6 +656,15 @@ class MMRPhysTrainer(BaseTrainer):
                     mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1).unsqueeze(1).cpu()
                     std_pred_rsp_test = torch.std(pred_rsp_test, dim=1).unsqueeze(1).cpu()
                     # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
+                
+                # Not needed for BP - as this is not to be normalized
+                
+                if "EDA" in self.tasks:
+                    mean_label_eda_test = torch.mean(label_eda_test, dim=1).unsqueeze(1).cpu()
+                    std_label_eda_test = torch.std(label_eda_test, dim=1).unsqueeze(1).cpu()
+                    mean_pred_eda_test = torch.mean(pred_eda_test, dim=1).unsqueeze(1).cpu()
+                    std_pred_eda_test = torch.std(pred_eda_test, dim=1).unsqueeze(1).cpu()
+                    # pred_eda_test = (pred_eda_test - mean_pred_eda_test) / std_pred_eda_test  # normalize
 
                 if self.config.TEST.OUTPUT_SAVE_DIR:
                     if "BVP" in self.tasks:
@@ -576,15 +673,35 @@ class MMRPhysTrainer(BaseTrainer):
                     if "RSP" in self.tasks:
                         label_rsp_test = label_rsp_test.cpu()
                         pred_rsp_test = pred_rsp_test.cpu()
+                    if "BP" in self.tasks:
+                        label_bp_test = label_bp_test.cpu()
+                        # label_bp_test = [torch.mean(label_sysBP_test, dim=1).cpu(), torch.mean(label_diaBP_test, dim=1).cpu()]
+                        pred_bp_test = pred_bp_test.cpu()
+                    if "EDA" in self.tasks:
+                        label_eda_test = label_eda_test.cpu()
+                        pred_eda_test = pred_eda_test.cpu()
 
                 for idx in range(batch_size):
                     subj_index = test_batch[2][idx]
                     sort_index = int(test_batch[3][idx])
+
                     if subj_index not in pred_bvp_dict.keys():
-                        pred_bvp_dict[subj_index] = dict()
-                        label_bvp_dict[subj_index] = dict()
-                        pred_rsp_dict[subj_index] = dict()
-                        label_rsp_dict[subj_index] = dict()
+                        if "BVP" in self.tasks:
+                            pred_bvp_dict[subj_index] = dict()
+                            label_bvp_dict[subj_index] = dict()
+
+                        if "RSP" in self.tasks:
+                            pred_rsp_dict[subj_index] = dict()
+                            label_rsp_dict[subj_index] = dict()
+
+                        if "BP" in self.tasks:
+                            pred_bp_dict[subj_index] = dict()
+                            label_bp_dict[subj_index] = dict()
+
+                        if "EDA" in self.tasks:
+                            pred_eda_dict[subj_index] = dict()
+                            label_eda_dict[subj_index] = dict()
+
 
                     if "BVP" in self.tasks:
                         if std_label_bvp_test[idx] > 0.001:
@@ -608,16 +725,44 @@ class MMRPhysTrainer(BaseTrainer):
                         else:
                             pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
 
+                    if "BP" in self.tasks:
+                        label_bp_dict[subj_index][sort_index] = label_bp_test[idx]
+                        pred_bp_dict[subj_index][sort_index] = pred_bp_test[idx]
+
+                    if "EDA" in self.tasks:
+                        if std_label_eda_test[idx] > 0.001:
+                            label_eda_dict[subj_index][sort_index] = (label_eda_test[idx] - mean_label_eda_test[idx]) / std_label_eda_test[idx]   #label_eda_test[idx]    # standardize
+                        else:
+                            label_eda_dict[subj_index][sort_index] = label_eda_test[idx]
+
+                        if std_pred_eda_test[idx] > 0.001:
+                            pred_eda_dict[subj_index][sort_index] = (pred_eda_test[idx] - mean_pred_eda_test[idx]) / std_pred_eda_test[idx]   #pred_eda_test[idx]    # standardize
+                        else:
+                            pred_eda_dict[subj_index][sort_index] = pred_eda_test[idx]
+
+
         print('')
         if "BVP" in self.tasks:
             calculate_metrics(pred_bvp_dict, label_bvp_dict, self.config)
+        
         if "RSP" in self.tasks:
             calculate_rsp_metrics(pred_rsp_dict, label_rsp_dict, self.config)
+
+        if "BP" in self.tasks:
+            calculate_bp_metrics(pred_bp_dict, label_bp_dict, self.config)
+
+        if "EDA" in self.tasks:
+            calculate_eda_metrics(pred_eda_dict, label_eda_dict, self.config)
+
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs 
             if "BVP" in self.tasks:
                 self.save_test_outputs(pred_bvp_dict, label_bvp_dict, self.config, suff="_bvp")
             if "RSP" in self.tasks:
                 self.save_test_outputs(pred_rsp_dict, label_rsp_dict, self.config, suff="_rsp")
+            if "BP" in self.tasks:
+                self.save_test_outputs(pred_bp_dict, label_bp_dict, self.config, suff="_bp")
+            if "EDA" in self.tasks:
+                self.save_test_outputs(pred_eda_dict, label_eda_dict, self.config, suff="_eda")
 
     def save_model(self, index):
         if not os.path.exists(self.model_dir):

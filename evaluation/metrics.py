@@ -252,14 +252,14 @@ def calculate_rsp_metrics(predictions, labels, config):
             
             if config.INFERENCE.EVALUATION_METHOD == "peak detection":
                 gt_rr_peak, pred_rr_peak, SNR, macc = calculate_rsp_metrics_per_video(
-                    prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='Peak')
+                    pred_window, label_window, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='Peak')
                 gt_rr_peak_all.append(gt_rr_peak)
                 predict_rr_peak_all.append(pred_rr_peak)
                 SNR_all.append(SNR)
                 MACC_all.append(macc)
             elif config.INFERENCE.EVALUATION_METHOD == "FFT":
                 gt_rr_fft, pred_rr_fft, SNR, macc = calculate_rsp_metrics_per_video(
-                    prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='FFT')
+                    pred_window, label_window, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='FFT')
                 gt_rr_fft_all.append(gt_rr_fft)
                 predict_rr_fft_all.append(pred_rr_fft)
                 SNR_all.append(SNR)
@@ -280,6 +280,7 @@ def calculate_rsp_metrics(predictions, labels, config):
         gt_rr_fft_all = np.array(gt_rr_fft_all)
         predict_rr_fft_all = np.array(predict_rr_fft_all)
         SNR_all = np.array(SNR_all)
+        MACC_all = np.array(MACC_all)
         num_test_samples = len(predict_rr_fft_all)
         for metric in config.TEST.METRICS:
             if metric == "MAE":
@@ -380,3 +381,190 @@ def calculate_rsp_metrics(predictions, labels, config):
                 raise ValueError("Wrong Test Metric Type")
     else:
         raise ValueError("Inference evaluation method name wrong!")
+    
+
+def calculate_bp_metrics(predictions, labels, config):
+    """Calculate BP Metrics - SBP (MAE, RMSE, MAPE, Pearson Coef.), DBP (MAE, RMSE, MAPE, Pearson Coef.), and  MACC."""
+
+    print('=====================')
+    print('==== BP Metrics ===')
+    print('=====================')
+
+    predict_sbp_all = list()
+    gt_sbp_all = list()
+    predict_dbp_all = list()
+    gt_dbp_all = list()
+    MACC_all = list()
+
+    for index in tqdm(predictions.keys(), ncols=80):
+        prediction = _reform_data_from_dict(predictions[index])
+        label = _reform_data_from_dict(labels[index])
+
+        video_frame_size = prediction.shape[0]
+        if config.INFERENCE.EVALUATION_WINDOW.USE_SMALLER_WINDOW:
+            window_frame_size = config.INFERENCE.EVALUATION_WINDOW.WINDOW_SIZE * config.TEST.DATA.FS
+            if window_frame_size > video_frame_size:
+                window_frame_size = video_frame_size
+        else:
+            window_frame_size = video_frame_size
+
+        for i in range(0, len(prediction), window_frame_size):
+            pred_window = prediction[i:i+window_frame_size]
+            label_window = label[i:i+window_frame_size]
+
+            if len(pred_window) < 9:
+                print(f"Window frame size of {len(pred_window)} is smaller than minimum pad length of 9. Window ignored!")
+                continue
+
+            sbp_pred, sbp_label, dbp_pred, dbp_label, macc = calculate_bp_metrics_per_video(pred_window, label_window, fs=config.TEST.DATA.FS)
+            predict_sbp_all.append(sbp_pred)
+            gt_sbp_all.append(sbp_label)
+            predict_dbp_all.append(dbp_pred)
+            gt_dbp_all.append(dbp_label)
+            MACC_all.append(macc)
+
+    # Filename ID to be used in any results files (e.g., Bland-Altman plots) that get saved
+    if config.TOOLBOX_MODE == 'train_and_test' or config.TOOLBOX_MODE == 'only_train':
+        filename_id = config.TRAIN.MODEL_FILE_NAME
+    elif config.TOOLBOX_MODE == 'only_test':
+        model_file_root = config.INFERENCE.MODEL_PATH.split("/")[-1].split(".pth")[0]
+        filename_id = model_file_root + "_" + config.TEST.DATA.DATASET
+    else:
+        raise ValueError('Metrics.py evaluation only supports train_and_test and only_test!')
+
+    predict_sbp_all = np.array(predict_sbp_all)
+    gt_sbp_all = np.array(gt_sbp_all)
+    predict_dbp_all = np.array(predict_dbp_all)
+    gt_dbp_all = np.array(gt_dbp_all)
+    MACC_all = np.array(MACC_all)
+    num_test_samples = len(MACC_all)
+    
+    for metric in config.TEST.METRICS:
+        if metric == "MAE":
+            MAE_SBP = np.mean(np.abs(predict_sbp_all - gt_sbp_all))
+            standard_error = np.std(np.abs(predict_sbp_all - gt_sbp_all)) / np.sqrt(num_test_samples)
+            print("SBP MAE: {0} +/- {1}".format(MAE_SBP, standard_error))
+            MAE_DBP = np.mean(np.abs(predict_dbp_all - gt_dbp_all))
+            standard_error = np.std(np.abs(predict_dbp_all - gt_dbp_all)) / np.sqrt(num_test_samples)
+            print("DBP MAE: {0} +/- {1}".format(MAE_DBP, standard_error))
+        
+        elif metric == "RMSE":
+            RMSE_SBP = np.sqrt(np.mean(np.square(predict_sbp_all - gt_sbp_all)))
+            standard_error = np.sqrt(np.std(np.square(predict_sbp_all - gt_sbp_all))) / np.sqrt(num_test_samples)
+            print("SBP RMSE: {0} +/- {1}".format(RMSE_SBP, standard_error))
+            RMSE_DBP = np.sqrt(np.mean(np.square(predict_dbp_all - gt_dbp_all)))
+            standard_error = np.sqrt(np.std(np.square(predict_dbp_all - gt_dbp_all))) / np.sqrt(num_test_samples)
+            print("DBP RMSE: {0} +/- {1}".format(RMSE_DBP, standard_error))
+
+        elif metric == "MAPE":
+            MAPE_SBP = np.mean(np.abs((predict_sbp_all - gt_sbp_all) / gt_sbp_all)) * 100
+            standard_error = np.std(np.abs((predict_sbp_all - gt_sbp_all) / gt_sbp_all)) / np.sqrt(num_test_samples) * 100
+            print("SBP MAPE: {0} +/- {1}".format(MAPE_SBP, standard_error))
+            MAPE_DBP = np.mean(np.abs((predict_dbp_all - gt_dbp_all) / gt_dbp_all)) * 100
+            standard_error = np.std(np.abs((predict_dbp_all - gt_dbp_all) / gt_dbp_all)) / np.sqrt(num_test_samples) * 100
+            print("DBP MAPE: {0} +/- {1}".format(MAPE_DBP, standard_error))
+
+        elif metric == "Pearson":
+            Pearson_SBP = np.corrcoef(predict_sbp_all, gt_sbp_all)
+            correlation_coefficient = Pearson_SBP[0][1]
+            standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
+            print("SBP Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+            Pearson_DBP = np.corrcoef(predict_dbp_all, gt_dbp_all)
+            correlation_coefficient = Pearson_DBP[0][1]
+            standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
+            print("DBP Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+
+        elif metric == "MACC":
+            MACC_avg = np.mean(MACC_all)
+            standard_error = np.std(MACC_all) / np.sqrt(num_test_samples)
+            print("MACC: {0} +/- {1}".format(MACC_avg, standard_error))
+
+        elif "BA" in metric:
+            compare = BlandAltman(gt_sbp_all, predict_sbp_all, config, averaged=True)
+            compare.scatter_plot(
+                x_label='GT SBP [mmHg]',
+                y_label='Predicted SBP [mmHg]', 
+                show_legend=True, figure_size=(5, 5), 
+                the_title=f'{filename_id}_SBP_BlandAltman_ScatterPlot',
+                file_name=f'{filename_id}_SBP_BlandAltman_ScatterPlot.pdf',
+                measure_lower_lim=10, 
+                measure_upper_lim=60)
+            compare.difference_plot(
+                x_label='Difference between Predicted SBP and GT SBP [mmHg]', 
+                y_label='Average of Predicted SBP and GT SBP [mmHg]', 
+                show_legend=True, figure_size=(5, 5), 
+                the_title=f'{filename_id}_SBP_BlandAltman_DifferencePlot',
+                file_name=f'{filename_id}_SBP_BlandAltman_DifferencePlot.pdf')
+
+            compare = BlandAltman(gt_dbp_all, predict_dbp_all, config, averaged=True)
+            compare.scatter_plot(
+                x_label='GT DBP [mmHg]',
+                y_label='Predicted DBP [mmHg]', 
+                show_legend=True, figure_size=(5, 5), 
+                the_title=f'{filename_id}_DBP_BlandAltman_ScatterPlot',
+                file_name=f'{filename_id}_DBP_BlandAltman_ScatterPlot.pdf',
+                measure_lower_lim=10, 
+                measure_upper_lim=60)
+            compare.difference_plot(
+                x_label='Difference between Predicted DBP and GT DBP [mmHg]', 
+                y_label='Average of Predicted DBP and GT DBP [mmHg]', 
+                show_legend=True, figure_size=(5, 5), 
+                the_title=f'{filename_id}_DBP_BlandAltman_DifferencePlot',
+                file_name=f'{filename_id}_DBP_BlandAltman_DifferencePlot.pdf')
+        else:
+            pass
+            # raise ValueError("Wrong Test Metric Type")
+
+
+
+
+def calculate_eda_metrics(predictions, labels, config):
+    """Calculate EDA Metrics (SNR, MACC)."""
+
+    print('=====================')
+    print('==== EDA Metrics ===')
+    print('=====================')
+
+    SNR_all = list()
+    MACC_all = list()
+    for index in tqdm(predictions.keys(), ncols=80):
+        prediction = _reform_data_from_dict(predictions[index])
+        label = _reform_data_from_dict(labels[index])
+
+        video_frame_size = prediction.shape[0]
+        if config.INFERENCE.EVALUATION_WINDOW.USE_SMALLER_WINDOW:
+            window_frame_size = config.INFERENCE.EVALUATION_WINDOW.WINDOW_SIZE * config.TEST.DATA.FS
+            if window_frame_size > video_frame_size:
+                window_frame_size = video_frame_size
+        else:
+            window_frame_size = video_frame_size
+
+        for i in range(0, len(prediction), window_frame_size):
+            pred_window = prediction[i:i+window_frame_size]
+            label_window = label[i:i+window_frame_size]
+
+            if len(pred_window) < 9:
+                print(f"Window frame size of {len(pred_window)} is smaller than minimum pad length of 9. Window ignored!")
+                continue
+
+            SNR, macc = calculate_eda_metrics_per_video(pred_window, label_window, fs=config.TEST.DATA.FS)
+            SNR_all.append(SNR)
+            MACC_all.append(macc)
+
+    SNR_all = np.array(SNR_all)
+    MACC_all = np.array(MACC_all)
+    num_test_samples = len(SNR_all)
+    for metric in config.TEST.METRICS:
+        if metric == "SNR":
+            SNR_FFT = np.mean(SNR_all)
+            standard_error = np.std(SNR_all) / np.sqrt(num_test_samples)
+            print("FFT SNR (FFT Label): {0} +/- {1}".format(SNR_FFT, standard_error))
+        elif metric == "MACC":
+            MACC_avg = np.mean(MACC_all)
+            standard_error = np.std(MACC_all) / np.sqrt(num_test_samples)
+            print("MACC: {0} +/- {1}".format(MACC_avg, standard_error))
+        # elif "AU" in metric:
+        #     pass
+        else:
+            pass
+            # raise ValueError("Wrong Test Metric Type")

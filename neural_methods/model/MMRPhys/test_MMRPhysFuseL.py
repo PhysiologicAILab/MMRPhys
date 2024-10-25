@@ -23,7 +23,7 @@ model_config = {
     "MD_STEPS": 4,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 3,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 72,
     "weight": 72,

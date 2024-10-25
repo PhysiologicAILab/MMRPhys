@@ -147,6 +147,40 @@ def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3
         SNR = 0
     return SNR
 
+def _calculate_SNR_EDA(pred_eda_signal, fs=30, low_pass=0.02, high_pass=5.0):
+    """Calculate SNR
+
+        Args:
+            pred_eda_signal(np.array): predicted EDA signal 
+            fs(int or float): sampling rate of the video
+        Returns:
+            SNR(float): Signal-to-Noise Ratio
+    """
+
+    # Calculate FFT
+    pred_eda_signal = np.expand_dims(pred_eda_signal, 0)
+    N = _next_power_of_2(pred_eda_signal.shape[1])
+    f_eda, pxx_eda = scipy.signal.periodogram(pred_eda_signal, fs=fs, nfft=N, detrend=False)
+
+    # Calculate the indices corresponding to the frequency ranges
+    idx_of_interest = np.argwhere((f_eda >= low_pass) & (f_eda <= high_pass))
+
+    # Select the corresponding values from the periodogram
+    pxx_eda = np.squeeze(pxx_eda)
+    pxx_boi = pxx_eda[idx_of_interest]
+
+    # Calculate the signal power
+    signal_power_all = np.sum(pxx_eda**2)
+    signal_power_boi = np.sum(pxx_boi**2)
+
+    # Calculate the SNR as the ratio of the areas
+    if signal_power_all != 0:
+        SNR = power2db(signal_power_boi / signal_power_all)
+    else:
+        SNR = 0
+    return SNR
+
+
 def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=False, use_bandpass=True, hr_method='FFT'):
     """Calculate video-level HR and SNR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of PPG signal.
@@ -211,3 +245,33 @@ def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=False,
     # SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.05, high_pass=0.7)
     SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.13, high_pass=0.5)
     return rr_label, rr_pred, SNR, macc
+
+
+def calculate_eda_metrics_per_video(predictions, labels, fs=30, use_bandpass=True):
+    """Calculate video-level EDA metrics"""
+
+    # SNR computation needs to be done before using bandpass filter
+    SNR = _calculate_SNR_EDA(predictions, fs=fs, low_pass=0.02, high_pass=5.0)
+
+    if use_bandpass:
+        # bandpass filter between [0.05, 0.7] Hz
+        # equals [3, 42] breaths per min
+        [b, a] = butter(2, [0.02 / fs * 2, 5.0 / fs * 2], btype='bandpass')
+        predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
+        labels = scipy.signal.filtfilt(b, a, np.double(labels))
+    
+    macc = _compute_macc(predictions, labels)
+    
+    return SNR, macc
+
+
+def calculate_bp_metrics_per_video(predictions, labels, fs=30):
+    """Calculate video-level BP metrics"""
+
+    sbp_pred = np.max(np.array(predictions))
+    sbp_label = np.max(np.array(labels))
+    dbp_pred = np.min(np.array(predictions))
+    dbp_label = np.min(np.array(labels))
+    macc = _compute_macc(predictions, labels)
+    
+    return sbp_pred, sbp_label, dbp_pred, dbp_label, macc

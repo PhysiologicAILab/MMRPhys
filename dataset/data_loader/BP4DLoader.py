@@ -41,6 +41,7 @@ class BP4DLoader(BaseLoader):
                 name(str): name of the dataloader.
                 config_data(CfgNode): data settings(ref:config.py).
         """
+        self.config_data = config_data
         super().__init__(name, data_path, config_data, device)
 
     def get_raw_data(self, data_path):
@@ -61,10 +62,14 @@ class BP4DLoader(BaseLoader):
         """Returns a subset of data dirs, split with begin and end values, 
         and ensures no overlapping subjects between splits"""
 
+        if self.config_data.FOLD.FOLD_NAME and self.config_data.FOLD.FOLD_PATH:
+            data_dirs_new = self.split_raw_data_by_fold(data_dirs, self.config_data.FOLD.FOLD_PATH)
+            return data_dirs_new
+
         # return the full directory
         if begin == 0 and end == 1:
             return data_dirs
-
+        
         # get info about the dataset: subject list and num vids per subject
         data_info = dict()
         for data in data_dirs:
@@ -95,6 +100,23 @@ class BP4DLoader(BaseLoader):
             # chunk num)
 
         return data_dirs_new
+
+
+    def split_raw_data_by_fold(self, data_dirs, fold_path):
+
+        fold_df = pd.read_csv(fold_path)
+        fold_subjs = list(set(list(fold_df.subjects)))
+
+        fold_data_dirs = []
+        for d in data_dirs:
+            idx = d['index']
+            subj = idx[0:4]
+
+            if subj in fold_subjs: # if trial has already been processed
+                fold_data_dirs.append(d)
+
+        return fold_data_dirs
+
 
     def preprocess_dataset_subprocess(self, data_dirs, config_preprocess, i, file_list_dict):
         """ Invoked by preprocess_dataset for multi_process. """

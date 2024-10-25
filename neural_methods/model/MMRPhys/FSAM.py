@@ -418,12 +418,12 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                         hr_bpm = int(round(hr[bt]))
                         hr_bpm = 30 if hr_bpm < 30 else hr_bpm
                         hr_bpm = 200 if hr_bpm > 200 else hr_bpm
-                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr_bpm, frequency_modulation=0.1, ibi_randomness=0.03, random_state=100, random_state_distort=100)
+                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr_bpm, frequency_modulation=0.1, ibi_randomness=0.03, random_state=1, random_state_distort=1)
                     else:
                         rr_bpm = int(round(rr[bt]))
                         rr_bpm = 3 if rr_bpm < 3 else rr_bpm
                         rr_bpm = 42 if rr_bpm > 42 else rr_bpm
-                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr_bpm, random_state=100, random_state_distort=100)
+                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr_bpm, random_state=1, random_state_distort=1)
 
                     # start = int(np.random.randint(0, P))
                     # sig_seg = sig[start: start + P]
@@ -440,11 +440,11 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
             SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
             for bt in range(B):
-                # sig = y[bt, :]
-                # mx = torch.max(sig)
-                # mn = torch.min(sig)
-                # sig = (sig - mn)/(mx - mn)
-                SNMF_estimators[bt, :, 0] = y[bt, :]
+                sig = y[bt, :]
+                mn = torch.min(sig)
+                mx = torch.max(sig)
+                sig = (sig - mn)/(mx - mn)
+                SNMF_estimators[bt, :, 0] = sig
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
 

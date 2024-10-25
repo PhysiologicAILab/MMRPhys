@@ -67,26 +67,35 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        "BP4D_500x36_Fold1_RGBT": {
-            "root": "runs/exp/BP4D_RGBT_500_36x36/saved_test_outputs/",
+        "BP4D_500x72_Fold1_RGBT": {
+            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
             "exp" : {
-                "MMRPhys_FuseM_SFSAM_Label":
+                # "MMRPhys_FuseL_SFSAM_Label":
+                # {
+                #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
+                #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
+                # },
+                "MMRPhys_FuseL_Base":
                 {
-                    "bvp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx500x36_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx500x36_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                    "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
+                    "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
+                    "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
+                    # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
                 }
             },
         },
-        "BP4D_500x9_Fold1_RGBT": {
-            "root": "runs/exp/BP4D_RGBT_500_9x9/saved_test_outputs/",
-            "exp": {
-                "MMRPhys_FuseS_SFSAM_Label":
-                {
-                    "bvp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseSx500x9_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseSx500x9_SFSAM_Label_Fold1_rsp_outputs.pickle",
-                },
-            }
-        }
+        # "BP4D_500x9_Fold1_RGBT": {
+        #     "root": "runs/exp/BP4D_RGBT_500_9x9/saved_test_outputs/",
+        #     "exp": {
+        #         "MMRPhys_FuseS_SFSAM_Label":
+        #         {
+        #             "bvp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseSx500x9_SFSAM_Label_Fold1_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhys_BVP_RSP_RGBT_FuseSx500x9_SFSAM_Label_Fold1_rsp_outputs.pickle",
+        #         },
+        #     }
+        # }
     }
 }
 
@@ -105,7 +114,7 @@ def _reform_data_from_dict(data, flatten=True):
 
     return sort_data
 
-def _process_bvp_signal(signal, fs=25, diff_flag=True):
+def _process_bvp_signal(signal, fs=25, diff_flag=False):
     # Detrend and filter
     use_bandpass = True
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
@@ -120,7 +129,7 @@ def _process_bvp_signal(signal, fs=25, diff_flag=True):
     return signal
 
 
-def _process_rsp_signal(signal, fs=25, diff_flag=True):
+def _process_rsp_signal(signal, fs=25, diff_flag=False):
     # Detrend and filter
     use_bandpass = True
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
@@ -132,6 +141,21 @@ def _process_rsp_signal(signal, fs=25, diff_flag=True):
     if use_bandpass:
         # [b, a] = butter(2, [0.05 / fs * 2, 0.7 / fs * 2], btype='bandpass')
         [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
+        signal = filtfilt(b, a, np.double(signal))
+    return signal
+
+
+def _process_eda_signal(signal, fs=25, diff_flag=False):
+    # Detrend and filter
+    use_bandpass = True
+    if diff_flag:  # if the predictions and labels are 1st derivative of EDA signal.
+        # signal = _detrend(np.cumsum(signal), 100)
+        signal = np.cumsum(signal)
+    else:
+        # signal = _detrend(signal, 100)
+        pass
+    if use_bandpass:
+        [b, a] = butter(2, [0.05 / fs * 2, 5.0 / fs * 2], btype='bandpass')
         signal = filtfilt(b, a, np.double(signal))
     return signal
 
@@ -211,6 +235,8 @@ def compare_estimated_phys_within_dataset(save_plot=1):
         print("*"*50)
         bvp_dict = {}
         rsp_dict = {}
+        bp_dict = {}
+        eda_dict = {}
 
         root_dir = Path(path_dict_within_dataset["test_datasets"][test_dataset]["root"])
         if not root_dir.exists():
@@ -227,6 +253,10 @@ def compare_estimated_phys_within_dataset(save_plot=1):
             bvp_dict[train_model] = CPU_Unpickler(open(bvp_fn, "rb")).load()
             rsp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["rsp"])
             rsp_dict[train_model] = CPU_Unpickler(open(rsp_fn, "rb")).load()
+            bp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bp"])
+            bp_dict[train_model] = CPU_Unpickler(open(bp_fn, "rb")).load()
+            # eda_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["eda"])
+            # eda_dict[train_model] = CPU_Unpickler(open(eda_fn, "rb")).load()
 
         print("-"*50)
 
@@ -260,6 +290,8 @@ def compare_estimated_phys_within_dataset(save_plot=1):
 
             bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
             rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+            bp_label = np.array(_reform_data_from_dict(bp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+            # eda_label = np.array(_reform_data_from_dict(eda_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
 
             trial_dict = {}
             hr_pred = {}
@@ -269,7 +301,7 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                 # print("*"*25)
                 # try:
                 if save_plot:
-                    fig, ax = plt.subplots(2, 1, figsize=(15, 8))
+                    fig, ax = plt.subplots(3, 1, figsize=(16, 12))
                 # fig.tight_layout()
 
                 start = (c_ind)*chunk_size
@@ -282,6 +314,8 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                 # print("hr_label:", hr_label)
 
                 rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
+                bp_seg = bp_label[start: stop]
+                # eda_seg = _process_eda_signal(eda_label[start: stop], fs, diff_flag=diff_flag)
                 
                 try:
                     rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
@@ -302,6 +336,8 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                         # Reform label and prediction vectors from multiple trial chunks
                         trial_dict[model_names[m_ind]]["bvp_pred"] = np.array(_reform_data_from_dict(bvp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
                         trial_dict[model_names[m_ind]]["rsp_pred"] = np.array(_reform_data_from_dict(rsp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
+                        trial_dict[model_names[m_ind]]["bp_pred"] = np.array(_reform_data_from_dict(bp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
+                        # trial_dict[model_names[m_ind]]["eda_pred"] = np.array(_reform_data_from_dict(eda_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
 
                     if model_names[m_ind] not in all_hr_labels:
                         all_hr_labels[model_names[m_ind]] = []
@@ -313,6 +349,8 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                     # Process label and prediction signals
                     bvp_pred_seg = _process_bvp_signal(trial_dict[model_names[m_ind]]["bvp_pred"][start: stop], fs, diff_flag=diff_flag)
                     rsp_pred_seg = _process_rsp_signal(trial_dict[model_names[m_ind]]["rsp_pred"][start: stop], fs, diff_flag=diff_flag)
+                    bp_pred_seg = trial_dict[model_names[m_ind]]["bp_pred"][start: stop]
+                    # eda_pred_seg = _process_eda_signal(trial_dict[model_names[m_ind]]["eda_pred"][start: stop], fs, diff_flag=diff_flag)
 
                     hr_pred[model_names[m_ind]] = _calculate_fft_hr(bvp_pred_seg, fs=fs)
                     hr_pred[model_names[m_ind]] = int(np.round(hr_pred[model_names[m_ind]]))
@@ -335,12 +373,18 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                     if save_plot:
                         ax[0].plot(x_time, bvp_pred_seg, label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
                         ax[1].plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
+                        ax[2].plot(x_time, bp_pred_seg, label=model_names[m_ind])
+                        # ax[3].plot(x_time, eda_pred_seg, label=model_names[m_ind])
 
                 if save_plot:
                     ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
                     ax[0].legend(loc="upper right")
                     ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
                     ax[1].legend(loc="upper right")
+                    ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
+                    ax[2].legend(loc="upper right")
+                    # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
+                    # ax[3].legend(loc="upper right")
                 
                     plt.suptitle("Dataset: " + test_dataset + '; Trial: ' + trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
 

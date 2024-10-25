@@ -54,7 +54,7 @@ class BaseTrainer:
 
         print('Saving outputs to:', output_path)
 
-    def plot_losses_and_lrs(self, train_loss, valid_loss, lrs, config, train_loss2=None, valid_loss2=None):
+    def plot_losses_and_lrs(self, train_loss, valid_loss, lrs, config, suff=""):
 
         output_dir = os.path.join(config.LOG.PATH, config.TRAIN.DATA.EXP_DATA_NAME, 'plots')
         if not os.path.exists(output_dir):
@@ -66,15 +66,12 @@ class BaseTrainer:
         else:
             raise ValueError('Trainer only supports train_and_test and only_train!')
         
-        log_filepath = os.path.join(output_dir, filename_id + '_log.pickle')
+        log_filepath = os.path.join(output_dir, filename_id + "_" + suff +  '_log.pickle')
 
         data = dict()
         data['lrs'] = lrs
         data['train_loss'] = train_loss
         data['valid_loss'] = valid_loss
-        if np.all(train_loss2) != None:
-            data['train_loss2'] = train_loss2
-            data['valid_loss2'] = valid_loss2
 
         with open(log_filepath, 'wb') as handle:  # save out training dict pickle file
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -85,13 +82,9 @@ class BaseTrainer:
         plt.figure(figsize=(10, 6))
         epochs = range(0, len(train_loss))  # Integer values for x-axis
         plt.plot(epochs, train_loss, label='Training Loss')
-        if np.all(train_loss2) != None:
-            plt.plot(epochs, train_loss2, label='Training Loss 2')
         
         if len(valid_loss) > 0:
             plt.plot(epochs, valid_loss, label='Validation Loss')
-            if np.all(train_loss2) != None:
-                plt.plot(epochs, valid_loss2, label='Validation Loss 2')
         else:
             print("The list of validation losses is empty. The validation loss will not be plotted!")
         plt.xlabel('Epoch')
@@ -104,7 +97,7 @@ class BaseTrainer:
         ax = plt.gca()
         ax.yaxis.set_major_locator(MaxNLocator(integer=False, prune='both'))
 
-        loss_plot_filename = os.path.join(output_dir, filename_id + '_losses.pdf')
+        loss_plot_filename = os.path.join(output_dir, filename_id + "_" + suff + '_losses.pdf')
         plt.savefig(loss_plot_filename, dpi=300)
         plt.close()
 
@@ -122,7 +115,7 @@ class BaseTrainer:
         ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True, useOffset=False))
         ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))  # Force scientific notation
 
-        lr_plot_filename = os.path.join(output_dir, filename_id + '_learning_rates.pdf')
+        lr_plot_filename = os.path.join(output_dir, filename_id + "_" + suff + '_learning_rates.pdf')
         plt.savefig(lr_plot_filename, bbox_inches='tight', dpi=300)
         plt.close()
 

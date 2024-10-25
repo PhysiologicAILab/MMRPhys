@@ -14,7 +14,7 @@ import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhysFuseM import MMRPhysFuseM
 
 model_config = {
-    "TASKS": ["BVP", "RSP"],
+    "TASKS": ["BVP", "RSP", "BP", "EDA"],
     "FS": 30,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
@@ -23,7 +23,7 @@ model_config = {
     "MD_STEPS": 4,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 3,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 36,
     "weight": 36,
@@ -107,7 +107,7 @@ class TestMMRPhys(object):
             self.time_vec = []
 
         if self.debug:
-            self.appx_error_list = []
+            self.appx_error_list_ppg = []
 
 
     def load_data(self, num_trial):
@@ -135,8 +135,11 @@ class TestMMRPhys(object):
         else:
             self.test_data = torch.rand(self.batch_size, self.data_channels, self.frames + 1, self.height, self.width)
             self.test_data = self.test_data.to(torch.float32).to(self.device)
-            self.bvp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
-            self.resp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
+
+        self.bvp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
+        self.rsp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
+        self.bp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
+        self.eda_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
 
     def run_inference(self, num_trial):
 
@@ -145,64 +148,60 @@ class TestMMRPhys(object):
         if self.assess_latency:
             t0 = time.time()
 
-        if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                if not self.use_label:
-                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-                else:
-                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(
-                        self.test_data, self.bvp_label, self.resp_label)
-            elif "BVP" in self.tasks:
-                if not self.use_label:
-                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
-                else:
-                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data, self.bvp_label)
-            elif "RSP" in self.tasks:
-                if not self.use_label:
-                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-                else:
-                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data, self.resp_label)
+        if self.debug and self.md_infer and self.use_fsam:
+            if self.use_label:
+                self.rPPG, self.rBr, self.rBP, self.rEDA, self.rppg_voxel_embeddings, \
+                    self.rbr_voxel_embeddings, self.rbp_voxel_embeddings, self.rEDA_voxel_embeddings, \
+                    self.factorized_embeddings_ppg, self.appx_error_ppg, self.factorized_embeddings_br, self.appx_error_br, \
+                    self.factorized_embeddings_bp, self.appx_error_bp, self.factorized_embeddings_eda, self.appx_error_eda = \
+                    self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.rsp_label,
+                             label_bp=self.bp_label, label_eda=self.eda_label)
             else:
-                print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
-                exit()
+                self.rPPG, self.rBr, self.rBP, self.rEDA, self.rppg_voxel_embeddings, \
+                    self.rbr_voxel_embeddings, self.rbp_voxel_embeddings, self.rEDA_voxel_embeddings, \
+                    self.factorized_embeddings_ppg, self.appx_error_ppg, self.factorized_embeddings_br, self.appx_error_br, \
+                    self.factorized_embeddings_bp, self.appx_error_bp, self.factorized_embeddings_eda, self.appx_error_eda = \
+                    self.net(self.test_data)
         else:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                self.pred, self.pred_rBr, self.vox_embed = self.net(self.test_data)
-            elif "BVP" in self.tasks:
-                self.pred, self.vox_embed = self.net(self.test_data)
-            elif "RSP" in self.tasks:
-                self.pred_rBr, self.vox_embed = self.net(self.test_data)
+            if self.use_label:
+                self.rPPG, self.rBr, self.rBP, self.rEDA, self.rppg_voxel_embeddings, \
+                    self.rbr_voxel_embeddings, self.rbp_voxel_embeddings, self.rEDA_voxel_embeddings = \
+                    self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.rsp_label,
+                             label_bp=self.bp_label, label_eda=self.eda_label)
             else:
-                print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
-                exit()
+                self.rPPG, self.rBr, self.rBP, self.rEDA, self.rppg_voxel_embeddings, \
+                    self.rbr_voxel_embeddings, self.rbp_voxel_embeddings, self.rEDA_voxel_embeddings = \
+                    self.net(self.test_data)
 
         if self.assess_latency:
             t1 = time.time()
             self.time_vec.append(t1-t0)
 
         if self.debug:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                print("pred.shape", self.pred.shape, self.pred_rBr.shape)
-            elif "BVP" in self.tasks:
-                print("pred.shape", self.pred.shape)
-            elif "RSP" in self.tasks:
-                print("pred.shape", self.pred_rBr.shape)
-            
-            if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                self.appx_error_list.append(self.appx_error.item())
+            if "BVP" in self.tasks:
+                print("rPPG.shape", self.rPPG.shape)
+            if "RSP" in self.tasks:
+                print("rBr.shape", self.rBr.shape)
+            if "BP" in self.tasks:
+                print("rBP.shape", self.rBP.shape)
+            if "EDA" in self.tasks:
+                print("rEDA.shape", self.rEDA.shape)
+
+            if self.md_infer and self.use_fsam:
+                self.appx_error_list_ppg.append(self.appx_error_ppg.item())
 
         if self.visualize:
             self.save_attention_maps(num_trial)
 
 
     def save_attention_maps(self, num_trial):
-        b, channels, enc_frames, enc_height, enc_width = self.vox_embed.shape
+        b, channels, enc_frames, enc_height, enc_width = self.rppg_voxel_embeddings.shape
         label_matrix = self.np_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
             2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
         label_matrix = label_matrix.to(device=self.device)
-        corr_matrix = F.cosine_similarity(self.vox_embed, label_matrix, dim=2).abs()
+        corr_matrix = F.cosine_similarity(self.rppg_voxel_embeddings, label_matrix, dim=2).abs()
 
-        # avg_emb = torch.mean(self.vox_embed, dim=1)
+        # avg_emb = torch.mean(self.rppg_voxel_embeddings, dim=1)
         # b, enc_frames, enc_height, enc_width = avg_emb.shape
         # label_matrix = np_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
         # label_matrix = label_matrix.to(device=device)
@@ -211,10 +210,10 @@ class TestMMRPhys(object):
         if self.debug:
             print("corr_matrix.shape", corr_matrix.shape)
             print("self.test_data.shape:", self.test_data.shape)
-            print("self.vox_embed.shape:", self.vox_embed.shape)
+            print("self.rppg_voxel_embeddings.shape:", self.rppg_voxel_embeddings.shape)
 
         self.test_data = self.test_data.detach().cpu().numpy()
-        self.vox_embed = self.vox_embed.detach().cpu().numpy()
+        self.rppg_voxel_embeddings = self.rppg_voxel_embeddings.detach().cpu().numpy()
         corr_matrix = corr_matrix.detach().cpu().numpy()
 
         fig, ax = plt.subplots(4, 4, figsize=[16, 16])
@@ -297,7 +296,7 @@ class TestMMRPhys(object):
 
         if self.debug:
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                print("Median error:", np.median(self.appx_error_list))
+                print("Median error:", np.median(self.appx_error_list_ppg))
 
         pytorch_total_params = sum(p.numel() for p in self.net.parameters())
         print("Total parameters = ", pytorch_total_params)

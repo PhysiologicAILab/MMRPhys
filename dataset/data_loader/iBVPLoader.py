@@ -156,10 +156,11 @@ class iBVPLoader(BaseLoader):
         # print(type(bvps), bvps.shape)
         # exit()
         # Discard frames based on Signal Quality
-        del_idx = sq_vec <= 0.3
-        frames = np.delete(frames, del_idx, axis=0)
-        bvps = np.delete(bvps, del_idx, axis=0)
-        sq_vec = np.delete(sq_vec, del_idx, axis=0)
+        if config_preprocess.IBVP.SQ:
+            del_idx = sq_vec <= 0.3
+            frames = np.delete(frames, del_idx, axis=0)
+            bvps = np.delete(bvps, del_idx, axis=0)
+            sq_vec = np.delete(sq_vec, del_idx, axis=0)
 
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)

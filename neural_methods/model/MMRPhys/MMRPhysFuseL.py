@@ -40,10 +40,10 @@ model_config = {
 
 
 class ConvBlock3D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1,1,1]):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1,1,1], bias=False):
         super(ConvBlock3D, self).__init__()
         self.conv_block_3d = nn.Sequential(
-            nn.Conv3d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=False, dilation=dilation),
+            nn.Conv3d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation),
             nn.Tanh(),
             nn.InstanceNorm3d(out_channel),
         )
@@ -321,6 +321,186 @@ class RSP_Head(nn.Module):
 
 
 
+class BP_Head(nn.Module):
+    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+        super(BP_Head, self).__init__()
+        self.debug = debug
+
+        self.use_fsam = md_config["MD_FSAM"]
+        self.md_type = md_config["MD_TYPE"]
+        self.md_infer = md_config["MD_INFERENCE"]
+        self.md_res = md_config["MD_RESIDUAL"]
+        self.frames = md_config["FRAME_NUM"]
+
+        self.conv_block = nn.Sequential(
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf[2], T, 11, 11
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
+        )
+
+        if self.use_fsam:
+            inC = nf[2]
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", sig_type="BVP", debug=debug)
+            self.fsam_norm = nn.InstanceNorm3d(inC)
+            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
+        else:
+            inC = nf[2]
+
+        self.final_layer = nn.Sequential(
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], bias=True),             #B, nf[1], T, 5, 5
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0], bias=True),           #B, nf[0], T, 3, 3
+            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=True),  #B, 1, T, 1, 1
+        )
+        # self.final_dense_1 = nn.Linear(self.frames * 7 * 7, self.frames)
+        # self.final_dense_2 = nn.Linear(self.frames, 2)
+
+
+
+    def forward(self, voxel_embeddings, batch, length, label_bp=None):
+
+        if self.debug:
+            print("BP Head")
+            print("     voxel_embeddings.shape", voxel_embeddings.shape)
+
+        voxel_embeddings = self.conv_block(voxel_embeddings)
+
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            if "NMF" in self.md_type:
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_bp) # to make it positive (>= 0)
+            else:
+                att_mask, appx_error = self.fsam(voxel_embeddings, label_bp)
+
+            if self.debug:
+                print("att_mask.shape", att_mask.shape)
+
+            if self.md_res:
+                # Multiplication with Residual connection
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)
+                factorized_embeddings = voxel_embeddings + factorized_embeddings
+            else:
+                # Multiplication
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)            
+
+            x = self.final_layer(factorized_embeddings)
+            # x = self.final_dense_1(factorized_embeddings)
+
+        else:
+            x = self.final_layer(voxel_embeddings)
+            # x = self.final_dense_1(voxel_embeddings)
+
+        rBP = x.view(-1, length)
+        # rBP = self.final_dense_2(x)
+
+        if self.debug:
+            print("     rBP.shape", rBP.shape)
+        
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            return rBP, factorized_embeddings, appx_error
+        else:
+            return rBP
+
+
+
+class EDA_Head(nn.Module):
+    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+        super(EDA_Head, self).__init__()
+        self.debug = debug
+
+        self.use_fsam = md_config["MD_FSAM"]
+        self.md_type = md_config["MD_TYPE"]
+        self.md_infer = md_config["MD_INFERENCE"]
+        self.md_res = md_config["MD_RESIDUAL"]
+
+        # md_config = deepcopy(md_config)
+        # md_config["MD_R"] = 4
+        # md_config["MD_S"] = 1
+        # md_config["MD_STEPS"] = 6
+
+        self.conv_block = nn.Sequential(
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf[2], T, 11, 11
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 9, 9
+            ConvBlock3D(nf[2], nf[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
+        )
+
+        if self.use_fsam:
+            inC = nf[2]
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", sig_type="RSP", debug=debug)
+            self.fsam_norm = nn.InstanceNorm3d(inC)
+            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
+        else:
+            inC = nf[2]
+
+        # self.upsample = nn.Upsample(scale_factor=(6, 1, 1))
+
+        self.final_layer = nn.Sequential(
+            ConvBlock3D(inC, nf[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], bias=True),                         #B, nf[1], T, 5, 5
+            ConvBlock3D(nf[1], nf[0], [3, 3, 3], [1, 1, 1], [1, 0, 0], bias=True),                       #B, nf[0], T, 3, 3
+            nn.Conv3d(nf[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=True),  #B, 1, T, 1, 1
+        )
+
+    def forward(self, voxel_embeddings, batch, length, label_eda=None):
+
+        if self.debug:
+            print("EDA Head")
+            print("     voxel_embeddings.shape", voxel_embeddings.shape)
+
+        voxel_embeddings = self.conv_block(voxel_embeddings)
+
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            if "NMF" in self.md_type:
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_eda) # to make it positive (>= 0)
+            else:
+                att_mask, appx_error = self.fsam(voxel_embeddings, label_eda)
+
+            if self.debug:
+                print("att_mask.shape", att_mask.shape)
+
+            # # directly use att_mask   ---> difficult to converge without Residual connection. Needs high rank
+            # factorized_embeddings = self.fsam_norm(att_mask)
+
+            # # Residual connection: 
+            # factorized_embeddings = voxel_embeddings + self.fsam_norm(att_mask)
+
+            if self.md_res:
+                # Multiplication with Residual connection
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)
+                factorized_embeddings = voxel_embeddings + factorized_embeddings
+            else:
+                # Multiplication
+                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+                factorized_embeddings = self.fsam_norm(x)            
+
+            # # Concatenate
+            # factorized_embeddings = torch.cat([voxel_embeddings, self.fsam_norm(x)], dim=1)
+            # factorized_embeddings = self.upsample(factorized_embeddings)
+            x = self.final_layer(factorized_embeddings)
+        
+        else:
+            if self.debug:
+                print("voxel_embeddings.shape", voxel_embeddings.shape)
+            # voxel_embeddings = self.upsample(voxel_embeddings)
+            if self.debug:
+                print("voxel_embeddings.shape", voxel_embeddings.shape)
+            x = self.final_layer(voxel_embeddings)
+            if self.debug:
+                print("x.shape", x.shape)
+
+        rEDA = x.view(-1, length)
+
+        if self.debug:
+            print("     rEDA.shape", rEDA.shape)
+        
+        if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            return rEDA, factorized_embeddings, appx_error
+        else:
+            return rEDA
+
+
 class MMRPhysFuseL(nn.Module):
     def __init__(self, frames, md_config, in_channels=3, dropout=0.2, device=torch.device("cpu"), debug=False):
         super(MMRPhysFuseL, self).__init__()
@@ -362,12 +542,20 @@ class MMRPhysFuseL(nn.Module):
             self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "RSP" in self.tasks:
-            self.rbr_feature_fusion = RGBTFeatureFusion_Slow(dropout_rate=dropout, debug=debug)        
+            self.rbr_feature_fusion = RGBTFeatureFusion_Slow(dropout_rate=dropout, debug=debug)
             self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
 
-        
-    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=4, Temp=frames, Width=72, Height=72]
-        
+        if "BP" in self.tasks:
+            self.rbp_feature_fusion = RGBTFeatureFusion_Fast(dropout_rate=dropout, debug=debug)
+            self.rbp_head = BP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+
+
+        if "EDA" in self.tasks:
+            self.rEDA_feature_fusion = RGBTFeatureFusion_Slow(dropout_rate=dropout, debug=debug)        
+            self.rEDA_head = EDA_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+
+    def forward(self, x, label_bvp=None, label_rsp=None, label_bp=None, label_eda=None):  # [batch, Features=4, Temp=frames, Width=72, Height=72]
+
         [batch, channel, length, width, height] = x.shape        
 
         if self.debug:
@@ -422,39 +610,102 @@ class MMRPhysFuseL(nn.Module):
             elif self.in_channels == 1:
                 rbr_voxel_embeddings = self.rbr_feature_fusion(thermal=base_embeddings_t)
 
+        if "BP" in self.tasks:
+            if self.in_channels == 4:
+                rbp_voxel_embeddings = self.rbp_feature_fusion(rgb=base_embeddings_rgb, thermal=base_embeddings_t)
+            elif self.in_channels == 3:
+                rbp_voxel_embeddings = self.rbp_feature_fusion(rgb=base_embeddings_rgb)
+            elif self.in_channels == 1:
+                rbp_voxel_embeddings = self.rbp_feature_fusion(thermal=base_embeddings_t)
+
+        if "EDA" in self.tasks:
+            if self.in_channels == 4:
+                rEDA_voxel_embeddings = self.rEDA_feature_fusion(rgb=base_embeddings_rgb, thermal=base_embeddings_t)
+            elif self.in_channels == 3:
+                rEDA_voxel_embeddings = self.rEDA_feature_fusion(rgb=base_embeddings_rgb)
+            elif self.in_channels == 1:
+                rEDA_voxel_embeddings = self.rEDA_feature_fusion(thermal=base_embeddings_t)
+
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
             if "BVP" in self.tasks:
-                rPPG, factorized_embeddings, appx_error = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
+                rPPG, factorized_embeddings_ppg, appx_error_ppg = self.rppg_head(rppg_voxel_embeddings, batch, length-1, label_bvp)
+            else:
+                rPPG = None
+                rppg_voxel_embeddings = None
+                factorized_embeddings_ppg = None
+                appx_error_ppg = None
+
+            if "BP" in self.tasks:
+                rBP, factorized_embeddings_bp, appx_error_bp = self.rbp_head(rbp_voxel_embeddings, batch, length-1, label_bp)
+            else:
+                rBP = None
+                rbp_voxel_embeddings = None
+                factorized_embeddings_bp = None
+                appx_error_bp = None
+
             if "RSP" in self.tasks:
                 rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rbr_voxel_embeddings, batch, length-1, label_rsp)
+            else:
+                rBr = None
+                rbr_voxel_embeddings = None
+                factorized_embeddings_br = None
+                appx_error_br = None
+
+            if "EDA" in self.tasks:
+                rEDA, factorized_embeddings_eda, appx_error_eda = self.rEDA_head(rEDA_voxel_embeddings, batch, length-1, label_eda)
+            else:
+                rEDA = None
+                rEDA_voxel_embeddings = None
+                factorized_embeddings_eda = None
+                appx_error_eda = None
+
         else:
             if "BVP" in self.tasks:
                 rPPG = self.rppg_head(rppg_voxel_embeddings, batch, length-1)
+            else:
+                rPPG = None
+                rppg_voxel_embeddings = None
+
+            if "BP" in self.tasks:
+                rBP = self.rbp_head(rbp_voxel_embeddings, batch, length-1)
+            else:
+                rBP = None
+                rbp_voxel_embeddings = None
+
             if "RSP" in self.tasks:
                 rBr = self.rBr_head(rbr_voxel_embeddings, batch, length-1)
+            else:
+                rBr = None
+                rbr_voxel_embeddings = None
+
+            if "EDA" in self.tasks:
+                rEDA = self.rEDA_head(rEDA_voxel_embeddings, batch, length-1)
+            else:
+                rEDA = None
+                rEDA_voxel_embeddings = None
 
         # if self.debug:
         #     print("rppg_feats.shape", rppg_feats.shape)
 
         # rPPG = rppg_feats.view(-1, length-1)
 
-        if self.debug:
-            if "BVP" in self.tasks:
-                print("rPPG.shape", rPPG.shape)
-            if "RSP" in self.tasks:
-                print("rBr.shape", rBr.shape)
+        # if self.debug:
+        #     if "BVP" in self.tasks:
+        #         print("rPPG.shape", rPPG.shape)
+        #     if "BP" in self.tasks:
+        #         print("rBP.shape", rBP.shape)
+        #     if "RSP" in self.tasks:
+        #         print("rBr.shape", rBr.shape)
+        #     if "EDA" in self.tasks:
+        #         print("rEDA.shape", rEDA.shape)
 
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                return rPPG, rBr, rppg_voxel_embeddings, factorized_embeddings, appx_error, factorized_embeddings_br, appx_error_br
-            elif "BVP" in self.tasks:
-                return rPPG, rppg_voxel_embeddings, factorized_embeddings, appx_error
-            elif "RSP" in self.tasks:
-                return rBr, rbr_voxel_embeddings, factorized_embeddings_br, appx_error_br
+        if (self.training or self.debug or self.md_infer) and self.use_fsam:
+            return_list = [rPPG, rBr, rBP, rEDA, rppg_voxel_embeddings,
+                           rbr_voxel_embeddings, rbp_voxel_embeddings, rEDA_voxel_embeddings,
+                           factorized_embeddings_ppg, appx_error_ppg, factorized_embeddings_br, appx_error_br,
+                           factorized_embeddings_bp, appx_error_bp, factorized_embeddings_eda, appx_error_eda]
         else:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                return rPPG, rBr, rppg_voxel_embeddings
-            elif "BVP" in self.tasks:
-                return rPPG, rppg_voxel_embeddings
-            elif "RSP" in self.tasks:
-                return rBr, rbr_voxel_embeddings
+            return_list = [rPPG, rBr, rBP, rEDA, rppg_voxel_embeddings,
+                           rbr_voxel_embeddings, rbp_voxel_embeddings, rEDA_voxel_embeddings]
+        
+        return return_list
