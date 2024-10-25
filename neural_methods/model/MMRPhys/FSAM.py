@@ -428,9 +428,10 @@ class _SmoothMatrixDecompositionBase(nn.Module):
                     # start = int(np.random.randint(0, P))
                     # sig_seg = sig[start: start + P]
                     sig_seg = sig[iter: iter + P]
-                    mx = np.max(sig_seg)
+                    # mx = np.max(sig_seg)
                     mn = np.min(sig_seg)
-                    sig_seg = (sig_seg - mn)/(mx - mn)
+                    # sig_seg = (sig_seg - mn)/(mx - mn)
+                    sig_seg = sig_seg - mn
                     SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg)
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
@@ -442,8 +443,9 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             for bt in range(B):
                 sig = y[bt, :]
                 mn = torch.min(sig)
-                mx = torch.max(sig)
-                sig = (sig - mn)/(mx - mn)
+                # mx = torch.max(sig)
+                # sig = (sig - mn)/(mx - mn)
+                sig = sig - mn
                 SNMF_estimators[bt, :, 0] = sig
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
