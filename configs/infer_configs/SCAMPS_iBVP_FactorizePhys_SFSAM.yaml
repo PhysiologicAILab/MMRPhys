@@ -46,7 +46,7 @@ MODEL:
     MD_TYPE: "SNMF"
     MD_R: 1
     MD_S: 1
-    MD_STEPS: 4
+    MD_STEPS: 2
     MD_RESIDUAL: True
     MD_INFERENCE: False
 INFERENCE:

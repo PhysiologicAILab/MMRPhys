@@ -1,0 +1,267 @@
+# %%
+from pathlib import Path
+
+import mat73
+import matplotlib.pyplot as plt
+import neurokit2 as nk
+import numpy as np
+import pandas as pd
+import torch
+import glob
+import os
+import torch
+
+# %%
+run_cell = 12
+
+# %% 
+if run_cell == 1:
+    a = torch.rand((4, 10))
+    b = a.roll(1)
+    plt.plot(a[0,:])
+    plt.plot(b[0,:])
+    plt.show()
+
+    plt.plot(a[1, :])
+    plt.plot(b[1, :])
+    plt.show()
+
+    # print(a.shape)
+    # b = []
+    # for s in range(10):
+    #     b.append(a.roll(s))
+    # b = torch.from_numpy(np.array(b))
+    # print(b.shape)
+
+# %%
+if run_cell == 2:
+    wave_file = "/mnt/sda/data/raw/SCAMPS/scamps_videos/P000007.mat"
+    opt = "bvp_rsp"
+    """Reads a bvp and resp signal file."""
+    mat = mat73.loadmat(wave_file)
+    ppg = mat['d_ppg']  # load ppg signal
+    ppg = np.asarray(ppg)
+    ppg = np.expand_dims(ppg, axis=1)
+    if "rsp" in opt:
+        resp = mat['d_br']  # load resp signal
+        resp = np.asarray(resp)
+        resp = np.expand_dims(resp, axis=1)
+
+    print(ppg.shape, resp.shape)
+    data = np.concatenate([ppg, resp], axis=1)
+    print(data.shape)
+
+# %% Simulated PPG for Smooth NMF estimators
+if run_cell == 3:
+    fs = 25
+    seg_len = 180
+    sig_type = "hr" # "hr" or "rr"
+
+    if sig_type == "hr":
+        hr = 72
+        max_samples_in_lowest_hr = 2*fs  # 30 BPM
+        max_samples = 4 * max_samples_in_lowest_hr
+        iters = np.arange(0, max_samples, 1)
+        duration = ((max_samples + seg_len) // fs) + 1
+        total_estimators = len(iters)
+    
+    else:
+        rr = 12
+        max_samples_in_lowest_rr = 10*fs  # 6 BPM
+        max_samples = 4 * max_samples_in_lowest_rr
+        iters = np.arange(0, max_samples, 5)
+        duration = ((max_samples + seg_len) // fs) + 1
+        total_estimators = len(iters)
+    
+    print("Duration:", duration)
+    print("Total SNMF Estimators:", total_estimators)
+    
+    for iter in iters:
+        if sig_type == "hr":
+            sig = nk.ppg_simulate(duration=duration, sampling_rate=fs, heart_rate=hr, frequency_modulation=0.1, ibi_randomness=0.03)
+        else:
+            sig = nk.rsp_simulate(duration=duration, sampling_rate=fs, respiratory_rate=rr)
+        sig_seg = sig[iter: iter + seg_len]
+        mx = np.max(sig_seg)
+        mn = np.min(sig_seg)
+        sig_seg = (sig_seg - mn)/(mx - mn)
+        plt.plot(sig_seg)
+
+    plt.show()
+
+# %%
+if run_cell == 4:
+    pth = "/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label3.npy"
+    data = np.load(pth)
+    print(data.shape)
+
+# %%
+if len(data.shape) < 2:
+    temp_data = np.expand_dims(data, 1)
+    hr_vec = 72 * np.ones_like(temp_data)
+    print(hr_vec.shape)
+    new_data = np.concatenate([temp_data, hr_vec], axis=1)
+    print(new_data.shape)
+# %%
+pth = Path("/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72")
+fns = sorted(list(pth.glob("*label*.npy")))
+for fn in fns:
+    print(fn.name)
+
+
+# %% check added HR to prepared data
+if run_cell == 4:
+    pth = Path("/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label1.npy")
+    data = np.load(str(pth))
+    print(data.shape)
+    plt.plot(data[:, 0])
+    plt.plot(data[:, 1])
+
+
+
+# %% Read CSV and find a specific file, remove the row.
+if run_cell == 5:
+    csv_path = "/home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS.csv"
+    video_fn = "/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS/subject1_input8.npy"
+
+    save_csv_path = "/home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS_new.csv"
+    
+    df = pd.read_csv(csv_path)
+    loc = df[df.input_files == video_fn].index
+    print(loc)
+    df = df.drop(loc)
+    df.to_csv(save_csv_path, header=["","input_files"], index=False)
+
+# %% merge selective frames of video
+if run_cell == 6:
+    # a = np.random.random((10, 3, 4, 5))
+    # b = np.random.random((10, 3, 4, 5))
+    # c = np.concatenate(a[])
+    a = np.array([1, 2, 3, 4, 5, 6])
+    b = np.array([7, 8, 9, 10, 11, 12])
+    c = np.concatenate([a[np.arange(0, 6, 2)], b[np.arange(0, 6, 2)]])
+    d = np.concatenate([a[np.arange(1, 6, 2)], b[np.arange(1, 6, 2)]])
+
+    print(c)
+    print(d)
+    
+# %% check labels for BP4D data
+if run_cell == 7:
+    old_prep_label_fn = "/home/jitesh/data/BP4D/BP4D_RGBT_180_36x36/F001T01_label0.npy"
+    new_prep_label_fn = "/home/jitesh/data/BP4D/BP4D_RGBT_300_36x36/F001T01_label0.npy"
+
+    l_old = np.load(old_prep_label_fn)
+    l_new = np.load(new_prep_label_fn)
+
+    bvp_old = l_old[:, 0]
+    bvp_new = l_new[:, 0]
+
+    rsp_old = l_old[:, 1]
+    rsp_new = l_new[:, 1]
+
+    bvp_bpm_old = l_old[:, 4]
+    bvp_bpm_new = l_new[:, 4]
+
+    rsp_bpm_old = l_old[:, 5]
+    rsp_bpm_new = l_new[:, 5]
+
+    fig, ax = plt.subplots(8, 1)
+    ax[0].plot(bvp_old)
+    ax[1].plot(bvp_new)
+    ax[2].plot(bvp_bpm_old)
+    ax[3].plot(bvp_bpm_new)
+
+    ax[4].plot(rsp_old)
+    ax[5].plot(rsp_new)
+    ax[6].plot(rsp_bpm_old)
+    ax[7].plot(rsp_bpm_new)
+
+    plt.savefig("test1.jpg")
+    plt.close()
+ 
+# %% 
+if run_cell == 8:
+    fn = "/home/jitesh/dev/repos/vis/mmrPhys/BP4D_500x9_Fold1_RGBT.npy"
+    test_data = np.load(fn, allow_pickle=True).item()
+    for models in test_data.keys():
+        hr_labels = test_data[models]["hr_labels"]
+        hr_pred = test_data[models]["hr_pred"]
+        rr_labels = test_data[models]["rr_labels"]
+        rr_pred = test_data[models]["rr_pred"]
+
+        plt.scatter(hr_labels, hr_pred)
+        plt.savefig("HR.jpg")
+        plt.close()
+
+        plt.scatter(rr_labels, rr_pred)
+        plt.savefig("RR.jpg")
+        plt.close()
+
+# %%
+if run_cell == 9:
+    fold_path = "dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv"
+    data_path = "/mnt/sda/data/raw/BP4D_9x9"
+    data_dirs = glob.glob(data_path + os.sep + "*_*")
+
+    dirs = list()
+    for data_dir in data_dirs:
+        subject_trail_val = os.path.split(data_dir)[-1].replace('_', '')
+        index = subject_trail_val
+        subject = subject_trail_val[0:4]
+        dirs.append({"index": index, "path": data_dir, "subject": subject})
+
+    print("data_dirs:", data_dirs)
+
+    fold_df = pd.read_csv(fold_path)
+    fold_subjs = list(set(list(fold_df.subjects)))
+
+    fold_data_dirs = []
+    for d in dirs:
+        idx = d['index']
+        subj = idx[0:4]
+
+        if subj in fold_subjs:  # if trial has already been processed
+            fold_data_dirs.append(d)
+
+    print("fold_data_dirs:", fold_data_dirs)
+
+# %%
+if run_cell == 10:
+    a = 10 + torch.rand((10, 1))
+    b = torch.rand((10, 1))
+    crit = torch.nn.SmoothL1Loss()
+    loss = crit(a, b)
+    print(loss)
+
+# %%
+if run_cell == 11:
+    SBP = 120
+    DBP = 80
+    hr_bpm = 70
+    fs = 25
+    duration = 20
+    hr_bpm = 30 if hr_bpm < 30 else hr_bpm
+    hr_bpm = 200 if hr_bpm > 200 else hr_bpm
+    sig = nk.ppg_simulate(duration=duration, sampling_rate=fs, heart_rate=hr_bpm,
+                          frequency_modulation=0, ibi_randomness=0, motion_amplitude=0, powerline_amplitude=0, burst_amplitude=0, random_state=1, random_state_distort=1)
+    mn = np.min(sig)
+    mx = np.max(sig)
+    sig = (sig - mn)/ (mx - mn)
+    sig = (sig * (SBP - DBP)) + DBP
+    plt.plot(sig)
+
+
+# %%
+if run_cell == 12:
+    pth = Path("/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72/F001T01_label0.npy")
+    data = np.load(pth)
+    bvp = data[:, 11]
+    # avg_bvp = np.mean(bvp)
+    # std_bvp = np.std(bvp)
+    # norm_bvp = (bvp - avg_bvp) / std_bvp
+
+    plt.plot(bvp)
+    
+
+
+# %%
