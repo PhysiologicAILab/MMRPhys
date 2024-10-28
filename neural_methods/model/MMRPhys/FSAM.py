@@ -438,14 +438,13 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
 
         elif "label" in self.md_type.lower():
-
             SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
             for bt in range(B):
                 sig = y[bt, :]
                 mn = torch.min(sig)
-                # mx = torch.max(sig)
-                # sig = (sig - mn)/(mx - mn)
-                sig = sig - mn
+                mx = torch.max(sig)
+                mx_x = torch.max(x[bt, ...])
+                sig = mx_x * (sig - mn)/(mx - mn)
                 SNMF_estimators[bt, :, 0] = sig
 
             SNMF_est_shape2 = SNMF_estimators.shape[2]
