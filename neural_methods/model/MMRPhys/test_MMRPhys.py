@@ -11,7 +11,7 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhys import MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
 
 model_config = {
     "TASKS": ["RSP"],
@@ -95,11 +95,11 @@ class TestMMRPhys(object):
         md_config["TASKS"] = model_config["TASKS"]
 
         if self.visualize:
-            self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
+            self.net = nn.DataParallel(MMRPhysLEF(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
             self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
         else:
-            self.net = MMRPhys(frames=self.frames, md_config=md_config,
+            self.net = MMRPhysLEF(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
 
         self.net.eval()

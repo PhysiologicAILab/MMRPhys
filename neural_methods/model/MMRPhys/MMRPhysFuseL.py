@@ -40,7 +40,7 @@ model_config = {
 
 
 class ConvBlock3D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1,1,1], bias=False):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1, 1], bias=False):
         super(ConvBlock3D, self).__init__()
         self.conv_block_3d = nn.Sequential(
             nn.Conv3d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation),
