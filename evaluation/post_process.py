@@ -246,32 +246,3 @@ def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=False,
     SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.13, high_pass=0.5)
     return rr_label, rr_pred, SNR, macc
 
-
-def calculate_eda_metrics_per_video(predictions, labels, fs=30, use_bandpass=True):
-    """Calculate video-level EDA metrics"""
-
-    # SNR computation needs to be done before using bandpass filter
-    SNR = _calculate_SNR_EDA(predictions, fs=fs, low_pass=0.02, high_pass=5.0)
-
-    if use_bandpass:
-        # bandpass filter between [0.05, 0.7] Hz
-        # equals [3, 42] breaths per min
-        [b, a] = butter(2, [0.02 / fs * 2, 5.0 / fs * 2], btype='bandpass')
-        predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
-        labels = scipy.signal.filtfilt(b, a, np.double(labels))
-    
-    macc = _compute_macc(predictions, labels)
-    
-    return SNR, macc
-
-
-def calculate_bp_metrics_per_video(predictions, labels, fs=30):
-    """Calculate video-level BP metrics"""
-
-    sbp_pred = np.max(np.array(predictions))
-    sbp_label = np.max(np.array(labels))
-    dbp_pred = np.min(np.array(predictions))
-    dbp_label = np.min(np.array(labels))
-    macc = _compute_macc(predictions, labels)
-    
-    return sbp_pred, sbp_label, dbp_pred, dbp_label, macc

@@ -4,9 +4,10 @@ import numpy as np
 import torch
 import torch.optim as optim
 import neurokit2 as nk
-from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics, calculate_eda_metrics
+from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 from neural_methods.model.MMRPhys.MMRPhysFuseL import MMRPhysFuseL
@@ -61,24 +62,16 @@ class MMRPhysTrainer(BaseTrainer):
         self.md_infer = self.config.MODEL.MMRPhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.MMRPhys.MD_FSAM
         self.tasks = self.config.MODEL.MMRPhys.TASKS
-        if "BVP" in self.tasks or "RSP" in self.tasks or "BP" in self.tasks or "EDA" in self.tasks:
-            pass
+        if "BVP" in self.tasks or "RSP" in self.tasks or "BP" in self.tasks:
+            print("Tasks:", self.tasks)
         else:
-            print("Unknown estimation task... BVP, RSP, BP and EDA are supported. Exiting the code...")
+            print("Unknown estimation task... BVP, RSP, and BP are supported. Exiting the code...")
             exit()
-
-        md_type = self.config.MODEL.MMRPhys.MD_TYPE.lower()
-        self.use_bvp_hr = 0
-        self.use_rsp_rr = 0
-
-        if "snmf" in md_type:
-            if "BVP" in self.tasks:
-                self.use_bvp_hr = 1 if "label" in md_type else 2
-            if "RSP" in self.tasks:
-                self.use_rsp_rr = 1 if "label" in md_type else 2
 
         if model_type == "lef":
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        if model_type == "lnf":
+            self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "big":
             self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 144, 144]
         elif model_type == "medium":
@@ -105,13 +98,10 @@ class MMRPhysTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
             self.criterion_bvp = Neg_Pearson() #BVP
             self.criterion_rsp = Neg_Pearson() #RSP
-            self.criterion_bp1 = torch.nn.SmoothL1Loss()  # BP
-            # self.criterion_bp1 = torch.nn.MSELoss()  # BP
-            # self.criterion_bp1 = Neg_Pearson()  # BP
-            # self.criterion_bp2 = torch.nn.SmoothL1Loss()  # BP
-            # self.criterion_bp2 = torch.nn.MSELoss()  # BP
-            # self.criterion_eda = Neg_Pearson()  # EDA
-            self.criterion_eda = torch.nn.MSELoss()  # EDA
+            self.criterion_sbp = torch.nn.MSELoss()  # SBP
+            # self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
+            self.criterion_dbp = torch.nn.MSELoss()  # DBP
+            # self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
@@ -130,10 +120,8 @@ class MMRPhysTrainer(BaseTrainer):
         avg_train_loss_bvp = []
         avg_train_loss_rsp = []
         avg_train_loss_bp = []
-        avg_train_loss_eda = []
         avg_valid_loss_bvp = []
         avg_valid_loss_rsp = []
-        avg_valid_loss_eda = []
         avg_valid_loss_bp = []
 
         lrs = []
@@ -144,18 +132,14 @@ class MMRPhysTrainer(BaseTrainer):
             running_loss_bvp = 0.0
             running_loss_rsp = 0.0
             running_loss_bp = 0.0
-            running_loss_eda = 0.0
 
             train_loss = []
             train_loss_bvp = []
             train_loss_rsp = []
             train_loss_bp = []
-            train_loss_eda = []
 
             appx_error_list_bvp = []
             appx_error_list_rsp = []
-            appx_error_list_bp = []
-            appx_error_list_eda = []
             self.model.train()
 
             tbar = tqdm(data_loader["train"], ncols=150)
@@ -165,7 +149,7 @@ class MMRPhysTrainer(BaseTrainer):
                 
                 data = batch[0].to(self.device)
                 labels = batch[1].to(self.device)
-                label_bvp = label_rsp = label_bp = label_eda = None
+                label_bvp = label_rsp = label_bp = None
                 label_hr = label_rr = label_sysBP = label_avgBP = label_diaBP = None
 
                 if len(labels.shape) == 3:
@@ -174,23 +158,19 @@ class MMRPhysTrainer(BaseTrainer):
                         label_bvp = labels[..., 0]
                         # label_bvp = labels[..., 11]
                         label_rsp = labels[..., 1]
-                        label_eda = labels[..., 2]
-                        label_hr = labels[..., 4]
-                        label_rr = labels[..., 5]
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
                         # label_bp = labels[..., 9]
                         label_bp = labels[..., 10]
+                        SBP = torch.median(label_sysBP, dim=1).values
+                        DBP = torch.median(label_diaBP, dim=1).values
 
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
-                        label_hr = labels[..., 2]
-                        # label_rr = labels[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
                         label_bvp = labels[..., 0]
-                        label_hr = labels[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
@@ -215,29 +195,15 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels[torch.isnan(labels)] = 0
 
                 self.optimizer.zero_grad()
-                if self.model.training and self.use_fsam:
-                    if "BVP" in self.tasks or "RSP" in self.tasks:
-                        if self.use_bvp_hr <= 1:
-                            out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
-                        elif self.use_bvp_hr == 2:
-                            out = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
-                        else:
-                            out = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
-                    else:
-                        out = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
-                else:
-                    out = self.model(data, label_bvp=label_hr, label_rsp=label_rr)
+                out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
                 
                 pred_bvp = out[0]
                 pred_rsp = out[1]
                 pred_bp = out[2]
-                pred_eda = out[3]
 
                 if self.model.training and self.use_fsam:
-                    appx_error_bvp = out[9]
-                    appx_error_rsp = out[11]
-                    appx_error_bp = out[13]
-                    appx_error_eda = out[15]
+                    appx_error_bvp = out[6]
+                    appx_error_rsp = out[8]
 
                 loss = 0
 
@@ -256,14 +222,8 @@ class MMRPhysTrainer(BaseTrainer):
                     loss = loss + loss_rsp
                 
                 if "BP" in self.tasks:
-                    loss_bp = self.criterion_bp1(pred_bp, label_bp) # + self.criterion_bp2(pred_bp, label_bp) 
-                    # loss_bp = self.criterion_bp1(pred_bp[:, 0], torch.mean(
-                    #     label_sysBP, dim=1)) + self.criterion_bp1(pred_bp[:, 1], torch.mean(label_diaBP, dim=1))
-                    loss = loss + loss_bp
-
-                if "EDA" in self.tasks:
-                    loss_eda = self.criterion_eda(pred_eda, label_eda)
-                    loss = loss + loss_eda
+                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
+                    loss = loss + 0.1*loss_bp
 
                 loss.backward()
 
@@ -273,8 +233,6 @@ class MMRPhysTrainer(BaseTrainer):
                     running_loss_rsp += loss_rsp.item()
                 if "BP" in self.tasks:
                     running_loss_bp += loss_bp.item()
-                if "EDA" in self.tasks:
-                    running_loss_eda += loss_eda.item()
 
                 if idx % 100 == 99:  # print every 100 mini-batches
                     print(f'[{epoch}, {idx + 1: 5d}]')
@@ -287,9 +245,6 @@ class MMRPhysTrainer(BaseTrainer):
                     if "BP" in self.tasks:
                         print(f'loss_bp: {running_loss_bp / 100:.3f}')
                         running_loss_bp = 0.0
-                    if "EDA" in self.tasks:
-                        print(f'loss_eda: {running_loss_eda / 100:.3f}')
-                        running_loss_eda = 0.0
 
                 train_loss.append(loss.item())
                 if "BVP" in self.tasks:
@@ -298,18 +253,12 @@ class MMRPhysTrainer(BaseTrainer):
                     train_loss_rsp.append(loss_rsp.item())
                 if "BP" in self.tasks:
                     train_loss_bp.append(loss_bp.item())
-                if "EDA" in self.tasks:
-                    train_loss_eda.append(loss_eda.item())
 
                 if self.use_fsam:
                     if "BVP" in self.tasks:
                         appx_error_list_bvp.append(appx_error_bvp.item())
                     if "RSP" in self.tasks:
                         appx_error_list_rsp.append(appx_error_rsp.item())
-                    if "BP" in self.tasks:
-                        appx_error_list_bp.append(appx_error_bp.item())
-                    if "EDA" in self.tasks:
-                        appx_error_list_eda.append(appx_error_eda.item())
 
                 # Append the current learning rate to the list
                 lrs.append(self.scheduler.get_last_lr())
@@ -322,8 +271,6 @@ class MMRPhysTrainer(BaseTrainer):
                     bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
                 if "RSP" in self.tasks:
                     bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
-                if "EDA" in self.tasks:
-                    bar_dict["loss_eda"] = round(loss_eda.item(), 2)
                 if "BP" in self.tasks:
                     bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
@@ -334,8 +281,6 @@ class MMRPhysTrainer(BaseTrainer):
                 avg_train_loss_bvp.append(round(np.mean(train_loss_bvp), 2))
             if "RSP" in self.tasks:
                 avg_train_loss_rsp.append(round(np.mean(train_loss_rsp), 2))
-            if "EDA" in self.tasks:
-                avg_train_loss_eda.append(round(np.mean(train_loss_eda), 2))
             if "BP" in self.tasks:
                 avg_train_loss_bp.append(round(np.mean(train_loss_bp), 2))
 
@@ -346,16 +291,12 @@ class MMRPhysTrainer(BaseTrainer):
                     print("Avg appx error BVP: {}".format(np.round(np.mean(appx_error_list_bvp), 2)))
                 if "RSP" in self.tasks:
                     print("Avg appx error RSP: {}".format(np.round(np.mean(appx_error_list_rsp), 2)))
-                if "BP" in self.tasks:
-                    print("Avg appx error BP: {}".format(np.round(np.mean(appx_error_list_bp), 2)))
-                if "EDA" in self.tasks:
-                    print("Avg appx error EDA: {}".format(np.round(np.mean(appx_error_list_eda), 2)))
 
             self.save_model(epoch)
 
             if not self.config.TEST.USE_LAST_EPOCH:
                 
-                valid_loss_bvp, valid_loss_rsp, valid_loss_bp, valid_loss_eda = self.valid(data_loader)
+                valid_loss_bvp, valid_loss_rsp, valid_loss_bp = self.valid(data_loader)
                 total_valid_loss = 0
                 
                 if "BVP" in self.tasks:
@@ -370,10 +311,6 @@ class MMRPhysTrainer(BaseTrainer):
                     print('Validation loss BP: ', valid_loss_bp)
                     avg_valid_loss_bp.append(valid_loss_bp)
                     total_valid_loss += valid_loss_bp
-                if "EDA" in self.tasks:
-                    print('Validation loss EDA: ', valid_loss_eda)
-                    avg_valid_loss_eda.append(valid_loss_eda)
-                    total_valid_loss += valid_loss_eda
 
                 print('Total validation loss: ', total_valid_loss)
 
@@ -396,8 +333,6 @@ class MMRPhysTrainer(BaseTrainer):
                 self.plot_losses_and_lrs(avg_train_loss_rsp, avg_valid_loss_rsp, lrs, self.config, suff="RSP")
             if "BP" in self.tasks:
                 self.plot_losses_and_lrs(avg_train_loss_bp, avg_valid_loss_bp, lrs, self.config, suff="BP")
-            if "EDA" in self.tasks:
-                self.plot_losses_and_lrs(avg_train_loss_eda, avg_valid_loss_eda, lrs, self.config, suff="EDA")
 
 
     def valid(self, data_loader):
@@ -410,11 +345,9 @@ class MMRPhysTrainer(BaseTrainer):
         valid_loss_bvp = []
         valid_loss_rsp = []
         valid_loss_bp = []
-        valid_loss_eda = []
         avg_valid_loss_bvp = 0
         avg_valid_loss_rsp = 0
         avg_valid_loss_bp = 0
-        avg_valid_loss_eda = 0
 
         self.model.eval()
         valid_step = 0
@@ -424,7 +357,7 @@ class MMRPhysTrainer(BaseTrainer):
                 vbar.set_description("Validation")
 
                 label_bvp = label_rsp = label_bp = label_eda = None
-                label_hr = label_rr = label_sysBP = label_avgBP = label_diaBP = None
+                label_sysBP = label_avgBP = label_diaBP = None
 
                 data, labels = valid_batch[0].to(self.device), valid_batch[1].to(self.device)
 
@@ -433,23 +366,19 @@ class MMRPhysTrainer(BaseTrainer):
                         label_bvp = labels[..., 0]
                         # label_bvp = labels[..., 11]
                         label_rsp = labels[..., 1]
-                        label_eda = labels[..., 2]
-                        label_hr = labels[..., 4]
-                        label_rr = labels[..., 5]
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
                         # label_bp = labels[..., 9]
                         label_bp = labels[..., 10]
+                        SBP = torch.median(label_sysBP, dim=1).values
+                        DBP = torch.median(label_diaBP, dim=1).values
 
                     elif labels.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
-                        label_hr = labels[..., 2]
-                        # label_rr = labels[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
                         label_bvp = labels[..., 0]
-                        label_hr = labels[..., 1]
                 elif "BVP" in self.tasks:
                     label_bvp = labels
                 elif "RSP" in self.tasks:
@@ -478,13 +407,6 @@ class MMRPhysTrainer(BaseTrainer):
                 pred_bvp = out[0]
                 pred_rsp = out[1]
                 pred_bp = out[2]
-                pred_eda = out[3]
-
-                if self.md_infer and self.use_fsam:
-                    appx_error_bvp = out[9]
-                    appx_error_rsp = out[11]
-                    appx_error_bp = out[13]
-                    appx_error_eda = out[15]
 
                 loss = 0
 
@@ -505,16 +427,9 @@ class MMRPhysTrainer(BaseTrainer):
                     loss += loss_rsp
                 
                 if "BP" in self.tasks:
-                    loss_bp = self.criterion_bp1(pred_bp, label_bp) #+ self.criterion_bp2(pred_bp, label_bp) 
-                    # loss_bp = self.criterion_bp1(pred_bp[:, 0], torch.mean(
-                    #     label_sysBP, dim=1)) + self.criterion_bp1(pred_bp[:, 1], torch.mean(label_diaBP, dim=1))
+                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP)
                     valid_loss_bp.append(loss_bp.item())
                     loss += loss_bp
-
-                if "EDA" in self.tasks:
-                    loss_eda = self.criterion_eda(pred_eda, label_eda)
-                    valid_loss_eda.append(loss_eda.item())
-                    loss += loss_eda
 
                 valid_step += 1
 
@@ -523,8 +438,6 @@ class MMRPhysTrainer(BaseTrainer):
                     bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
                 if "RSP" in self.tasks:
                     bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
-                if "EDA" in self.tasks:
-                    bar_dict["loss_eda"] = round(loss_eda.item(), 2)
                 if "BP" in self.tasks:
                     bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
@@ -537,10 +450,8 @@ class MMRPhysTrainer(BaseTrainer):
                 avg_valid_loss_rsp = np.mean(np.asarray(valid_loss_rsp))
             if "BP" in self.tasks:
                 avg_valid_loss_bp = np.mean(np.asarray(valid_loss_bp))
-            if "EDA" in self.tasks:
-                avg_valid_loss_eda = np.mean(np.asarray(valid_loss_eda))
 
-        return avg_valid_loss_bvp, avg_valid_loss_rsp, avg_valid_loss_bp, avg_valid_loss_eda
+        return avg_valid_loss_bvp, avg_valid_loss_rsp, avg_valid_loss_bp
 
 
     def test(self, data_loader):
@@ -552,13 +463,13 @@ class MMRPhysTrainer(BaseTrainer):
         print("===Testing===")
         pred_bvp_dict = dict()
         pred_rsp_dict = dict()
-        pred_bp_dict = dict()
-        pred_eda_dict = dict()
+        pred_sbp_dict = dict()
+        pred_dbp_dict = dict()
 
         label_bvp_dict = dict()
         label_rsp_dict = dict()
-        label_bp_dict = dict()
-        label_eda_dict = dict()
+        label_sbp_dict = dict()
+        label_dbp_dict = dict()
 
         if self.config.TOOLBOX_MODE == "only_test":
             if not os.path.exists(self.config.INFERENCE.MODEL_PATH):
@@ -593,23 +504,19 @@ class MMRPhysTrainer(BaseTrainer):
                         label_bvp_test = labels_test[..., 0]
                         # label_bvp_test = labels_test[..., 11]
                         label_rsp_test = labels_test[..., 1]
-                        label_eda_test = labels_test[..., 2]
-                        label_hr_test = labels_test[..., 4]
-                        label_rr_test = labels_test[..., 5]
                         label_sysBP_test = labels_test[..., 6]
                         label_avgBP_test = labels_test[..., 7]
                         label_diaBP_test = labels_test[..., 8]
                         # label_bp_test = labels_test[..., 9]
                         label_bp_test = labels_test[..., 10]
+                        SBP_test = torch.median(label_sysBP_test, dim=1).values
+                        DBP_test = torch.median(label_diaBP_test, dim=1).values
 
                     elif labels_test.shape[-1] >= 3:     #SCAMPS dataset
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]
-                        label_hr_test = labels_test[..., 2]
-                        # label_rr = labels_test[..., 3] #TODO: once SCAMPS dataset is added with RSP values, after downsampling.. uncomment this
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
                         label_bvp_test = labels_test[..., 0]
-                        label_hr_test = labels_test[..., 1]
 
                 elif "BVP" in self.tasks:
                     label_bvp_test = labels_test
@@ -639,7 +546,6 @@ class MMRPhysTrainer(BaseTrainer):
                 pred_bvp_test = out[0]
                 pred_rsp_test = out[1]
                 pred_bp_test = out[2]
-                pred_eda_test = out[3]
 
                 if "BVP" in self.tasks:
                     mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1).cpu()
@@ -653,15 +559,7 @@ class MMRPhysTrainer(BaseTrainer):
                     mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1).unsqueeze(1).cpu()
                     std_pred_rsp_test = torch.std(pred_rsp_test, dim=1).unsqueeze(1).cpu()
                     # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
-                
-                # Not needed for BP - as this is not to be normalized
-                
-                if "EDA" in self.tasks:
-                    mean_label_eda_test = torch.mean(label_eda_test, dim=1).unsqueeze(1).cpu()
-                    std_label_eda_test = torch.std(label_eda_test, dim=1).unsqueeze(1).cpu()
-                    mean_pred_eda_test = torch.mean(pred_eda_test, dim=1).unsqueeze(1).cpu()
-                    std_pred_eda_test = torch.std(pred_eda_test, dim=1).unsqueeze(1).cpu()
-                    # pred_eda_test = (pred_eda_test - mean_pred_eda_test) / std_pred_eda_test  # normalize
+
 
                 if self.config.TEST.OUTPUT_SAVE_DIR:
                     if "BVP" in self.tasks:
@@ -671,12 +569,9 @@ class MMRPhysTrainer(BaseTrainer):
                         label_rsp_test = label_rsp_test.cpu()
                         pred_rsp_test = pred_rsp_test.cpu()
                     if "BP" in self.tasks:
-                        label_bp_test = label_bp_test.cpu()
-                        # label_bp_test = [torch.mean(label_sysBP_test, dim=1).cpu(), torch.mean(label_diaBP_test, dim=1).cpu()]
+                        SBP_test = SBP_test.cpu()
+                        DBP_test = DBP_test.cpu()
                         pred_bp_test = pred_bp_test.cpu()
-                    if "EDA" in self.tasks:
-                        label_eda_test = label_eda_test.cpu()
-                        pred_eda_test = pred_eda_test.cpu()
 
                 for idx in range(batch_size):
                     subj_index = test_batch[2][idx]
@@ -692,12 +587,10 @@ class MMRPhysTrainer(BaseTrainer):
                             label_rsp_dict[subj_index] = dict()
 
                         if "BP" in self.tasks:
-                            pred_bp_dict[subj_index] = dict()
-                            label_bp_dict[subj_index] = dict()
-
-                        if "EDA" in self.tasks:
-                            pred_eda_dict[subj_index] = dict()
-                            label_eda_dict[subj_index] = dict()
+                            pred_sbp_dict[subj_index] = dict()
+                            pred_dbp_dict[subj_index] = dict()
+                            label_sbp_dict[subj_index] = dict()
+                            label_dbp_dict[subj_index] = dict()
 
 
                     if "BVP" in self.tasks:
@@ -723,19 +616,11 @@ class MMRPhysTrainer(BaseTrainer):
                             pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
 
                     if "BP" in self.tasks:
-                        label_bp_dict[subj_index][sort_index] = label_bp_test[idx]
-                        pred_bp_dict[subj_index][sort_index] = pred_bp_test[idx]
+                        label_sbp_dict[subj_index][sort_index] = SBP_test[idx]
+                        label_dbp_dict[subj_index][sort_index] = DBP_test[idx]
+                        pred_sbp_dict[subj_index][sort_index] = pred_bp_test[idx][0]
+                        pred_dbp_dict[subj_index][sort_index] = pred_bp_test[idx][1]
 
-                    if "EDA" in self.tasks:
-                        if std_label_eda_test[idx] > 0.001:
-                            label_eda_dict[subj_index][sort_index] = (label_eda_test[idx] - mean_label_eda_test[idx]) / std_label_eda_test[idx]   #label_eda_test[idx]    # standardize
-                        else:
-                            label_eda_dict[subj_index][sort_index] = label_eda_test[idx]
-
-                        if std_pred_eda_test[idx] > 0.001:
-                            pred_eda_dict[subj_index][sort_index] = (pred_eda_test[idx] - mean_pred_eda_test[idx]) / std_pred_eda_test[idx]   #pred_eda_test[idx]    # standardize
-                        else:
-                            pred_eda_dict[subj_index][sort_index] = pred_eda_test[idx]
 
 
         print('')
@@ -746,10 +631,8 @@ class MMRPhysTrainer(BaseTrainer):
             calculate_rsp_metrics(pred_rsp_dict, label_rsp_dict, self.config)
 
         if "BP" in self.tasks:
-            calculate_bp_metrics(pred_bp_dict, label_bp_dict, self.config)
+            calculate_bp_metrics(pred_sbp_dict, label_sbp_dict, pred_dbp_dict, label_dbp_dict, self.config)
 
-        if "EDA" in self.tasks:
-            calculate_eda_metrics(pred_eda_dict, label_eda_dict, self.config)
 
         if self.config.TEST.OUTPUT_SAVE_DIR: # saving test outputs 
             if "BVP" in self.tasks:
@@ -757,9 +640,8 @@ class MMRPhysTrainer(BaseTrainer):
             if "RSP" in self.tasks:
                 self.save_test_outputs(pred_rsp_dict, label_rsp_dict, self.config, suff="_rsp")
             if "BP" in self.tasks:
-                self.save_test_outputs(pred_bp_dict, label_bp_dict, self.config, suff="_bp")
-            if "EDA" in self.tasks:
-                self.save_test_outputs(pred_eda_dict, label_eda_dict, self.config, suff="_eda")
+                self.save_test_outputs(pred_sbp_dict, label_sbp_dict, self.config, suff="_SBP")
+                self.save_test_outputs(pred_dbp_dict, label_dbp_dict, self.config, suff="_DBP")
 
     def save_model(self, index):
         if not os.path.exists(self.model_dir):

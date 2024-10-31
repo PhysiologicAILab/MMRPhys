@@ -11,10 +11,11 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
+# from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 
 model_config = {
-    "TASKS": ["RSP"],
+    "TASKS": ["BP"],
     "FS": 25,
     "MD_FSAM": False,
     "MD_TYPE": "SNMF",
@@ -23,12 +24,12 @@ model_config = {
     "MD_STEPS": 4,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 3,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 72,
     "weight": 72,
     "batch_size": 2,
-    "frames": 180,
+    "frames": 500,
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
@@ -95,11 +96,11 @@ class TestMMRPhys(object):
         md_config["TASKS"] = model_config["TASKS"]
 
         if self.visualize:
-            self.net = nn.DataParallel(MMRPhysLEF(frames=self.frames, md_config=md_config,
+            self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
             self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
         else:
-            self.net = MMRPhysLEF(frames=self.frames, md_config=md_config,
+            self.net = MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
 
         self.net.eval()
@@ -145,36 +146,15 @@ class TestMMRPhys(object):
         if self.assess_latency:
             t0 = time.time()
 
+        out = self.net(self.test_data)
+        self.pred_ppg = out[0]
+        self.pred_rBr = out[1]
+        self.pred_eBP = out[2]
+        self.vox_embed_ppg = out[3]
+
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                if not self.use_label:
-                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-                else:
-                    self.pred, self.pred_rBr, self.vox_embed, self.factorized_embed, self.appx_error, self.factorized_embed_br, self.appx_error_br = self.net(
-                        self.test_data, self.bvp_label, self.resp_label)
-            elif "BVP" in self.tasks:
-                if not self.use_label:
-                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
-                else:
-                    self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data, self.bvp_label)
-            elif "RSP" in self.tasks:
-                if not self.use_label:
-                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data)
-                else:
-                    self.pred_rBr, self.vox_embed, self.factorized_embed_br, self.appx_error_br = self.net(self.test_data, self.resp_label)
-            else:
-                print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
-                exit()
-        else:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                self.pred, self.pred_rBr, self.vox_embed = self.net(self.test_data)
-            elif "BVP" in self.tasks:
-                self.pred, self.vox_embed = self.net(self.test_data)
-            elif "RSP" in self.tasks:
-                self.pred_rBr, self.vox_embed = self.net(self.test_data)
-            else:
-                print("Unknown modality... Only BVP and RSP are supported. Exiting the code...")
-                exit()
+            self.factorized_embed_ppg = out[4]
+            self.appx_error_ppg = out[5]
 
         if self.assess_latency:
             t1 = time.time()
@@ -182,27 +162,27 @@ class TestMMRPhys(object):
 
         if self.debug:
             if "BVP" in self.tasks and "RSP" in self.tasks:
-                print("pred.shape", self.pred.shape, self.pred_rBr.shape)
+                print("pred.shape", self.pred_ppg.shape, self.pred_rBr.shape)
             elif "BVP" in self.tasks:
-                print("pred.shape", self.pred.shape)
+                print("pred.shape", self.pred_ppg.shape)
             elif "RSP" in self.tasks:
                 print("pred.shape", self.pred_rBr.shape)
             
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                self.appx_error_list.append(self.appx_error.item())
+                self.appx_error_list.append(self.appx_error_ppg.item())
 
         if self.visualize:
             self.save_attention_maps(num_trial)
 
 
     def save_attention_maps(self, num_trial):
-        b, channels, enc_frames, enc_height, enc_width = self.vox_embed.shape
+        b, channels, enc_frames, enc_height, enc_width = self.vox_embed_ppg.shape
         label_matrix = self.np_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
             2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
         label_matrix = label_matrix.to(device=self.device)
-        corr_matrix = F.cosine_similarity(self.vox_embed, label_matrix, dim=2).abs()
+        corr_matrix = F.cosine_similarity(self.vox_embed_ppg, label_matrix, dim=2).abs()
 
-        # avg_emb = torch.mean(self.vox_embed, dim=1)
+        # avg_emb = torch.mean(self.vox_embed_ppg, dim=1)
         # b, enc_frames, enc_height, enc_width = avg_emb.shape
         # label_matrix = np_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
         # label_matrix = label_matrix.to(device=device)
@@ -211,10 +191,10 @@ class TestMMRPhys(object):
         if self.debug:
             print("corr_matrix.shape", corr_matrix.shape)
             print("self.test_data.shape:", self.test_data.shape)
-            print("self.vox_embed.shape:", self.vox_embed.shape)
+            print("self.vox_embed_ppg.shape:", self.vox_embed_ppg.shape)
 
         self.test_data = self.test_data.detach().cpu().numpy()
-        self.vox_embed = self.vox_embed.detach().cpu().numpy()
+        self.vox_embed_ppg = self.vox_embed_ppg.detach().cpu().numpy()
         corr_matrix = corr_matrix.detach().cpu().numpy()
 
         fig, ax = plt.subplots(4, 4, figsize=[16, 16])
