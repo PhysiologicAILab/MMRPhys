@@ -8,6 +8,7 @@ from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calcula
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
 from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
+from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 from neural_methods.model.MMRPhys.MMRPhysFuseL import MMRPhysFuseL
@@ -70,8 +71,10 @@ class MMRPhysTrainer(BaseTrainer):
 
         if model_type == "lef":
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        if model_type == "lnf":
+        elif model_type == "lnf":
             self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "llf":
+            self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "big":
             self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 144, 144]
         elif model_type == "medium":
@@ -98,10 +101,10 @@ class MMRPhysTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
             self.criterion_bvp = Neg_Pearson() #BVP
             self.criterion_rsp = Neg_Pearson() #RSP
-            self.criterion_sbp = torch.nn.MSELoss()  # SBP
-            # self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
-            self.criterion_dbp = torch.nn.MSELoss()  # DBP
-            # self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
+            # self.criterion_sbp = torch.nn.MSELoss()  # SBP
+            self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
+            # self.criterion_dbp = torch.nn.MSELoss()  # DBP
+            self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
@@ -223,7 +226,7 @@ class MMRPhysTrainer(BaseTrainer):
                 
                 if "BP" in self.tasks:
                     loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
-                    loss = loss + 0.1*loss_bp
+                    loss = loss + loss_bp
 
                 loss.backward()
 
