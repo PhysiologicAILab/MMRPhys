@@ -61,12 +61,12 @@ def _compute_macc(pred_signal, gt_signal):
 
 
 class AddHR2Labels(object):
-    def __init__(self, datadir, fps, file_filter) -> None:
+    def __init__(self, datadir, fps, file_filter, ref_file) -> None:
         self.fps = fps
         self.file_filter = file_filter
         self.files = sorted(list(Path(datadir).glob(self.file_filter)))
         [self.b, self.a] = butter(2, [0.6 / self.fps * 2, 3.3 / self.fps * 2], btype='bandpass')
-        self.ref_file = "/home/jitesh/data/BP4D/BP4D_500_Clean.csv"
+        self.ref_file = ref_file
         with open(self.ref_file) as f:
             self.clean_data = pd.read_csv(f)
         # print("total_files:", len(self.clean_data["input_files"]))
@@ -257,14 +257,19 @@ class AddHR2Labels(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datadir', default="/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
+    parser.add_argument('--datadir', default="/home/jitesh/data/BP4D/BP4D_RGBT_500_36x36",
                         dest="datadir", type=str, help='path of the data')
     parser.add_argument('--fps', default=25,
                         dest="fps", type=int, help='sampling rate')
-    parser.add_argument('--file_filter', default="*label*.npy",
+    parser.add_argument('--file_filter', default="*.npy",
                         dest="file_filter", type=str, help='string used for filtering the data: [*label*.npy, *.mat, *.csv]')
+    # parser.add_argument('--file_filter', default="*label*.npy",
+    #                     dest="file_filter", type=str, help='string used for filtering the data: [*label*.npy, *.mat, *.csv]')
     # parser.add_argument('--file_filter', default="*input*.npy",
     #                     dest="file_filter", type=str, help='string used for filtering the data: [*label*.npy, *.mat, *.csv]')
+    parser.add_argument('--ref_file', default="/home/jitesh/data/BP4D/BP4D_500_36_Clean.csv",
+                        dest="ref_file", type=str, help='file with datalist used for removing the noisy data')
+
 
     parser.add_argument('REMAIN', nargs='*')
     args_parser = parser.parse_args()
@@ -272,13 +277,13 @@ if __name__ == "__main__":
     utilObj = AddHR2Labels(args_parser.datadir, args_parser.fps, args_parser.file_filter)
     # utilObj.add_bp_hr()
     # utilObj.add_bvp()
-    # utilObj.remove_noisy_input_files()
+    utilObj.remove_noisy_input_files()
     # utilObj.plot_bvp()
     # utilObj.update_bvp_bp()
-    utilObj.update_bvp_bp_new()
+    # utilObj.update_bvp_bp_new()
 
 
 # fps: 25
-# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_72x72
-# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36
-# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_9x9
+# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_72x72; '/home/jitesh/data/BP4D/BP4D_500_72_Clean.csv'
+# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36; '/home/jitesh/data/BP4D/BP4D_500_36_Clean.csv'
+# BP4D: /home/jitesh/data/BP4D/BP4D_RGBT_500_9x9; '/home/jitesh/data/BP4D/BP4D_500_9_Clean.csv'

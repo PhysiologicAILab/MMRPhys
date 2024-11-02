@@ -169,7 +169,7 @@ class MMRPhysTrainer(BaseTrainer):
                         SBP = torch.median(label_sysBP, dim=1).values
                         DBP = torch.median(label_diaBP, dim=1).values
 
-                    elif labels.shape[-1] >= 3:     #SCAMPS dataset
+                    elif labels.shape[-1] >= 1:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)

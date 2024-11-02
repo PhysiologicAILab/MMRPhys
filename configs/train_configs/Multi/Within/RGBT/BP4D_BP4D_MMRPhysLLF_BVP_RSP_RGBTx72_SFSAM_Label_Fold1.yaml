@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 10
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhysLLF_BVP_RSP_Tx72_Base_Fold1
+  MODEL_FILE_NAME: BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -106,7 +106,7 @@ TEST:
       RESIZE:
         H: 72
         W: 72
-DEVICE: cuda:3
+DEVICE: cuda:1
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -114,10 +114,17 @@ MODEL:
   DROP_RATE: 0.1
   NAME: MMRPhys
   MMRPhys:
-    CHANNELS: 1
+    CHANNELS: 4
     FRAME_NUM: 500
     TYPE: "LLF"
     TASKS: ["BVP", "RSP"]
+    MD_FSAM: True
+    MD_TYPE: "SNMF_Label"
+    MD_R: 1
+    MD_S: 1
+    MD_STEPS: 5
+    MD_RESIDUAL: True
+    MD_INFERENCE: False
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
