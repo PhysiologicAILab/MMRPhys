@@ -265,7 +265,53 @@ if run_cell == 12:
 
 
 # %%
-a = torch.tensor([1,2,3,4,5,4,3,2,1,2,3,4,5,4,3,2,1,2,3,4,5,4,3,2,1])
-b = torch.fft.fft(a)
-print(b)
+nfft = 500
+fs = 25
+freqs = 60 * (np.arange(0, nfft)) * (fs / nfft / 2.)
+min_hr = 40
+max_hr = 200
+idx = np.argwhere((freqs > min_hr) & (freqs < max_hr))
+
+ppg = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=70)
+ppg = ppg[200: 700]
+ppg_tensor = torch.tensor(ppg)
+ppg_fft_c = torch.fft.fft(ppg_tensor)
+ppg_fft = torch.fft.rfft(ppg_tensor)
+ppg_fft_angle = torch.angle(ppg_fft_c)
+ppg_fft_freq = 60 * 25 * torch.fft.rfftfreq(nfft)
+# ppg_fft_freq 
+ppg_foi = torch.argwhere((ppg_fft_freq > 40) & (ppg_fft_freq < 200))
+
+plt.plot(ppg_fft_freq[ppg_foi], ppg_fft[ppg_foi])
+plt.plot(ppg_fft_freq[ppg_foi], ppg_fft_angle[ppg_foi])
+
+ppg_fft_foi = ppg_fft[ppg_foi]
+foi_idx = torch.argsort(ppg_fft_foi)
+
+ppg_fft_peaks = [ppg_fft_freq[foi_idx[0]], ppg_fft_freq[foi_idx[1]], ppg_fft_freq[foi_idx[2]]]
+ppg_fft_peaks_angle = [torch.angle(ppg_fft_foi[foi_idx[0]]), torch.angle(ppg_fft_foi[foi_idx[1]]), torch.angle(ppg_fft_foi[foi_idx[2]])]
+
+print("ppg_fft_peaks:", ppg_fft_peaks)
+print("ppg_fft_peaks_angle:", ppg_fft_peaks_angle)
+
+'''
+ppg_fft_sorted_idx = torch.argsort(ppg_fft, descending=True)
+ppg_peak_1 = ppg_fft[ppg_fft_sorted_idx[0]]
+ppg_freq_1 = 60 * ppg_fft_sorted_idx[0] * (fs / nfft / 2.)
+print(ppg_freq_1)
+# ppg_fft_angle = torch.angle(ppg_fft)
+
+# ppg_fft = ppg_fft[idx]
+# ppg_fft_angle = ppg_fft_angle[idx]
+# freqs = freqs[idx]
+# plt.plot(freqs, ppg_fft)
+# plt.plot(freqs, ppg_fft_angle)
+
+'''
 # %%
+p = torch.angle(b)
+print(a.shape)
+print(p.shape)
+# %%
+
+

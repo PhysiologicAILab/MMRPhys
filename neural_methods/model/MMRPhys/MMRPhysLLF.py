@@ -121,12 +121,18 @@ class Thermal_BVP_FeatureExtractor(nn.Module):
 
 
 class BVP_Head(nn.Module):
-    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+    def __init__(self, inCh, md_config, device, dropout_rate=0.1, debug=False):
         super(BVP_Head, self).__init__()
         self.debug = debug
+        self.inCh = inCh
+
+        if self.inCh in [1, 3]:
+            in_ch = nf_BVP[2]
+        else:
+            in_ch = 2 * nf_BVP[2]
 
         self.conv_fusion_layer = nn.Sequential(
-            ConvBlock3D(2 * nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 7, 7
+            ConvBlock3D(in_ch, nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 7, 7
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -148,10 +154,16 @@ class BVP_Head(nn.Module):
             nn.Conv3d(nf_BVP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, T, 1, 1
         )
 
-    def forward(self, rgb_embeddings, thermal_embeddings, batch, length, label_bvp=None):
+    def forward(self, length, rgb_embeddings=None, thermal_embeddings=None, label_bvp=None):
 
-        voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
-        voxel_embeddings = rgb_embeddings + thermal_embeddings + self.conv_fusion_layer(voxel_embeddings)
+        if self.inCh == 4:
+            voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
+            voxel_embeddings = rgb_embeddings + thermal_embeddings + self.conv_fusion_layer(voxel_embeddings)
+        else:
+            if self.inCh == 1:
+                voxel_embeddings = thermal_embeddings
+            else:
+                voxel_embeddings = rgb_embeddings
 
         if self.debug:
             print("BVP Head")
@@ -261,12 +273,18 @@ class Thermal_RSP_FeatureExtractor(nn.Module):
 
 
 class RSP_Head(nn.Module):
-    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+    def __init__(self, inCh, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
         self.debug = debug
+        self.inCh = inCh
+
+        if self.inCh in [1, 3]:
+            in_ch = nf_BVP[2]
+        else:
+            in_ch = 2 * nf_BVP[2]
 
         self.conv_fusion_layer = nn.Sequential(
-            ConvBlock3D(2 * nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 7, 7
+            ConvBlock3D(in_ch, nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 7, 7
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -295,10 +313,16 @@ class RSP_Head(nn.Module):
             nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),     #B, 1, T, 1, 1
         )
 
-    def forward(self, rgb_embeddings, thermal_embeddings, batch, length, label_rsp=None):
+    def forward(self, length, rgb_embeddings=None, thermal_embeddings=None, label_rsp=None):
 
-        voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
-        voxel_embeddings = rgb_embeddings + thermal_embeddings + self.conv_fusion_layer(voxel_embeddings)
+        if self.inCh == 4:
+            voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
+            voxel_embeddings = rgb_embeddings + thermal_embeddings + self.conv_fusion_layer(voxel_embeddings)
+        else:
+            if self.inCh == 1:
+                voxel_embeddings = thermal_embeddings
+            else:
+                voxel_embeddings = rgb_embeddings
 
         if self.debug:
             print("RSP Head")
@@ -353,63 +377,19 @@ class RSP_Head(nn.Module):
             return rBr
 
 
-class BP_Head(nn.Module):
-    def __init__(self, dropout_rate=0.1, debug=False):
-        super(BP_Head, self).__init__()
-        self.debug = debug
-
-        self.conv_block = nn.Sequential(
-            ConvBlock3D(nf_BVP[2] + nf_RSP[2], nf_BVP[2], [1, 3, 3], [2, 1, 1], [0, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf_BVP[2], T//2, 5, 5
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [1, 3, 3], [2, 1, 1], [0, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf_BVP[2], T//4, 3, 3
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [1, 3, 3], [5, 1, 1], [0, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf_BVP[2], T//20, 1, 1
-        )
-
-        self.final_dense_layer = nn.Sequential(
-            nn.Linear(nf_BVP[2]*25, nf_BVP[2]),
-            nn.Dropout(0.2),
-            nn.Linear(nf_BVP[2], 2)
-        )
-
-    def forward(self, rppg_embeddings, rbr_embeddings, batch, length):
-
-        if self.debug:
-            print(" BP Head")
-            print(" rppg_embeddings.shape", rppg_embeddings.shape)
-            print(" rbr_embeddings.shape", rbr_embeddings.shape)
-
-        x = torch.concat([rppg_embeddings, rbr_embeddings], dim=1)
-        x = self.conv_block(x)
-        
-        if self.debug:
-            print(" x.shape", x.shape)
-        
-        x = x.view(x.size(0), -1)
-        
-        if self.debug:
-            print(" Flattened x.shape", x.shape)
-
-        rBP = self.final_dense_layer(x)
-
-        if self.debug:
-            print(" rBP.shape", rBP.shape)
-
-        return rBP
-
-
 class BP_Head_Phase(nn.Module):
     def __init__(self, dropout_rate=0.1, debug=False):
         super(BP_Head_Phase, self).__init__()
         self.debug = debug
         self.inCh = nf_BVP[2] + nf_RSP[2]
         self.outCh = (nf_BVP[2] + nf_RSP[2]) // 2
-        self.conv_block = nn.Sequential(
-            ConvBlock3D(self.inCh, self.inCh, [1, 7, 7], [1, 1, 1], [0, 0, 0], dilation=[1, 1, 1], bias=True), #B, nf_BVP[2], T, 1, 1
-        )
 
-        self.final_conv_block = nn.Sequential(
-            nn.Conv1d(self.inCh, self.outCh, 1),
-            nn.Conv1d(self.outCh, 1, 1),
-        )
+        self.spatial_pool = nn.AvgPool3d(kernel_size=[1, 7, 7], stride=[1, 1, 1], padding=[0, 0, 0])
+
+        # self.final_conv_block = nn.Sequential(
+        #     nn.Conv1d(self.inCh, self.outCh, 1),
+        #     nn.Conv1d(self.outCh, 1, 1),
+        # )
 
         self.final_dense_layer = nn.Sequential(
             nn.Linear(500, 16),
@@ -417,7 +397,7 @@ class BP_Head_Phase(nn.Module):
             nn.Linear(16, 2)
         )
 
-    def forward(self, rppg_embeddings, rbr_embeddings, batch, length):
+    def forward(self, rppg_embeddings=None, rbr_embeddings=None):
 
         if self.debug:
             print(" BP Head")
@@ -463,6 +443,10 @@ class MMRPhysLLF(nn.Module):
         if self.in_channels == 4:
             self.rgb_norm = nn.InstanceNorm3d(3)
             self.thermal_norm = nn.InstanceNorm3d(1)
+        elif self.in_channels == 3:
+            self.rgb_norm = nn.InstanceNorm3d(3)
+        elif self.in_channels == 1:
+            self.thermal_norm = nn.InstanceNorm3d(1)
         else:
             print("Unsupported input channels")
 
@@ -485,18 +469,25 @@ class MMRPhysLLF(nn.Module):
             print("nf_BVP:", nf_BVP)
             print("nf_RSP:", nf_RSP)
 
-        self.rgb_bvp_feature_extractor = RGB_BVP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
-        self.thermal_bvp_feature_extractor = Thermal_BVP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
+        if self.in_channels in [1, 4]:
+            if "BVP" in self.tasks or "BP" in self.tasks:
+                self.thermal_bvp_feature_extractor = Thermal_BVP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
+            if "RSP" in self.tasks or "BP" in self.tasks:
+                self.thermal_rsp_feature_extractor = Thermal_RSP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
 
-        self.rgb_rsp_feature_extractor = RGB_RSP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
-        self.thermal_rsp_feature_extractor = Thermal_RSP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
+        if self.in_channels in [3, 4]:
+            if "BVP" in self.tasks or "BP" in self.tasks:
+                self.rgb_bvp_feature_extractor = RGB_BVP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
+            if "RSP" in self.tasks or "BP" in self.tasks:
+                self.rgb_rsp_feature_extractor = RGB_RSP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
+        
+        if "BVP" in self.tasks:
+            self.rppg_head = BVP_Head(self.in_channels, md_config, device=device, dropout_rate=dropout, debug=debug)
 
-        self.rppg_head = BVP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
-
-        self.rBr_head = RSP_Head(md_config, device=device, dropout_rate=dropout, debug=debug)
+        if "RSP" in self.tasks:
+            self.rBr_head = RSP_Head(self.in_channels, md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "BP" in self.tasks:
-            # self.rBP_head = BP_Head(dropout_rate=dropout, debug=debug)
             self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
 
 
@@ -509,11 +500,11 @@ class MMRPhysLLF(nn.Module):
 
         if self.in_channels == 1:
             x = torch.diff(x, dim=2)
-            x = self.norm(x[:, -1:, :, :, :])
+            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
             # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
         elif self.in_channels == 3:
             x = torch.diff(x, dim=2)
-            x = self.norm(x[:, :3, :, :, :])
+            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
         elif self.in_channels == 4:
             x = torch.diff(x, dim=2)
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
@@ -534,21 +525,42 @@ class MMRPhysLLF(nn.Module):
         if self.debug:
             print("Diff Normalized shape", x.shape)
 
-        rgb_bvp_voxel_embeddings = self.rgb_bvp_feature_extractor(rgb_x)
-        thermal_bvp_voxel_embeddings = self.thermal_bvp_feature_extractor(thermal_x)
+        if self.in_channels in [1, 4]:
+            if "BVP" in self.tasks or "BP" in self.tasks:
+                thermal_bvp_voxel_embeddings = self.thermal_bvp_feature_extractor(thermal_x)
+            if "RSP" in self.tasks or "BP" in self.tasks:
+                thermal_rsp_voxel_embeddings = self.thermal_rsp_feature_extractor(thermal_x)
+            if self.in_channels == 1:
+                rgb_bvp_voxel_embeddings = None
+                rgb_rsp_voxel_embeddings = None
 
-        rgb_rsp_voxel_embeddings = self.rgb_rsp_feature_extractor(rgb_x)
-        thermal_rsp_voxel_embeddings = self.thermal_rsp_feature_extractor(thermal_x)
+        if self.in_channels in [3, 4]:
+            if "BVP" in self.tasks or "BP" in self.tasks:
+                rgb_bvp_voxel_embeddings = self.rgb_bvp_feature_extractor(rgb_x)
+            if "RSP" in self.tasks or "BP" in self.tasks:
+                rgb_rsp_voxel_embeddings = self.rgb_rsp_feature_extractor(rgb_x)
+            if self.in_channels == 3:
+                thermal_bvp_voxel_embeddings = None
+                thermal_rsp_voxel_embeddings = None
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            rPPG, factorized_embeddings_ppg, appx_error_ppg = self.rppg_head(rgb_bvp_voxel_embeddings, thermal_bvp_voxel_embeddings, batch, length-1, label_bvp)
-            rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(rgb_rsp_voxel_embeddings, thermal_rsp_voxel_embeddings, batch, length-1, label_rsp)
+            rPPG, factorized_embeddings_ppg, appx_error_ppg = self.rppg_head(
+                length-1, rgb_embeddings=rgb_bvp_voxel_embeddings, thermal_embeddings=thermal_bvp_voxel_embeddings, label_bvp=label_bvp)
+            rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(
+                length-1, rgb_embeddings=rgb_rsp_voxel_embeddings, thermal_embeddings=thermal_rsp_voxel_embeddings, label_rsp=label_rsp)
         else:
-            rPPG = self.rppg_head(rgb_bvp_voxel_embeddings, thermal_bvp_voxel_embeddings, batch, length-1)
-            rBr = self.rBr_head(rgb_rsp_voxel_embeddings, thermal_rsp_voxel_embeddings, batch, length-1)
+            rPPG = self.rppg_head(length-1, rgb_embeddings=rgb_bvp_voxel_embeddings,
+                                  thermal_embeddings=thermal_bvp_voxel_embeddings,)
+            rBr = self.rBr_head(length-1, rgb_embeddings=rgb_rsp_voxel_embeddings,
+                                thermal_embeddings=thermal_rsp_voxel_embeddings)
 
         if "BP" in self.tasks:
-            rBP = self.rBP_head(rgb_bvp_voxel_embeddings.detach(), thermal_rsp_voxel_embeddings.detach(), batch, length-1)
+            if self.in_channels == 1:
+                rBP = self.rBP_head(thermal_bvp_voxel_embeddings.detach(), thermal_rsp_voxel_embeddings.detach())
+            elif self.in_channels == 3:
+                rBP = self.rBP_head(rgb_bvp_voxel_embeddings.detach(), rgb_rsp_voxel_embeddings.detach())
+            elif self.in_channels == 4:
+                rBP = self.rBP_head(rgb_bvp_voxel_embeddings.detach(), thermal_rsp_voxel_embeddings.detach())
         else:
             rBP = None
 
