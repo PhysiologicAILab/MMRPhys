@@ -315,3 +315,8 @@ print(p.shape)
 # %%
 
 
+pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
+data = np.load(pth)
+print(data.shape)
+
+# %%

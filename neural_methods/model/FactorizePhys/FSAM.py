@@ -1,5 +1,5 @@
 """
-FactorizePhys: Effective Spatial-Temporal Attention in Remote Photo-plethysmography through Factorization of Voxel Embeddings
+SAMPhys: Smooth Tensor Factorization for Enhanced Multidimensional Attention in Multitask Remote Physiological Sensing
 """
 
 import torch

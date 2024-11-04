@@ -7,8 +7,8 @@ import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 from copy import deepcopy
 
-nf_BVP = [8, 12, 16]
-nf_RSP = [8, 12, 16]
+nf_BVP = [8, 16, 16]
+nf_RSP = [8, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -62,19 +62,18 @@ class RGB_BVP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                        Input: #B, inCh, T, 72, 72
         self.rgb_bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 72, 72
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
-            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 33, 33
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 35, 35
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
+            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 31, 31
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 15, 15
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 17, 17
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 15, 15
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 13, 13
             nn.Dropout3d(p=dropout_rate),
 
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 11, 11
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 9, 9
-            nn.Dropout3d(p=dropout_rate),
         )
 
     def forward(self, x):
@@ -94,17 +93,16 @@ class Thermal_BVP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                        Input: #B, inCh, T, 72, 72
         self.thermal_bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 72, 72
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
-            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 33, 33
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 35, 35
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
+            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 35, 35
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 31, 31
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 29, 29
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 27, 27
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 17, 17
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 15, 15
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 13, 13
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 13, 13
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 11, 11
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 9, 9
         )
@@ -126,10 +124,12 @@ class BVP_Head(nn.Module):
 
         self.conv_layer = nn.Sequential(
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
         )
 
         self.conv_fusion_layer = nn.Sequential(
             ConvBlock3D(2 * nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, 2 * nf_BVP[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -211,22 +211,20 @@ class RGB_RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, T, 72, 72
+        #                                                                                     Input: #B, inCh, T, 72, 72
         self.rgb_rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]),  #B, nf_RSP[0], T, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf_RSP[1], T, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf_RSP[1], T, 33, 33
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [2, 1, 1], dilation=[2, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [2, 0, 0], dilation=[2, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
+            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 31, 31
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 29, 29
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 27, 27
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 13, 13
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 13, 13
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 11, 11
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 9, 9
-            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 11, 11
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 9, 9
         )
 
     def forward(self, x):
@@ -243,21 +241,20 @@ class Thermal_RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, T, 72, 72
+        #                                                                                     Input: #B, inCh, T, 72, 72
         self.thermal_rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [1, 1, 1], [2, 1, 1], dilation=[2, 1, 1]),  #B, nf_RSP[0], T, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]), #B, nf_RSP[1], T, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]), #B, nf_RSP[1], T, 33, 33
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [2, 1, 1], dilation=[2, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [2, 0, 0], dilation=[2, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
+            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 31, 31
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 29, 29
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 27, 27
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 13, 13
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 13, 13
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 11, 11
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 9, 9
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 11, 11
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 9, 9
         )
 
     def forward(self, x):
@@ -274,12 +271,17 @@ class RSP_Head(nn.Module):
         self.debug = debug
         self.inCh = inCh
 
+        self.upsample = nn.Upsample(scale_factor=(4, 1, 1))     #B, nf_RSP[2], T, 7, 7    ; T = 125 x 4 = 500
+
         self.conv_layer = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 7, 7
+            
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
         )
 
         self.conv_fusion_layer = nn.Sequential(
             ConvBlock3D(2 * nf_BVP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_RSP[2], T, 7, 7
+            nn.Dropout3d(p=dropout_rate),
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -298,9 +300,7 @@ class RSP_Head(nn.Module):
             self.fsam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
         else:
-            inC = nf_RSP[2]
-
-        # self.upsample = nn.Upsample(scale_factor=(6, 1, 1))
+            inC = nf_RSP[2]        
 
         self.final_layer = nn.Sequential(
             ConvBlock3D(inC, nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),        #B, nf_RSP[1], T, 5, 5
@@ -311,12 +311,16 @@ class RSP_Head(nn.Module):
     def forward(self, length, rgb_embeddings=None, thermal_embeddings=None, label_rsp=None):
 
         if self.inCh == 4:
+            rgb_embeddings = self.upsample(rgb_embeddings)
+            thermal_embeddings = self.upsample(thermal_embeddings)
             voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
             voxel_embeddings = self.conv_layer(rgb_embeddings + thermal_embeddings) + self.conv_fusion_layer(voxel_embeddings)
         else:
             if self.inCh == 1:
+                thermal_embeddings = self.upsample(thermal_embeddings)
                 voxel_embeddings = self.conv_layer(thermal_embeddings)
             else:
+                rgb_embeddings = self.upsample(rgb_embeddings)
                 voxel_embeddings = self.conv_layer(rgb_embeddings)
 
         if self.debug:
@@ -381,7 +385,7 @@ class BP_Head_Phase(nn.Module):
 
         self.spatial_pool = nn.AvgPool3d(kernel_size=[1, 7, 7], stride=[1, 1, 1], padding=[0, 0, 0])
 
-        # self.final_conv_block = nn.Sequential(
+        # self.final_layer = nn.Sequential(
         #     nn.Conv1d(self.inCh, self.outCh, 1),
         #     nn.Conv1d(self.outCh, 1, 1),
         # )
@@ -400,7 +404,7 @@ class BP_Head_Phase(nn.Module):
             print(" rbr_embeddings.shape", rbr_embeddings.shape)
 
         x = torch.concat([rppg_embeddings, rbr_embeddings], dim=1)
-        x = self.conv_block(x)
+        x = self.spatial_pool(x)
         
         bt, ch, t, h, w = x.shape
         
@@ -411,7 +415,7 @@ class BP_Head_Phase(nn.Module):
             for cn in range(ch):
                 x_fft[bn, cn, :] = torch.angle(torch.fft.fft(x[bn, cn, :]))
 
-        x = self.final_conv_block(x)
+        x = self.final_layer(x)
         
         if self.debug:
             print(" x.shape", x.shape)

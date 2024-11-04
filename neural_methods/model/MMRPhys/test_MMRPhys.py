@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "RSP", "BP"],
+    "TASKS": ["BVP", "RSP"],
     "FS": 25,
     "MD_FSAM": False,
     "MD_TYPE": "SNMF",

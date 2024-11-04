@@ -1,5 +1,5 @@
 """
-FactorizePhys: Effective Spatial-Temporal Attention in Remote Photo-plethysmography through Factorization of Voxel Embeddings
+SAMPhys: Smooth Tensor Factorization for Enhanced Multidimensional Attention in Remote Photo-plethysmography through Factorization of Voxel Embeddings
 """
 
 import torch
@@ -7,7 +7,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.batchnorm import _BatchNorm
 import numpy as np
-import neurokit2 as nk
 
 
 class _MatrixDecompositionBase(nn.Module):
@@ -254,15 +253,13 @@ class NMF(_MatrixDecompositionBase):
 
 
 class _SmoothMatrixDecompositionBase(nn.Module):
-    def __init__(self, device, md_config, debug=False, dim="3D", sig_type=""):
+    def __init__(self, device, md_config, debug=False, dim="3D"):
         super().__init__()
 
         self.dim = dim
         self.md_type = md_config["MD_TYPE"]
-        self.sig_type = sig_type
         self.S = md_config["MD_S"]
         self.R = md_config["MD_R"]
-        self.fs = md_config["FS"]
         self.debug = debug
 
         self.train_steps = md_config["MD_STEPS"]
@@ -312,7 +309,6 @@ class _SmoothMatrixDecompositionBase(nn.Module):
             print("Org x.shape", x.shape)
             print("y.shape:", y.shape)
             print("MD_Type:", self.md_type)
-            print("FS:", self.fs)
             print("*****************")
 
         if self.dim == "3D":        # (B, C, T, H, W) -> (B * S, D, N)
@@ -375,67 +371,6 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
             SNMF_estimators = SNMF_estimators.repeat(B * self.S, 1, 1).to(self.device)
             SNMF_est_shape2 = SNMF_estimators.shape[2]
-
-
-        elif "sim" in self.md_type.lower():
-            if "bvp" in self.sig_type.lower():
-                hr = torch.mean(y, dim=1).cpu().numpy()
-                # max_samples_in_lowest_hr = 2*self.fs     #30 BPM
-                # max_samples = 4 * max_samples_in_lowest_hr
-                max_samples = 1
-                iters = np.arange(0, max_samples, 1)
-                duration = ((max_samples + P) // self.fs) + 1
-                total_estimators = len(iters)
-
-            elif "rsp" in self.sig_type.lower():
-                rr = torch.mean(y, dim=1).cpu().numpy()
-                # max_samples_in_lowest_rr = 10*self.fs  # 6 BPM
-                # max_samples = 4 * max_samples_in_lowest_rr
-                max_samples = 1
-                iters = np.arange(0, max_samples, 5)
-                duration = ((max_samples + 10*P) // self.fs) + 1
-                total_estimators = len(iters)
-
-            else:
-                print("\n*****************")
-                print("Invalid MD_Type for SIM - Should be SIM_HR or SIM_RR")
-                print("Terminating")
-                print("*****************")
-                exit()
-
-            if self.debug:
-                print("\n*****************")
-                print("P:", P)
-                print("Duration:", duration)
-                print("Total estimators:", total_estimators)
-                print("*****************")
-
-            SNMF_estimators = torch.zeros((B, P, total_estimators)).to(self.device)
-            
-            for bt in range(B):
-                for iter in iters:
-                    if "bvp" in self.sig_type.lower():
-                        hr_bpm = int(round(hr[bt]))
-                        hr_bpm = 30 if hr_bpm < 30 else hr_bpm
-                        hr_bpm = 200 if hr_bpm > 200 else hr_bpm
-                        sig = nk.ppg_simulate(duration=duration, sampling_rate=self.fs, heart_rate=hr_bpm, frequency_modulation=0.1, ibi_randomness=0.03, random_state=1, random_state_distort=1)
-                    else:
-                        rr_bpm = int(round(rr[bt]))
-                        rr_bpm = 3 if rr_bpm < 3 else rr_bpm
-                        rr_bpm = 42 if rr_bpm > 42 else rr_bpm
-                        sig = nk.rsp_simulate(duration=duration, sampling_rate=self.fs, respiratory_rate=rr_bpm, random_state=1, random_state_distort=1)
-
-                    # start = int(np.random.randint(0, P))
-                    # sig_seg = sig[start: start + P]
-                    sig_seg = sig[iter: iter + P]
-                    # mx = np.max(sig_seg)
-                    mn = np.min(sig_seg)
-                    # sig_seg = (sig_seg - mn)/(mx - mn)
-                    sig_seg = sig_seg - mn
-                    SNMF_estimators[bt, :, iter] = torch.FloatTensor(sig_seg)
-
-            SNMF_est_shape2 = SNMF_estimators.shape[2]
-
 
         elif "label" in self.md_type.lower():
             SNMF_estimators = torch.zeros((B, P, 1)).to(self.device)    #only label as estimator
@@ -517,8 +452,8 @@ class _SmoothMatrixDecompositionBase(nn.Module):
 
 
 class SNMF(_SmoothMatrixDecompositionBase):
-    def __init__(self, device, md_config, debug=False, dim="3D", sig_type=""):
-        super().__init__(device, md_config, debug=debug, dim=dim, sig_type=sig_type)
+    def __init__(self, device, md_config, debug=False, dim="3D"):
+        super().__init__(device, md_config, debug=debug, dim=dim)
         self.device = device
         self.inv_t = 1
 
@@ -718,7 +653,7 @@ class ConvBNReLU(nn.Module):
 
 
 class FeaturesFactorizationModule(nn.Module):
-    def __init__(self, inC, device, md_config, dim="3D", sig_type="", debug=False):
+    def __init__(self, inC, device, md_config, dim="3D", debug=False):
         super().__init__()
 
         self.device = device
@@ -753,7 +688,7 @@ class FeaturesFactorizationModule(nn.Module):
             print("Dimension not supported")
 
         if "snmf" in md_type.lower():
-            self.md_block = SNMF(self.device, md_config, dim=self.dim, sig_type=sig_type, debug=debug)
+            self.md_block = SNMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "nmf" in md_type.lower():
             self.md_block = NMF(self.device, md_config, dim=self.dim, debug=debug)
         elif "vq" in md_type.lower():
