@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 import neurokit2 as nk
 import numpy as np
 import pandas as pd
-import torch
 import glob
 import os
 import torch
+
 
 # %%
 run_cell = 12

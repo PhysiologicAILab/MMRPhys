@@ -7,8 +7,8 @@ import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 from copy import deepcopy
 
-nf_BVP = [8, 16, 16]
-nf_RSP = [8, 16, 16]
+nf_BVP = [16, 16, 16]
+nf_RSP = [16, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -51,7 +51,6 @@ class ConvBlock3D(nn.Module):
 
     def forward(self, x):
         return self.conv_block_3d(x)
-
 
 
 class RGB_BVP_FeatureExtractor(nn.Module):
@@ -300,7 +299,7 @@ class RSP_Head(nn.Module):
             self.fsam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
         else:
-            inC = nf_RSP[2]        
+            inC = nf_RSP[2]
 
         self.final_layer = nn.Sequential(
             ConvBlock3D(inC, nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),        #B, nf_RSP[1], T, 5, 5
@@ -481,10 +480,10 @@ class MMRPhysLLF(nn.Module):
                 self.rgb_rsp_feature_extractor = RGB_RSP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
         
         if "BVP" in self.tasks:
-            self.rppg_head = BVP_Head(self.in_channels, md_config, device=device, dropout_rate=dropout, debug=debug)
+            self.rppg_head = BVP_Head(inCh=self.in_channels, md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "RSP" in self.tasks:
-            self.rBr_head = RSP_Head(self.in_channels, md_config, device=device, dropout_rate=dropout, debug=debug)
+            self.rBr_head = RSP_Head(inCh=self.in_channels, md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "BP" in self.tasks:
             self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
@@ -497,18 +496,15 @@ class MMRPhysLLF(nn.Module):
         if self.debug:
             print("Input.shape", x.shape)
 
-        if self.in_channels == 1:
-            x = torch.diff(x, dim=2)
-            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
-            # x = self.norm(x[:, -1:, :-1, :, :])   #if no diff used, then discard the last added frame
-        elif self.in_channels == 3:
-            x = torch.diff(x, dim=2)
-            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
-        elif self.in_channels == 4:
-            x = torch.diff(x, dim=2)
+        x = torch.diff(x, dim=2)
+        if self.in_channels == 4:
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
             thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
             # x = torch.concat([rgb_x, thermal_x], dim = 1)
+        elif self.in_channels == 3:
+            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
+        elif self.in_channels == 1:
+            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
         else:
             try:
                 print("Specified input channels:", self.in_channels)
@@ -520,7 +516,6 @@ class MMRPhysLLF(nn.Module):
                 print("Data channels [B, C, N, W, H]", x.shape)
                 print("Exiting")
                 exit()
-
         if self.debug:
             print("Diff Normalized shape", x.shape)
 

@@ -12,11 +12,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "RSP"],
+    "TASKS": ["RSP"],
     "FS": 25,
     "MD_FSAM": False,
     "MD_TYPE": "SNMF",
@@ -25,7 +25,7 @@ model_config = {
     "MD_STEPS": 4,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 4,
+    "in_channels": 1,
     "data_channels": 4,
     "height": 72,
     "weight": 72,
