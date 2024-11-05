@@ -145,35 +145,6 @@ def _process_rsp_signal(signal, fs=25, diff_flag=False):
     return signal
 
 
-def _process_eda_signal(signal, fs=25, diff_flag=False):
-    # Detrend and filter
-    use_bandpass = True
-    if diff_flag:  # if the predictions and labels are 1st derivative of EDA signal.
-        # signal = _detrend(np.cumsum(signal), 100)
-        signal = np.cumsum(signal)
-    else:
-        # signal = _detrend(signal, 100)
-        pass
-    if use_bandpass:
-        [b, a] = butter(2, [0.05 / fs * 2, 5.0 / fs * 2], btype='bandpass')
-        signal = filtfilt(b, a, np.double(signal))
-    return signal
-
-# def _detrend(input_signal, lambda_value):
-#     """Detrend RSP signal."""
-#     signal_length = input_signal.shape[0]
-#     # observation matrix
-#     H = np.identity(signal_length)
-#     ones = np.ones(signal_length)
-#     minus_twos = -2 * np.ones(signal_length)
-#     diags_data = np.array([ones, minus_twos, ones])
-#     diags_index = np.array([0, 1, 2])
-#     D = spdiags(diags_data, diags_index,
-#                 (signal_length - 2), signal_length).toarray()
-#     detrended_signal = np.dot(
-#         (H - np.linalg.inv(H + (lambda_value ** 2) * np.dot(D.T, D))), input_signal)
-#     return detrended_signal
-
 
 def _next_power_of_2(x):
     """Calculate the nearest power of 2."""
@@ -221,7 +192,7 @@ def _calculate_peak_rr(resp_signal, fs=25):
 
 # Main functions
 
-def compare_estimated_phys_within_dataset(save_plot=1):
+def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
 
     if save_plot:
         plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
@@ -233,10 +204,15 @@ def compare_estimated_phys_within_dataset(save_plot=1):
         print("*"*50)
         print("Test Data:", test_dataset)
         print("*"*50)
-        bvp_dict = {}
-        rsp_dict = {}
-        bp_dict = {}
-        eda_dict = {}
+        if tasks in [0, 1]:
+            bvp_dict = {}
+            if tasks == 0:
+                bp_dict = {}
+        if tasks in [0, 2]:
+            rsp_dict = {}
+        if tasks not in [0, 1, 2]:
+            print("Unsupported task option")
+            exit()
 
         root_dir = Path(path_dict_within_dataset["test_datasets"][test_dataset]["root"])
         if not root_dir.exists():
@@ -249,54 +225,74 @@ def compare_estimated_phys_within_dataset(save_plot=1):
 
         for train_model in path_dict_within_dataset["test_datasets"][test_dataset]["exp"]:
             print("Model:", train_model)
-            bvp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bvp"])
-            bvp_dict[train_model] = CPU_Unpickler(open(bvp_fn, "rb")).load()
-            rsp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["rsp"])
-            rsp_dict[train_model] = CPU_Unpickler(open(rsp_fn, "rb")).load()
-            bp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bp"])
-            bp_dict[train_model] = CPU_Unpickler(open(bp_fn, "rb")).load()
-            # eda_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["eda"])
-            # eda_dict[train_model] = CPU_Unpickler(open(eda_fn, "rb")).load()
+            if tasks in [0, 1]:
+                bvp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bvp"])
+                bvp_dict[train_model] = CPU_Unpickler(open(bvp_fn, "rb")).load()
+                if tasks == 0:
+                    bp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bp"])
+                    bp_dict[train_model] = CPU_Unpickler(open(bp_fn, "rb")).load()
+            if tasks in [0, 2]:
+                rsp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["rsp"])
+                rsp_dict[train_model] = CPU_Unpickler(open(rsp_fn, "rb")).load()
 
         print("-"*50)
 
-        model_names = list(bvp_dict.keys())
+        if tasks in [0, 1]:
+            model_names = list(bvp_dict.keys())
+        else:
+            model_names = list(rsp_dict.keys())
         print("Model Names:", model_names)
         # print(bvp_dict[model_names[0]].keys())
         # exit()
 
         # List of all video trials
-        trial_list = list(bvp_dict[model_names[0]]['predictions'].keys())
+        if tasks in [0, 1]:
+            trial_list = list(bvp_dict[model_names[0]]['predictions'].keys())
+        else:
+            trial_list = list(rsp_dict[model_names[0]]['predictions'].keys())
         print('Num Trials', len(trial_list))
-        all_hr_labels = {}
-        all_hr_preds = {}
-        all_rr_labels = {}
-        all_rr_preds = {}
+
+        if tasks in [0, 1]:
+            all_hr_labels = {}
+            all_hr_preds = {}
+        if tasks in [0, 2]:
+            all_rr_labels = {}
+            all_rr_preds = {}
 
         for trial_ind in range(len(trial_list)):
             # print("."*25)
-            gt_bvp = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['predictions'][trial_list[trial_ind]]))
-            # gt_rsp = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['predictions'][trial_list[0]]))
 
-            total_samples = len(gt_bvp)
+            # Read in meta-data from pickle file
+            if tasks in [0, 1]:               
+                gt_bvp = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['predictions'][trial_list[trial_ind]]))
+                total_samples = len(gt_bvp)
+                fs = bvp_dict[model_names[0]]['fs'] # Video Frame Rate
+                label_type = bvp_dict[model_names[0]]['label_type'] # BVP Signal Transformation: `DiffNormalized` or `Standardized`
+                diff_flag = (label_type == 'DiffNormalized')
+            else:
+                # Read in meta-data from pickle file
+                gt_rsp = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['predictions'][trial_list[0]]))
+                total_samples = len(gt_rsp)
+                fs = rsp_dict[model_names[0]]['fs'] # Video Frame Rate
+                label_type = rsp_dict[model_names[0]]['label_type'] # RSP Signal Transformation: `DiffNormalized` or `Standardized`
+                diff_flag = (label_type == 'DiffNormalized')
+
             total_chunks = total_samples // chunk_size
             # print('Chunk size', chunk_size)
             # print('Total chunks', total_chunks)
 
-            # Read in meta-data from pickle file
-            fs = bvp_dict[model_names[0]]['fs'] # Video Frame Rate
-            label_type = bvp_dict[model_names[0]]['label_type'] # RSP Signal Transformation: `DiffNormalized` or `Standardized`
-            diff_flag = (label_type == 'DiffNormalized')
+            if tasks in [0, 1]:
+                bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+                if tasks == 0:
+                    bp_label = np.array(_reform_data_from_dict(bp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+                hr_pred = {}
 
-            bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-            rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-            bp_label = np.array(_reform_data_from_dict(bp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-            # eda_label = np.array(_reform_data_from_dict(eda_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+            if tasks in [0, 2]:
+                rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
+                rr_pred = {}
 
             trial_dict = {}
-            hr_pred = {}
-            rr_pred = {}
-
+            
             for c_ind in range(total_chunks):
                 # print("*"*25)
                 # try:
@@ -308,14 +304,17 @@ def compare_estimated_phys_within_dataset(save_plot=1):
                 stop = (c_ind+1)*chunk_size
                 samples = stop - start
                 
-                bvp_seg = _process_bvp_signal(bvp_label[start: stop], fs, diff_flag=diff_flag)
-                hr_label = _calculate_fft_hr(bvp_seg, fs=fs)
-                hr_label = int(np.round(hr_label))
-                # print("hr_label:", hr_label)
+                if tasks in [0, 1]:
+                    bvp_seg = _process_bvp_signal(bvp_label[start: stop], fs, diff_flag=diff_flag)
+                    hr_label = _calculate_fft_hr(bvp_seg, fs=fs)
+                    hr_label = int(np.round(hr_label))
+                    # print("hr_label:", hr_label)
+                    if tasks == 0:
+                        bp_seg = bp_label[start: stop]
 
-                rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
-                bp_seg = bp_label[start: stop]
-                # eda_seg = _process_eda_signal(eda_label[start: stop], fs, diff_flag=diff_flag)
+                if tasks in [0, 2]:
+                    rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
+                    
                 
                 try:
                     rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
@@ -509,9 +508,11 @@ def compare_estimated_phys_within_dataset(save_plot=1):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--tasks', default="0", dest="tasks", type=int,
+                        help='physiological signals to analyze: [0: All (BVP, RSP, BP); 1:BVP; 2: RSP')
     parser.add_argument('--plot', default="1", dest="plot", type=int,
                         help='whether to save plots: [0: No; 1:Yes')
     parser.add_argument('REMAIN', nargs='*')
     args_parser = parser.parse_args()
 
-    compare_estimated_phys_within_dataset(args_parser.plot)
+    compare_estimated_phys_within_dataset(args_parser.tasks, args_parser.plot)

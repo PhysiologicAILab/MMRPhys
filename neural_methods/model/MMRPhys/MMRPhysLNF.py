@@ -376,15 +376,9 @@ class MMRPhysLNF(nn.Module):
             print("nf_RSP:", nf_RSP)
 
         if "BVP" in self.tasks or "BP" in self.tasks:
-            if self.in_channels in [3, 4]:
-                self.bvp_feature_extractor = BVP_FeatureExtractor(inCh=3, dropout_rate=dropout, debug=debug)
-            else:
-                self.bvp_feature_extractor = BVP_FeatureExtractor(inCh=1, dropout_rate=dropout, debug=debug)
+            self.bvp_feature_extractor = BVP_FeatureExtractor(inCh=self.in_channels, dropout_rate=dropout, debug=debug)
         if "RSP" in self.tasks or "BP" in self.tasks:
-            if self.in_channels in [1, 4]:
-                self.rsp_feature_extractor = RSP_FeatureExtractor(inCh=1, dropout_rate=dropout, debug=debug)
-            else:
-                self.rsp_feature_extractor = RSP_FeatureExtractor(inCh=3, dropout_rate=dropout, debug=debug)
+            self.rsp_feature_extractor = RSP_FeatureExtractor(inCh=self.in_channels, dropout_rate=dropout, debug=debug)
         
         if "BVP" in self.tasks:
             self.rppg_head = BVP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)

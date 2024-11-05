@@ -2,7 +2,7 @@ BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
   BATCH_SIZE: 4
-  EPOCHS: 10
+  EPOCHS: 5
   LR: 1e-3
   MODEL_FILE_NAME: BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
@@ -120,9 +120,9 @@ MODEL:
     TASKS: ["RSP"]
     MD_FSAM: True
     MD_TYPE: "SNMF_Label"
-    MD_R: 1
+    MD_R: 16
     MD_S: 1
-    MD_STEPS: 5
+    MD_STEPS: 8
     MD_RESIDUAL: True
     MD_INFERENCE: False
 INFERENCE:

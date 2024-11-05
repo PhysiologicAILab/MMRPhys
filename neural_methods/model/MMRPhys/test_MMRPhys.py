@@ -11,18 +11,18 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
     "TASKS": ["RSP"],
     "FS": 25,
-    "MD_FSAM": False,
-    "MD_TYPE": "SNMF",
+    "MD_FSAM": True,
+    "MD_TYPE": "SNMF_Label",
     "MD_R": 1,
     "MD_S": 1,
-    "MD_STEPS": 4,
+    "MD_STEPS": 5,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
     "in_channels": 1,
@@ -147,30 +147,29 @@ class TestMMRPhys(object):
         if self.assess_latency:
             t0 = time.time()
 
-        out = self.net(self.test_data)
+        out = self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.resp_label)
         self.pred_ppg = out[0]
         self.pred_rBr = out[1]
         self.pred_eBP = out[2]
         self.vox_embed_ppg = out[3]
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-            self.factorized_embed_ppg = out[4]
-            self.appx_error_ppg = out[5]
+            self.factorized_embed_ppg = out[5]
+            self.appx_error_ppg = out[6]
 
         if self.assess_latency:
             t1 = time.time()
             self.time_vec.append(t1-t0)
 
         if self.debug:
-            if "BVP" in self.tasks and "RSP" in self.tasks:
-                print("pred.shape", self.pred_ppg.shape, self.pred_rBr.shape)
-            elif "BVP" in self.tasks:
+            if "BVP" in self.tasks:
                 print("pred.shape", self.pred_ppg.shape)
-            elif "RSP" in self.tasks:
+            if "RSP" in self.tasks:
                 print("pred.shape", self.pred_rBr.shape)
             
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                self.appx_error_list.append(self.appx_error_ppg.item())
+                if "BVP" in self.tasks:
+                    self.appx_error_list.append(self.appx_error_ppg.item())
 
         if self.visualize:
             self.save_attention_maps(num_trial)

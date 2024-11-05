@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 5
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhysLEF_BVP_RGBx72_Base_Fold1
+  MODEL_FILE_NAME: BP4D_MMRPhysLEF_BVP_RGBx72_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -118,6 +118,13 @@ MODEL:
     FRAME_NUM: 500
     TYPE: "LEF"
     TASKS: ["BVP"]
+    MD_FSAM: True
+    MD_TYPE: "SNMF_Label"
+    MD_R: 1
+    MD_S: 1
+    MD_STEPS: 5
+    MD_RESIDUAL: True
+    MD_INFERENCE: False
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
