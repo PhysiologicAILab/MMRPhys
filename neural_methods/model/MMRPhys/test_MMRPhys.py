@@ -11,9 +11,9 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
     "TASKS": ["RSP"],
@@ -25,7 +25,7 @@ model_config = {
     "MD_STEPS": 5,
     "MD_INFERENCE": True,
     "MD_RESIDUAL": True,
-    "in_channels": 1,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 72,
     "weight": 72,

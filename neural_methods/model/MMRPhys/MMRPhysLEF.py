@@ -7,7 +7,7 @@ import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 
 nf_BVP = [8, 12, 16]
-nf_RSP = [8, 12, 16]
+nf_RSP = [8, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -171,6 +171,11 @@ class RSP_FeatureExtractor(nn.Module):
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 29, 29
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 27, 27
             nn.Dropout3d(p=dropout_rate),
+
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 25, 25
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 23, 23
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 21, 21
+            nn.Dropout3d(p=dropout_rate),
         )
 
     def forward(self, x):
@@ -189,9 +194,6 @@ class RSP_Head(nn.Module):
 
         # self.downsample = nn.AvgPool1d(kernel_size=self.time_scale_factor)
         self.upsample = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 25, 25
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 23, 23
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 21, 21
             nn.Upsample(scale_factor=(self.time_scale_factor, 1, 1)),
         )
 
@@ -212,8 +214,8 @@ class RSP_Head(nn.Module):
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[1], [5, 3, 3], [1, 3, 3], [4, 0, 0], dilation=[2, 1, 1]), #B, nf_RSP[2], T, 7, 7
-            ConvBlock3D(nf_RSP[1], nf_RSP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),        #B, nf_RSP[1], T, 3, 3
+            ConvBlock3D(nf_RSP[2], nf_RSP[1], [5, 3, 3], [1, 3, 3], [4, 0, 0], dilation=[2, 1, 1]),         #B, nf_RSP[2], T, 7, 7
+            ConvBlock3D(nf_RSP[1], nf_RSP[0], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]),         #B, nf_RSP[1], T, 3, 3
             nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), dilation=(1, 1, 1), bias=False),     #B, 1, T, 1, 1
         )
 
