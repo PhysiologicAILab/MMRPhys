@@ -7,7 +7,7 @@ import torch.nn as nn
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 
 nf_BVP = [8, 12, 16]
-nf_RSP = [8, 12, 16]
+nf_RSP = [8, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -261,10 +261,10 @@ class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
         self.debug = debug
-        self.time_scale_factor = 4
+        self.temporal_scale_factor = 4
 
         self.upsample = nn.Sequential(
-            nn.Upsample(scale_factor=(self.time_scale_factor, 1, 1)),       #B, nf_RSP[2], T, 21, 21
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),       #B, nf_RSP[2], T, 21, 21
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -440,7 +440,7 @@ class MMRPhysLLF(nn.Module):
             self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
 
 
-    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=72, Height=72]
+    def forward(self, x, label_bvp=None, label_rsp=None, epoch_count=-1): # [batch, Features=3, Temp=frames, Width=72, Height=72]
         
         [batch, channel, length, width, height] = x.shape        
 

@@ -67,7 +67,7 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        "BP4D_500x72_Fold1_RGBT": {
+        "BP4D_500x72_Fold1": {
             "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
             "exp" : {
                 # "MMRPhys_FuseL_SFSAM_Label":
@@ -77,15 +77,64 @@ path_dict_within_dataset = {
                 #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
                 #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
                 # },
-                "MMRPhys_FuseL_Base":
-                {
-                    "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
-                    "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
-                    "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
-                    # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
-                }
+                # "MMRPhys_FuseL_Base":
+                # {
+                #     "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
+                #     "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
+                #     "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
+                #     # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
+                # },
+                # "MMRPhys_LEF_SFSAM_Thermal":
+                # {
+                #     "rsp": "BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
+                # "MMRPhys_LLF_SFSAM":
+                # {
+                #     "bvp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                # },
+                # "MMRPhys_LEF_SFSAM_RGB":
+                # {
+                #     "rsp": "BP4D_MMRPhysLEF_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
+
+                "MMRPhysLNF_Base_Fold1":{
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_rsp_outputs.pickle"
+                },
+                "MMRPhysLNF_SFSAM_Fold1": {
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                },
             },
         },
+        "BP4D_500x72_Fold2": {
+            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+            "exp": {
+                "MMRPhysLNF_Base_Fold2": {
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_rsp_outputs.pickle"
+                },
+                "MMRPhysLNF_SFSAM_Fold2": {
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_rsp_outputs.pickle"
+                },
+            }
+        },
+        "BP4D_500x72_Fold3": {
+            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+            "exp": {
+                "MMRPhysLNF_Base_Fold3": {
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_rsp_outputs.pickle"
+                },
+                "MMRPhysLNF_SFSAM_Fold3": {
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle"
+                },
+            }
+        },
+
         # "BP4D_500x9_Fold1_RGBT": {
         #     "root": "runs/exp/BP4D_RGBT_500_9x9/saved_test_outputs/",
         #     "exp": {
@@ -204,13 +253,13 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
         print("*"*50)
         print("Test Data:", test_dataset)
         print("*"*50)
-        if tasks in [0, 1]:
+        if tasks in [0, 1, 3]:
             bvp_dict = {}
-            if tasks == 0:
+            if tasks == 3:
                 bp_dict = {}
-        if tasks in [0, 2]:
+        if tasks in [0, 2, 3]:
             rsp_dict = {}
-        if tasks not in [0, 1, 2]:
+        if tasks not in [0, 1, 2, 3]:
             print("Unsupported task option")
             exit()
 
@@ -225,19 +274,19 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
 
         for train_model in path_dict_within_dataset["test_datasets"][test_dataset]["exp"]:
             print("Model:", train_model)
-            if tasks in [0, 1]:
+            if tasks in [0, 1, 3]:
                 bvp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bvp"])
                 bvp_dict[train_model] = CPU_Unpickler(open(bvp_fn, "rb")).load()
-                if tasks == 0:
+                if tasks == 3:
                     bp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bp"])
                     bp_dict[train_model] = CPU_Unpickler(open(bp_fn, "rb")).load()
-            if tasks in [0, 2]:
+            if tasks in [0, 2, 3]:
                 rsp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["rsp"])
                 rsp_dict[train_model] = CPU_Unpickler(open(rsp_fn, "rb")).load()
 
         print("-"*50)
 
-        if tasks in [0, 1]:
+        if tasks in [0, 1, 3]:
             model_names = list(bvp_dict.keys())
         else:
             model_names = list(rsp_dict.keys())
@@ -246,16 +295,16 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
         # exit()
 
         # List of all video trials
-        if tasks in [0, 1]:
+        if tasks in [0, 1, 3]:
             trial_list = list(bvp_dict[model_names[0]]['predictions'].keys())
         else:
             trial_list = list(rsp_dict[model_names[0]]['predictions'].keys())
         print('Num Trials', len(trial_list))
 
-        if tasks in [0, 1]:
+        if tasks in [0, 1, 3]:
             all_hr_labels = {}
             all_hr_preds = {}
-        if tasks in [0, 2]:
+        if tasks in [0, 2, 3]:
             all_rr_labels = {}
             all_rr_preds = {}
 
@@ -263,7 +312,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             # print("."*25)
 
             # Read in meta-data from pickle file
-            if tasks in [0, 1]:               
+            if tasks in [0, 1, 3]:               
                 gt_bvp = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['predictions'][trial_list[trial_ind]]))
                 total_samples = len(gt_bvp)
                 fs = bvp_dict[model_names[0]]['fs'] # Video Frame Rate
@@ -281,13 +330,13 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             # print('Chunk size', chunk_size)
             # print('Total chunks', total_chunks)
 
-            if tasks in [0, 1]:
+            if tasks in [0, 1, 3]:
                 bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-                if tasks == 0:
+                if tasks == 3:
                     bp_label = np.array(_reform_data_from_dict(bp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
                 hr_pred = {}
 
-            if tasks in [0, 2]:
+            if tasks in [0, 2, 3]:
                 rsp_label = np.array(_reform_data_from_dict(rsp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
                 rr_pred = {}
 
@@ -297,33 +346,35 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 # print("*"*25)
                 # try:
                 if save_plot:
-                    fig, ax = plt.subplots(3, 1, figsize=(16, 12))
+                    if tasks in [0, 3]:
+                        fig, ax = plt.subplots(2, 1, figsize=(16, 12))
+                    else:
+                        fig, ax = plt.subplots(1, 1, figsize=(16, 8))
                 # fig.tight_layout()
 
                 start = (c_ind)*chunk_size
                 stop = (c_ind+1)*chunk_size
                 samples = stop - start
                 
-                if tasks in [0, 1]:
+                if tasks in [0, 1, 3]:
                     bvp_seg = _process_bvp_signal(bvp_label[start: stop], fs, diff_flag=diff_flag)
                     hr_label = _calculate_fft_hr(bvp_seg, fs=fs)
                     hr_label = int(np.round(hr_label))
                     # print("hr_label:", hr_label)
-                    if tasks == 0:
+                    if tasks == 3:
                         bp_seg = bp_label[start: stop]
 
-                if tasks in [0, 2]:
+                if tasks in [0, 2, 3]:
                     rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
                     
+                    try:
+                        rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
+                        rr_label = int(np.round(rr_label))
+                    except:
+                        rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
+                        rr_label = int(np.round(rr_label))
                 
-                try:
-                    rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
-                    rr_label = int(np.round(rr_label))
-                except:
-                    rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
-                    rr_label = int(np.round(rr_label))
-                
-                # print("rr_label:", rr_label)
+                    # print("rr_label:", rr_label)
 
                 x_time = np.linspace(0, samples/fs, num=samples)
 
@@ -333,55 +384,86 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                         trial_dict[model_names[m_ind]] = {}
 
                         # Reform label and prediction vectors from multiple trial chunks
-                        trial_dict[model_names[m_ind]]["bvp_pred"] = np.array(_reform_data_from_dict(bvp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
-                        trial_dict[model_names[m_ind]]["rsp_pred"] = np.array(_reform_data_from_dict(rsp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
-                        trial_dict[model_names[m_ind]]["bp_pred"] = np.array(_reform_data_from_dict(bp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
-                        # trial_dict[model_names[m_ind]]["eda_pred"] = np.array(_reform_data_from_dict(eda_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
+                        if tasks in [0, 1, 3]:
+                            trial_dict[model_names[m_ind]]["bvp_pred"] = np.array(_reform_data_from_dict(bvp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))                        
+                            if tasks == 3:
+                                trial_dict[model_names[m_ind]]["bp_pred"] = np.array(_reform_data_from_dict(bp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
 
-                    if model_names[m_ind] not in all_hr_labels:
-                        all_hr_labels[model_names[m_ind]] = []
-                        all_hr_preds[model_names[m_ind]] = []
-                        all_rr_labels[model_names[m_ind]] = []
-                        all_rr_preds[model_names[m_ind]] = []
+                        if tasks in [0, 2, 3]:
+                            trial_dict[model_names[m_ind]]["rsp_pred"] = np.array(_reform_data_from_dict(rsp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
+
+                    
+                        if tasks in [0, 1, 3]:
+                            if model_names[m_ind] not in all_hr_labels:
+                                all_hr_labels[model_names[m_ind]] = []
+                                all_hr_preds[model_names[m_ind]] = []
+                        if tasks in [0, 2, 3]:
+                            if model_names[m_ind] not in all_rr_labels:
+                                all_rr_labels[model_names[m_ind]] = []
+                                all_rr_preds[model_names[m_ind]] = []
 
 
                     # Process label and prediction signals
-                    bvp_pred_seg = _process_bvp_signal(trial_dict[model_names[m_ind]]["bvp_pred"][start: stop], fs, diff_flag=diff_flag)
-                    rsp_pred_seg = _process_rsp_signal(trial_dict[model_names[m_ind]]["rsp_pred"][start: stop], fs, diff_flag=diff_flag)
-                    bp_pred_seg = trial_dict[model_names[m_ind]]["bp_pred"][start: stop]
+                    if tasks in [0, 1, 3]:
+                        bvp_pred_seg = _process_bvp_signal(trial_dict[model_names[m_ind]]["bvp_pred"][start: stop], fs, diff_flag=diff_flag)
+                        if tasks == 3:
+                            bp_pred_seg = trial_dict[model_names[m_ind]]["bp_pred"][start: stop]
+                    if tasks in [0, 2, 3]:
+                        rsp_pred_seg = _process_rsp_signal(trial_dict[model_names[m_ind]]["rsp_pred"][start: stop], fs, diff_flag=diff_flag)
                     # eda_pred_seg = _process_eda_signal(trial_dict[model_names[m_ind]]["eda_pred"][start: stop], fs, diff_flag=diff_flag)
 
-                    hr_pred[model_names[m_ind]] = _calculate_fft_hr(bvp_pred_seg, fs=fs)
-                    hr_pred[model_names[m_ind]] = int(np.round(hr_pred[model_names[m_ind]]))
+                    if tasks in [0, 1, 3]:
+                        hr_pred[model_names[m_ind]] = _calculate_fft_hr(bvp_pred_seg, fs=fs)
+                        hr_pred[model_names[m_ind]] = int(np.round(hr_pred[model_names[m_ind]]))
+                        # print("m_ind:", m_ind, "; hr_pred: ", hr_pred[model_names[m_ind]])
 
-                    try:
-                        rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
-                        rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
-                    except:
-                        rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
-                        rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                    if tasks in [0, 2, 3]:
+                        try:
+                            rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
+                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        except:
+                            rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
+                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
 
-                    # print("m_ind:", m_ind, "; hr_pred: ", hr_pred[model_names[m_ind]])
-                    # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
+                         # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
 
-                    all_hr_labels[model_names[m_ind]].append(hr_label)
-                    all_hr_preds[model_names[m_ind]].append(hr_pred[model_names[m_ind]])
-                    all_rr_labels[model_names[m_ind]].append(rr_label)
-                    all_rr_preds[model_names[m_ind]].append(rr_pred[model_names[m_ind]])
+                    if tasks in [0, 1, 3]:
+                        all_hr_labels[model_names[m_ind]].append(hr_label)
+                        all_hr_preds[model_names[m_ind]].append(hr_pred[model_names[m_ind]])
+
+                    if tasks in [0, 2, 3]:
+                        all_rr_labels[model_names[m_ind]].append(rr_label)
+                        all_rr_preds[model_names[m_ind]].append(rr_pred[model_names[m_ind]])
 
                     if save_plot:
-                        ax[0].plot(x_time, bvp_pred_seg, label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
-                        ax[1].plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
-                        ax[2].plot(x_time, bp_pred_seg, label=model_names[m_ind])
+                        if tasks in [0, 3]:
+                            ax[0].plot(x_time, bvp_pred_seg, label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
+                            ax[1].plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
+                        else:
+                            if tasks in [1, 3]:
+                                ax.plot(x_time, bvp_pred_seg, label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
+                            else:
+                                ax.plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
+                        # ax[2].plot(x_time, bp_pred_seg, label=model_names[m_ind])
                         # ax[3].plot(x_time, eda_pred_seg, label=model_names[m_ind])
 
                 if save_plot:
-                    ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                    ax[0].legend(loc="upper right")
-                    ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                    ax[1].legend(loc="upper right")
-                    ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
-                    ax[2].legend(loc="upper right")
+                    if tasks in [0, 3]:
+                        ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                        ax[0].legend(loc="upper right")
+                        ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                        ax[1].legend(loc="upper right")
+                    else:
+                        if tasks in [1, 3]:
+                            ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                            ax.legend(loc="upper right")
+                        else:
+                            ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                            ax.legend(loc="upper right")
+
+
+                    # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
+                    # ax[2].legend(loc="upper right")
                     # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
                     # ax[3].legend(loc="upper right")
                 
@@ -403,30 +485,31 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             if model_names[m_ind] not in all_test_data:
                 all_test_data[model_names[m_ind]] = {}
 
-            rr_labels_array = np.array(all_rr_labels[model_names[m_ind]])
-            rr_pred_array = np.array(all_rr_preds[model_names[m_ind]])
-            rr_labels_clean_array = deepcopy(rr_labels_array)
-            rr_pred_clean_array = deepcopy(rr_pred_array)
+            if tasks in [0, 1, 3]:
+                hr_labels_array = np.array(all_hr_labels[model_names[m_ind]])
+                hr_pred_array = np.array(all_hr_preds[model_names[m_ind]])
+                hr_labels_clean_array = deepcopy(hr_labels_array)
+                hr_pred_clean_array = deepcopy(hr_pred_array)
 
-            for ind in range(len(rr_labels_array)):
-                if rr_labels_array[ind]==0 or np.isnan(rr_labels_array[ind]) or rr_pred_array[ind]==0 or np.isnan(rr_pred_array[ind]):
-                    rr_labels_clean_array = np.delete(rr_labels_array, ind)
-                    rr_pred_clean_array = np.delete(rr_pred_array, ind)
-            all_test_data[model_names[m_ind]]["rr_labels"] = rr_labels_clean_array
-            all_test_data[model_names[m_ind]]["rr_pred"] = rr_pred_clean_array
+                for ind in range(len(hr_labels_array)):
+                    if hr_labels_array[ind]==0 or np.isnan(hr_labels_array[ind]) or hr_pred_array[ind]==0 or np.isnan(hr_pred_array[ind]):
+                        hr_labels_clean_array = np.delete(hr_labels_array, ind)
+                        hr_pred_clean_array = np.delete(hr_pred_array, ind)
+                all_test_data[model_names[m_ind]]["hr_labels"] = hr_labels_clean_array
+                all_test_data[model_names[m_ind]]["hr_pred"] = hr_pred_clean_array
 
-            hr_labels_array = np.array(all_hr_labels[model_names[m_ind]])
-            hr_pred_array = np.array(all_hr_preds[model_names[m_ind]])
-            hr_labels_clean_array = deepcopy(hr_labels_array)
-            hr_pred_clean_array = deepcopy(hr_pred_array)
+            if tasks in [0, 2, 3]:
+                rr_labels_array = np.array(all_rr_labels[model_names[m_ind]])
+                rr_pred_array = np.array(all_rr_preds[model_names[m_ind]])
+                rr_labels_clean_array = deepcopy(rr_labels_array)
+                rr_pred_clean_array = deepcopy(rr_pred_array)
 
-            for ind in range(len(hr_labels_array)):
-                if hr_labels_array[ind]==0 or np.isnan(hr_labels_array[ind]) or hr_pred_array[ind]==0 or np.isnan(hr_pred_array[ind]):
-                    hr_labels_clean_array = np.delete(hr_labels_array, ind)
-                    hr_pred_clean_array = np.delete(hr_pred_array, ind)
-            all_test_data[model_names[m_ind]]["hr_labels"] = hr_labels_clean_array
-            all_test_data[model_names[m_ind]]["hr_pred"] = hr_pred_clean_array
-
+                for ind in range(len(rr_labels_array)):
+                    if rr_labels_array[ind]==0 or np.isnan(rr_labels_array[ind]) or rr_pred_array[ind]==0 or np.isnan(rr_pred_array[ind]):
+                        rr_labels_clean_array = np.delete(rr_labels_array, ind)
+                        rr_pred_clean_array = np.delete(rr_pred_array, ind)
+                all_test_data[model_names[m_ind]]["rr_labels"] = rr_labels_clean_array
+                all_test_data[model_names[m_ind]]["rr_pred"] = rr_pred_clean_array
 
         data_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_eval_data.npy")
         np.save(data_fn, all_test_data)
@@ -439,77 +522,84 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             print("Model:", model_names[m_ind])
             print("-"*50)
             
-            gt_hr = np.array(all_hr_labels[model_names[m_ind]])
-            pred_hr = np.array(all_hr_preds[model_names[m_ind]])
-            gt_rr = np.array(all_rr_labels[model_names[m_ind]])
-            pred_rr = np.array(all_rr_preds[model_names[m_ind]])
-            num_test_samples = len(gt_hr)
-
+            if tasks in [0, 1, 3]:
+                gt_hr = np.array(all_hr_labels[model_names[m_ind]])
+                pred_hr = np.array(all_hr_preds[model_names[m_ind]])
+                num_test_samples = len(gt_hr)
+            
+            if tasks in [0, 2, 3]:
+                gt_rr = np.array(all_rr_labels[model_names[m_ind]])
+                pred_rr = np.array(all_rr_preds[model_names[m_ind]])
+                num_test_samples = len(gt_rr)
+            
             print("Total Samples: ", num_test_samples)
             print("."*50)
-            print("HR Metrics")
-            print("."*50)
+            
+            if tasks in [0, 1, 3]:
+                print("HR Metrics")
+                print("."*50)
 
-            MAE_HR = np.mean(np.abs(pred_hr - gt_hr))
-            standard_error = np.std(np.abs(pred_hr - gt_hr)) / np.sqrt(num_test_samples)
-            print("HR MAE: {0} +/- {1}".format(MAE_HR, standard_error))
+                MAE_HR = np.mean(np.abs(pred_hr - gt_hr))
+                standard_error = np.std(np.abs(pred_hr - gt_hr)) / np.sqrt(num_test_samples)
+                print("HR MAE: {0} +/- {1}".format(MAE_HR, standard_error))
 
-            RMSE_HR = np.sqrt(np.mean(np.square(pred_hr - gt_hr)))
-            standard_error = np.sqrt(np.std(np.square(pred_hr - gt_hr))) / np.sqrt(num_test_samples)
-            print("HR RMSE: {0} +/- {1}".format(RMSE_HR, standard_error))
+                RMSE_HR = np.sqrt(np.mean(np.square(pred_hr - gt_hr)))
+                standard_error = np.sqrt(np.std(np.square(pred_hr - gt_hr))) / np.sqrt(num_test_samples)
+                print("HR RMSE: {0} +/- {1}".format(RMSE_HR, standard_error))
 
-            MAPE_HR = np.mean(np.abs((pred_hr - gt_hr) / gt_hr)) * 100
-            standard_error = np.std(np.abs((pred_hr - gt_hr) / gt_hr)) / np.sqrt(num_test_samples) * 100
-            print("HR MAPE: {0} +/- {1}".format(MAPE_HR, standard_error))
+                MAPE_HR = np.mean(np.abs((pred_hr - gt_hr) / gt_hr)) * 100
+                standard_error = np.std(np.abs((pred_hr - gt_hr) / gt_hr)) / np.sqrt(num_test_samples) * 100
+                print("HR MAPE: {0} +/- {1}".format(MAPE_HR, standard_error))
 
-            Pearson_HR = np.corrcoef(pred_hr, gt_hr)
-            correlation_coefficient = Pearson_HR[0][1]
-            standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
-            print("HR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+                Pearson_HR = np.corrcoef(pred_hr, gt_hr)
+                correlation_coefficient = Pearson_HR[0][1]
+                standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
+                print("HR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
 
-            scatter_plot_hr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_HR.jpg")
-            plt.scatter(hr_labels_clean_array, hr_pred_clean_array)
-            plt.xlabel("Ground Truth HR")
-            plt.ylabel("Estimated HR")
-            plt.title("HR | MAE: " + str(np.round(MAE_HR, 2)) + "; RMSE: " + str(np.round(RMSE_HR, 2)) + "; MAPE: " + str(np.round(MAPE_HR, 2)) + "; Corr: " + str(np.round(Pearson_HR, 2)))
-            plt.savefig(scatter_plot_hr_fn)
-            plt.close()
+                scatter_plot_hr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_HR.jpg")
+                plt.scatter(hr_labels_clean_array, hr_pred_clean_array)
+                plt.xlabel("Ground Truth HR")
+                plt.ylabel("Estimated HR")
+                plt.title("HR | MAE: " + str(np.round(MAE_HR, 2)) + "; RMSE: " + str(np.round(RMSE_HR, 2)) + "; MAPE: " + str(np.round(MAPE_HR, 2)) + "; Corr: " + str(np.round(Pearson_HR, 2)))
+                plt.savefig(scatter_plot_hr_fn)
+                plt.close()
 
-            print("."*50)
-            print("RR Metrics")
-            print("."*50)
+            if tasks in [0, 2, 3]:
+                print("."*50)
+                print("RR Metrics")
+                print("."*50)
 
-            MAE_RR = np.mean(np.abs(pred_rr - gt_rr))
-            standard_error = np.std(np.abs(pred_rr - gt_rr)) / np.sqrt(num_test_samples)
-            print("RR MAE: {0} +/- {1}".format(MAE_RR, standard_error))
+                MAE_RR = np.mean(np.abs(pred_rr - gt_rr))
+                standard_error = np.std(np.abs(pred_rr - gt_rr)) / np.sqrt(num_test_samples)
+                print("RR MAE: {0} +/- {1}".format(MAE_RR, standard_error))
 
-            RMSE_RR = np.sqrt(np.mean(np.square(pred_rr - gt_rr)))
-            standard_error = np.sqrt(np.std(np.square(pred_rr - gt_rr))) / np.sqrt(num_test_samples)
-            print("RR RMSE: {0} +/- {1}".format(RMSE_RR, standard_error))
+                RMSE_RR = np.sqrt(np.mean(np.square(pred_rr - gt_rr)))
+                standard_error = np.sqrt(np.std(np.square(pred_rr - gt_rr))) / np.sqrt(num_test_samples)
+                print("RR RMSE: {0} +/- {1}".format(RMSE_RR, standard_error))
 
-            MAPE_RR = np.mean(np.abs((pred_rr - gt_rr) / gt_rr)) * 100
-            standard_error = np.std(np.abs((pred_rr - gt_rr) / gt_rr)) / np.sqrt(num_test_samples) * 100
-            print("RR MAPE: {0} +/- {1}".format(MAPE_RR, standard_error))
+                MAPE_RR = np.mean(np.abs((pred_rr - gt_rr) / gt_rr)) * 100
+                standard_error = np.std(np.abs((pred_rr - gt_rr) / gt_rr)) / np.sqrt(num_test_samples) * 100
+                print("RR MAPE: {0} +/- {1}".format(MAPE_RR, standard_error))
 
-            Pearson_RR = np.corrcoef(pred_rr, gt_rr)
-            correlation_coefficient = Pearson_RR[0][1]
-            standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
-            print("RR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+                Pearson_RR = np.corrcoef(pred_rr, gt_rr)
+                correlation_coefficient = Pearson_RR[0][1]
+                standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
+                print("RR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
 
-            scatter_plot_rr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_RR.jpg")
-            plt.scatter(rr_labels_clean_array, rr_pred_clean_array)
-            plt.xlabel("Ground Truth RR")
-            plt.ylabel("Estimated RR")
-            plt.title("RR | MAE: " + str(np.round(MAE_RR, 2)) + "; RMSE: " + str(np.round(RMSE_RR, 2)) + "; MAPE: " + str(np.round(MAPE_RR, 2)) + "; Corr: " + str(np.round(Pearson_RR, 2)))
-            plt.savefig(scatter_plot_rr_fn)
-            plt.close()
+                scatter_plot_rr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_RR.jpg")
+                plt.scatter(rr_labels_clean_array, rr_pred_clean_array)
+                plt.xlabel("Ground Truth RR")
+                plt.ylabel("Estimated RR")
+                plt.title("RR | MAE: " + str(np.round(MAE_RR, 2)) + "; RMSE: " + str(np.round(RMSE_RR, 2)) + "; MAPE: " + str(np.round(MAPE_RR, 2)) + "; Corr: " + str(np.round(Pearson_RR, 2)))
+                plt.savefig(scatter_plot_rr_fn)
+                plt.close()
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--tasks', default="0", dest="tasks", type=int,
-                        help='physiological signals to analyze: [0: All (BVP, RSP, BP); 1:BVP; 2: RSP')
+                        help='physiological signals to analyze: [0: BVP and RSP; 1:BVP; 2: RSP; 3: All (BVP, RSP, BP)')
     parser.add_argument('--plot', default="1", dest="plot", type=int,
                         help='whether to save plots: [0: No; 1:Yes')
     parser.add_argument('REMAIN', nargs='*')

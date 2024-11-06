@@ -198,7 +198,7 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels[torch.isnan(labels)] = 0
 
                 self.optimizer.zero_grad()
-                out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
+                out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp, epoch_count=epoch)
                 
                 pred_bvp = out[0]
                 pred_rsp = out[1]
