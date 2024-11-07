@@ -41,10 +41,10 @@ model_config = {
 
 
 class ConvBlock3D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1, 1], bias=False):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1, 1], bias=False, groups=1):
         super(ConvBlock3D, self).__init__()
         self.conv_block_3d = nn.Sequential(
-            nn.Conv3d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation),
+            nn.Conv3d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
             nn.Tanh(),
             nn.InstanceNorm3d(out_channel),
         )
@@ -54,16 +54,29 @@ class ConvBlock3D(nn.Module):
 
 
 class ConvBlock2D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1], bias=False):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1], bias=False, groups=1):
         super(ConvBlock2D, self).__init__()
         self.conv_block_2d = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation),
+            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
             nn.ReLU(),
             nn.BatchNorm2d(out_channel),
         )
 
     def forward(self, x):
         return self.conv_block_2d(x)
+
+
+class ConvBlock1D(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=1, bias=False, groups=1):
+        super(ConvBlock1D, self).__init__()
+        self.conv_block_1d = nn.Sequential(
+            nn.Conv1d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
+            nn.ReLU(),
+            nn.BatchNorm1d(out_channel),
+        )
+
+    def forward(self, x):
+        return self.conv_block_1d(x)
 
 
 class BVP_FeatureExtractor(nn.Module):
@@ -316,72 +329,81 @@ class BP_Estimation_Head(nn.Module):
         self.rsp_max_freq_id = rsp_freq_idx.max()    # 45 for fs = 25 and T = 4x500
         self.rsp_feat_res_y = self.rsp_max_freq_id - self.rsp_min_freq_id
 
-        self.bvp_fft_magnitude = nn.Sequential(
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 49, 9
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
+        # Convolution groups are used to separately process magnitude and phase features of STFT
+        self.bvp_embeddings_stft_feature_extractor = nn.Sequential(
+            ConvBlock2D(32, 32, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0], groups=2),  #B, 32, 47, 9
+            ConvBlock2D(32, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0], groups=2),  #B, 16, 43, 7
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 32, 23, 5
-            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 32, 21, 3
-            nn.Dropout2d(p=0.2),
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[2, 1], padding=[0, 0], groups=2),  #B, 16, 20, 5
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0], groups=2),  #B, 16, 16, 3
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0], groups=1),   #B, 16, 12, 1
         )
 
-        self.bvp_fft_phase = nn.Sequential(
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 49, 9
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
+        self.bvp_stft_feature_extractor = nn.Sequential(
+            ConvBlock2D(1, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 9
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 43, 7
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 32, 23, 5
-            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 32, 21, 3
-            nn.Dropout2d(p=0.2),
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[2, 1], padding=[0, 0]),  #B, 16, 20, 5
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 8, 3
+            ConvBlock2D(16, 16, kernel_size=[5, 3], stride=[1, 1], padding=[0, 0]),   #B, 16, 12, 1
         )
 
-        self.bvp_merged = nn.Sequential(
-            ConvBlock2D(64, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 32, 19, 3
-            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 32, 17, 3
-            ConvBlock2D(32, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),    #B, 16, 15, 1
-        )
-
-        self.rsp_fft_magnitude = nn.Sequential(
+        self.rsp_stft_feature_extractor = nn.Sequential(
             ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),   #B, 16, 36, 8
             ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 34, 6
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),    #B, 32, 16, 4
-            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),     #B, 32, 14, 4
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),    #B, 32, 12, 4
-            ConvBlock2D(32, 16, kernel_size=[3, 4], stride=[1, 1], padding=[0, 0]),     #B, 16, 10, 1
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),    #B, 16, 8, 4
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),     #B, 16, 14, 2
+            ConvBlock2D(16, 16, kernel_size=[3, 2], stride=[1, 1], padding=[0, 0]),    #B, 16, 12, 1
         )
 
-        num_feats = (16 * 15) + (16 * 10)
+        self.conv_feature_fusion = nn.Sequential(
+            ConvBlock1D(48, 48, kernel_size=7, stride=1, padding=0, groups=3),  #16*3
+            ConvBlock1D(48, 48, kernel_size=6, stride=1, padding=0, groups=1),
+        )
+
+        num_feats = 48
         self.final_dense_layer = nn.Sequential(
-            nn.Linear(num_feats, 2)
+            nn.Linear(num_feats, 2),
         )
 
 
-    def forward(self, bvp_embeddings=None, rsp_vec=None):
+    def forward(self, bvp_embeddings, bvp_vec, rsp_vec):
 
         if self.debug:
             print(" BP Head")
             print(" rppg_embeddings.shape", bvp_embeddings.shape)
             print(" rBr.shape", rsp_vec.shape)
 
-        bvp_feats = self.spatial_pool_bvp(bvp_embeddings)
-        bt, ch, t, h, w = bvp_feats.shape
-        bvp_feats = bvp_feats.view(bt, ch, t)   #h = w = 1 is expected here
+        bvp_embeddings_feats = self.spatial_pool_bvp(bvp_embeddings)
+        bt, ch, t, h, w = bvp_embeddings_feats.shape
+        bvp_embeddings_feats = bvp_embeddings_feats.view(bt, ch, t)   #h = w = 1 is expected here
 
-        feature_map_bvp_fft_magnitude = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
-        feature_map_bvp_fft_phase = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+        feature_map_bvp_emb_fft_magnitude = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+        feature_map_bvp_emb_fft_phase = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
 
         # STFT - magnitude and phase for multiple channels of BVP embeddings - to capture phase differences between different facial sites
         for cn in range(ch):
-            bvp_stft = torch.stft(bvp_feats[:, cn, :], n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
-            feature_map_bvp_fft_magnitude[:, cn, :, :] = bvp_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
-            feature_map_bvp_fft_phase[:, cn, :, :] = bvp_stft.angle()[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+            emb_feats = bvp_embeddings_feats[:, cn, :]
+            avg_feats = torch.mean(emb_feats, dim=1).unsqueeze(1)
+            std_feats = torch.std(emb_feats, dim=1).unsqueeze(1)
+            emb_feats = (emb_feats - avg_feats) / std_feats
+            bvp_emb_stft = torch.stft(emb_feats, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
+            feature_map_bvp_emb_fft_magnitude[:, cn, :, :] = bvp_emb_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+            feature_map_bvp_emb_fft_phase[:, cn, :, :] = bvp_emb_stft.angle()[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
 
-        # STFT - magnitude for estimated RSP signal - to capture respiration variability
+        # STFT - magnitude for estimated BVP signal - to capture heart-rate and HRV
+        avg_bvp = torch.mean(bvp_vec, dim=1).unsqueeze(1)
+        std_bvp = torch.std(bvp_vec, dim=1).unsqueeze(1)
+        norm_bvp_vec = (bvp_vec - avg_bvp)/std_bvp
+        feature_map_bvp_fft_magnitude = torch.zeros((bt, 1, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+        bvp_stft = torch.stft(norm_bvp_vec, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
+        feature_map_bvp_fft_magnitude[:, 0, :, :] = bvp_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+
+        # STFT - magnitude for estimated RSP signal - to capture Resp Rate and respiration variability
         avg_rsp = torch.mean(rsp_vec, dim=1).unsqueeze(1)
         std_rsp = torch.std(rsp_vec, dim=1).unsqueeze(1)
         norm_rsp_vec = (rsp_vec - avg_rsp)/std_rsp
@@ -393,24 +415,26 @@ class BP_Estimation_Head(nn.Module):
         rsp_stft = torch.stft(long_rsp_vec, n_fft=self.rsp_nfft, win_length=self.win_len_rsp, window=self.win_rsp, hop_length=self.hop_len_rsp, return_complex=True)
         feature_map_rsp_fft_magnitude[:, 0, :, :] = rsp_stft.real[:, self.rsp_min_freq_id:self.rsp_max_freq_id, :]
 
-        # Convolutional blocks - separate feature extraction for BVP (phase, magnitude) and RSP
-        bvp_mag_feats = self.bvp_fft_magnitude(feature_map_bvp_fft_magnitude)
-        bvp_phase_feats = self.bvp_fft_phase(feature_map_bvp_fft_phase)
-        rsp_feats = self.rsp_fft_magnitude(feature_map_rsp_fft_magnitude)
-        
-        bvp_feats = torch.concat([bvp_mag_feats, bvp_phase_feats], dim=1)
-        bvp_feats = self.bvp_merged(bvp_feats)
+        # Convolutional blocks - separate feature extraction for BVP Embeddings (phase, magnitude), BVP (magnitude) and RSP (magnitude)
+        bvp_emb_feats = torch.concat([feature_map_bvp_emb_fft_magnitude, feature_map_bvp_emb_fft_phase], dim=1)
+        bvp_emb_feats = self.bvp_embeddings_stft_feature_extractor(bvp_emb_feats)
+        bvp_feats = self.bvp_stft_feature_extractor(feature_map_bvp_fft_magnitude)
+        rsp_feats = self.rsp_stft_feature_extractor(feature_map_rsp_fft_magnitude)
 
-        # print("bvp_mag_feats.shape", bvp_mag_feats.shape)
-        # print("bvp_phase_feats.shape", bvp_phase_feats.shape)
-        # print("bvp_feats.shape", bvp_feats.shape)
-        # print("rsp_feats.shape", rsp_feats.shape)
-        # exit()
+        if self.debug:
+            print("bvp_emb_feats.shape", bvp_emb_feats.shape)
+            print("bvp_feats.shape", bvp_feats.shape)
+            print("rsp_feats.shape", rsp_feats.shape)
+
+        bvp_emb_feats = bvp_emb_feats.squeeze(-1)
+        bvp_feats = bvp_feats.squeeze(-1)
+        rsp_feats = rsp_feats.squeeze(-1)
+
+        merged_feats = torch.concat([bvp_emb_feats, bvp_feats, rsp_feats], dim=1)
+        merged_feats = self.conv_feature_fusion(merged_feats)
+        merged_feats = merged_feats.view(bt, -1)
 
         # Fully connected
-        bvp_feats = bvp_feats.view(bt, -1)
-        rsp_feats = rsp_feats.view(bt, -1)
-        merged_feats = torch.concat([bvp_feats, rsp_feats], dim=1)
         rBP = self.final_dense_layer(merged_feats)
 
         if self.debug:
@@ -484,9 +508,9 @@ class MMRPhysLNF(nn.Module):
 
         if "BP" in self.tasks:
             if (self.training and (epoch_count == -1 or epoch_count > self.wait_epochs_BP)):        # -1 will make BP head learn from very beginning of the training
-                rBP = self.rBP_head(bvp_embeddings = factorized_embeddings_bvp.detach(), rsp_vec = rBr.detach())
+                rBP = self.rBP_head(bvp_embeddings=factorized_embeddings_bvp.detach(), bvp_vec=rPPG.detach(), rsp_vec=rBr.detach())
             elif not self.training:
-                rBP = self.rBP_head(bvp_embeddings = factorized_embeddings_bvp.detach(), rsp_vec = rBr.detach())
+                rBP = self.rBP_head(bvp_embeddings=factorized_embeddings_bvp.detach(), bvp_vec=rPPG.detach(), rsp_vec=rBr.detach())
             else:
                 rBP = None
         else:
