@@ -6,6 +6,7 @@ import numpy as np
 import scipy
 import scipy.io
 from scipy.signal import butter
+import scipy.signal
 from scipy.sparse import spdiags
 from copy import deepcopy
 
@@ -51,9 +52,18 @@ def _calculate_peak_hr(ppg_signal, fs):
 
 
 # RSP Metrics
-# def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.05, high_pass=0.7):
-def _calculate_fft_rr(resp_signal, fs=30, low_pass=0.13, high_pass=0.5):
-    """Calculate respiration rate based on PPG using Fast Fourier transform (FFT)."""
+# def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
+def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.05, high_pass=0.7):
+    """Calculate respiration rate using Fast Fourier transform (FFT)."""
+    resp_signal = deepcopy(rsp_signal)
+    avg_resp = np.mean(resp_signal)
+    std_resp = np.std(resp_signal)
+    resp_signal = (resp_signal - avg_resp) / std_resp   # Standardize to remove DC level - which was due to min-max normalization
+
+    inv_resp_signal = deepcopy(resp_signal)
+    inv_resp_signal = -1 * inv_resp_signal[::-1]
+    resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)    # Higher signal length is needed to reliably compute FFT for low frequencies
+    
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
     f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
@@ -147,38 +157,6 @@ def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3
         SNR = 0
     return SNR
 
-def _calculate_SNR_EDA(pred_eda_signal, fs=30, low_pass=0.02, high_pass=5.0):
-    """Calculate SNR
-
-        Args:
-            pred_eda_signal(np.array): predicted EDA signal 
-            fs(int or float): sampling rate of the video
-        Returns:
-            SNR(float): Signal-to-Noise Ratio
-    """
-
-    # Calculate FFT
-    pred_eda_signal = np.expand_dims(pred_eda_signal, 0)
-    N = _next_power_of_2(pred_eda_signal.shape[1])
-    f_eda, pxx_eda = scipy.signal.periodogram(pred_eda_signal, fs=fs, nfft=N, detrend=False)
-
-    # Calculate the indices corresponding to the frequency ranges
-    idx_of_interest = np.argwhere((f_eda >= low_pass) & (f_eda <= high_pass))
-
-    # Select the corresponding values from the periodogram
-    pxx_eda = np.squeeze(pxx_eda)
-    pxx_boi = pxx_eda[idx_of_interest]
-
-    # Calculate the signal power
-    signal_power_all = np.sum(pxx_eda**2)
-    signal_power_boi = np.sum(pxx_boi**2)
-
-    # Calculate the SNR as the ratio of the areas
-    if signal_power_all != 0:
-        SNR = power2db(signal_power_boi / signal_power_all)
-    else:
-        SNR = 0
-    return SNR
 
 
 def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=False, use_bandpass=True, hr_method='FFT'):

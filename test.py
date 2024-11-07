@@ -265,14 +265,31 @@ if run_cell == 12:
 
 
 # %%
-nfft = 500
+
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+nfft = _next_power_of_2(500)
 fs = 25
 freqs = 60 * (np.arange(0, nfft)) * (fs / nfft / 2.)
-min_hr = 40
+min_hr = 30
 max_hr = 200
-idx = np.argwhere((freqs > min_hr) & (freqs < max_hr))
+idx_hr = np.argwhere((freqs > min_hr) & (freqs < max_hr))
+print(idx_hr)
 
-ppg = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=70)
+min_rr = 6
+max_rr = 33
+idx_rr = np.argwhere((freqs > min_rr) & (freqs < max_rr))
+print(idx_rr)
+
+# rsp_fft_freq = 60 * fs * torch.fft.rfftfreq(nfft)
+# rsp_foi = torch.argwhere((rsp_fft_freq > 3) & (rsp_fft_freq < 33))
+# print(rsp_foi)
+
+# %%
+
+ppg = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=40)
 ppg = ppg[200: 700]
 ppg_tensor = torch.tensor(ppg)
 ppg_fft_c = torch.fft.fft(ppg_tensor)
@@ -319,4 +336,64 @@ pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
 data = np.load(pth)
 print(data.shape)
 
+# %%
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+fs = 25
+ppg = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=140)
+ppg = ppg[200: 700]
+ppg = torch.from_numpy(ppg)
+bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(500), win_length=125, hop_length=50, return_complex=True)
+
+print(bvp_stft.angle()[12:63, :].shape)
+fig, ax = plt.subplots(1, 3)
+ax[0].imshow(bvp_stft.real[12:63, :])
+ax[1].imshow(bvp_stft.angle()[12:63, :])
+
+rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
+rsp = rsp[0: 1997]
+rsp = torch.from_numpy(rsp)
+rsp = rsp.unsqueeze(0)
+rsp = rsp.repeat(2,1)
+print(rsp.shape)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=250, hop_length=200, return_complex=True)
+print(rsp_stft.real[0, 7:45, :].shape)
+ax[2].imshow(rsp_stft.real[0, 7:45, :])
+
+
+# %%
+
+
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+
+fs = 25
+rsp_nfft = _next_power_of_2(2000)
+rsp_fft_freq = (60 * fs * torch.fft.rfftfreq(rsp_nfft))
+rsp_freq_idx = torch.argwhere((rsp_fft_freq > 5) & (rsp_fft_freq < 33))
+
+bvp_nfft = _next_power_of_2(500)
+bvp_fft_freq = (60 * fs * torch.fft.rfftfreq(bvp_nfft))
+bvp_freq_idx = torch.argwhere((bvp_fft_freq > 35) & (bvp_fft_freq < 185))
+
+print(rsp_freq_idx.min(), rsp_freq_idx.max())
+print(bvp_freq_idx.min(), bvp_freq_idx.max())
+
+# %%
+a = np.array([[1,2,3,4,5], [10, 11, 12, 13, 15]])
+at = torch.FloatTensor(a)
+print(torch.min(at, dim=1).values)
+print(torch.mean(at, dim=1))
+# %%
+a = np.array([[1, 2, 3, 4, 5], [10, 11, 12, 13, 15]])
+at = torch.FloatTensor(a)
+print(at.shape)
+bt = at.flip(dims=[1])
+print(bt.shape)
+print(at)
+print(bt)
 # %%

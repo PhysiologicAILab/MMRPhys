@@ -67,70 +67,76 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        "BP4D_500x72_Fold1": {
-            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
-            "exp" : {
-                # "MMRPhys_FuseL_SFSAM_Label":
-                # {
-                #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                #     "rsp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_rsp_outputs.pickle",
-                #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
-                #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
-                # },
-                # "MMRPhys_FuseL_Base":
-                # {
-                #     "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
-                #     "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
-                #     "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
-                #     # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
-                # },
-                # "MMRPhys_LEF_SFSAM_Thermal":
-                # {
-                #     "rsp": "BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-                # },
-                # "MMRPhys_LLF_SFSAM":
-                # {
-                #     "bvp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                #     "rsp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
-                # },
-                # "MMRPhys_LEF_SFSAM_RGB":
-                # {
-                #     "rsp": "BP4D_MMRPhysLEF_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-                # },
+        # "BP4D_500x72_Fold1": {
+        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        #     "exp" : {
+        #         # "MMRPhys_FuseL_SFSAM_Label":
+        #         # {
+        #         #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+        #         #     "rsp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+        #         #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
+        #         #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
+        #         # },
+        #         # "MMRPhys_FuseL_Base":
+        #         # {
+        #         #     "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
+        #         #     "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
+        #         #     "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
+        #         #     # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
+        #         # },
+        #         # "MMRPhys_LEF_SFSAM_Thermal":
+        #         # {
+        #         #     "rsp": "BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+        #         # },
+        #         # "MMRPhys_LLF_SFSAM":
+        #         # {
+        #         #     "bvp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+        #         #     "rsp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+        #         # },
+        #         # "MMRPhys_LEF_SFSAM_RGB":
+        #         # {
+        #         #     "rsp": "BP4D_MMRPhysLEF_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+        #         # },
 
-                "MMRPhysLNF_Base_Fold1":{
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_rsp_outputs.pickle"
-                },
-                "MMRPhysLNF_SFSAM_Fold1": {
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-                },
-            },
-        },
-        "BP4D_500x72_Fold2": {
-            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
-            "exp": {
-                "MMRPhysLNF_Base_Fold2": {
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_rsp_outputs.pickle"
-                },
-                "MMRPhysLNF_SFSAM_Fold2": {
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_rsp_outputs.pickle"
-                },
-            }
-        },
+        #         "MMRPhysLNF_Base_Fold1":{
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_rsp_outputs.pickle"
+        #         },
+        #         "MMRPhysLNF_SFSAM_Fold1": {
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+        #         },
+        #     },
+        # },
+        # "BP4D_500x72_Fold2": {
+        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        #     "exp": {
+        #         "MMRPhysLNF_Base_Fold2": {
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold2_rsp_outputs.pickle"
+        #         },
+        #         "MMRPhysLNF_SFSAM_Fold2": {
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold2_rsp_outputs.pickle"
+        #         },
+        #     }
+        # },
         "BP4D_500x72_Fold3": {
             "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
             "exp": {
-                "MMRPhysLNF_Base_Fold3": {
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_rsp_outputs.pickle"
-                },
-                "MMRPhysLNF_SFSAM_Fold3": {
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle"
+                # "MMRPhysLNF_Base_Fold3": {
+                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_rsp_outputs.pickle"
+                # },
+                # "MMRPhysLNF_SFSAM_Fold3": {
+                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle"
+                # },
+                "MMRPhysLNF_SFSAM_Fold3":{
+                    "bvp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle",
+                    "SBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_SBP_outputs.pickle",
+                    "DBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_DBP_outputs.pickle",
                 },
             }
         },
@@ -163,6 +169,15 @@ def _reform_data_from_dict(data, flatten=True):
 
     return sort_data
 
+
+def _reform_BP_data_from_dict(data):
+    """Helper func for calculate metrics: reformat predictions and labels from dicts. """
+    sort_data = sorted(data.items(), key=lambda x: x[0])
+    sort_data = [i[1] for i in sort_data]
+    sort_data = float(sort_data[0])
+    return sort_data
+
+
 def _process_bvp_signal(signal, fs=25, diff_flag=False):
     # Detrend and filter
     use_bandpass = True
@@ -188,7 +203,7 @@ def _process_rsp_signal(signal, fs=25, diff_flag=False):
         # signal = _detrend(signal, 100)
         pass
     if use_bandpass:
-        # [b, a] = butter(2, [0.05 / fs * 2, 0.7 / fs * 2], btype='bandpass')
+        # [b, a] = butter(2, [0.05 / fs * 2, 0.6 / fs * 2], btype='bandpass')
         [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
         signal = filtfilt(b, a, np.double(signal))
     return signal
@@ -212,17 +227,52 @@ def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
     return fft_hr
 
 
+# RSP Metrics
 # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.05, high_pass=0.7):
-def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
-    """Calculate respiration rate based on RSP using Fast Fourier transform (FFT)."""
-    rsp_signal = np.expand_dims(rsp_signal, 0)
-    N = _next_power_of_2(rsp_signal.shape[1])
-    f_rsp, pxx_rsp = scipy.signal.periodogram(rsp_signal, fs=fs, nfft=N, detrend=False)
-    fmask_rsp = np.argwhere((f_rsp >= low_pass) & (f_rsp <= high_pass))
-    mask_rsp = np.take(f_rsp, fmask_rsp)
-    mask_pxx = np.take(pxx_rsp, fmask_rsp)
-    fft_rr = np.take(mask_rsp, np.argmax(mask_pxx, 0))[0] * 60
+# def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
+def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
+    """Calculate respiration rate using Fast Fourier transform (FFT)."""
+    resp_signal = deepcopy(rsp_signal)
+    avg_resp = np.mean(resp_signal)
+    std_resp = np.std(resp_signal)
+    resp_signal = (resp_signal - avg_resp) / std_resp   # Standardize to remove DC level - which was due to min-max normalization
+
+    inv_resp_signal = deepcopy(resp_signal)
+    inv_resp_signal = -1 * inv_resp_signal[::-1]
+    # Higher signal length is needed to reliably compute FFT for low frequencies
+    resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
+                                 inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
+
+    # print(len(rsp_signal), len(resp_signal))
+    # fig, ax = plt.subplots(2, 1)
+    # ax[0].plot(rsp_signal)
+    # ax[1].plot(resp_signal)
+    # plt.savefig("temp.jpg")
+    # exit()
+
+    resp_signal = np.expand_dims(resp_signal, 0)
+    N = _next_power_of_2(resp_signal.shape[1])
+    f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
+    fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
+    # print(fmask_resp)
+    # exit()
+
+    mask_resp = np.take(f_resp, fmask_resp)
+    mask_pxx = np.take(pxx_resp, fmask_resp)
+    fft_rr = np.take(mask_resp, np.argmax(mask_pxx, 0))[0] * 60
     return fft_rr
+
+# # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.05, high_pass=0.7):
+# def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
+#     """Calculate respiration rate based on RSP using Fast Fourier transform (FFT)."""
+#     rsp_signal = np.expand_dims(rsp_signal, 0)
+#     N = _next_power_of_2(rsp_signal.shape[1])
+#     f_rsp, pxx_rsp = scipy.signal.periodogram(rsp_signal, fs=fs, nfft=N, detrend=False)
+#     fmask_rsp = np.argwhere((f_rsp >= low_pass) & (f_rsp <= high_pass))
+#     mask_rsp = np.take(f_rsp, fmask_rsp)
+#     mask_pxx = np.take(pxx_rsp, fmask_rsp)
+#     fft_rr = np.take(mask_rsp, np.argmax(mask_pxx, 0))[0] * 60
+#     return fft_rr
 
 
 def _calculate_peak_hr(ppg_signal, fs=25):
@@ -243,9 +293,9 @@ def _calculate_peak_rr(resp_signal, fs=25):
 
 def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
 
-    if save_plot:
-        plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
-        plot_dir.mkdir(parents=True, exist_ok=True)
+    # if save_plot:
+    plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
+    plot_dir.mkdir(parents=True, exist_ok=True)
 
     chunk_size = 500 #300  # size of chunk to visualize: -1 will plot the entire signal
 
@@ -257,6 +307,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             bvp_dict = {}
             if tasks == 3:
                 bp_dict = {}
+
         if tasks in [0, 2, 3]:
             rsp_dict = {}
         if tasks not in [0, 1, 2, 3]:
@@ -268,9 +319,9 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
             print("Data path does not exists:", str(root_dir))
             exit()
 
-        if save_plot:
-            plot_test_dir = plot_dir.joinpath(test_dataset)
-            plot_test_dir.mkdir(parents=True, exist_ok=True)
+        # if save_plot:
+        plot_test_dir = plot_dir.joinpath(test_dataset)
+        plot_test_dir.mkdir(parents=True, exist_ok=True)
 
         for train_model in path_dict_within_dataset["test_datasets"][test_dataset]["exp"]:
             print("Model:", train_model)
@@ -406,11 +457,8 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                     # Process label and prediction signals
                     if tasks in [0, 1, 3]:
                         bvp_pred_seg = _process_bvp_signal(trial_dict[model_names[m_ind]]["bvp_pred"][start: stop], fs, diff_flag=diff_flag)
-                        if tasks == 3:
-                            bp_pred_seg = trial_dict[model_names[m_ind]]["bp_pred"][start: stop]
                     if tasks in [0, 2, 3]:
                         rsp_pred_seg = _process_rsp_signal(trial_dict[model_names[m_ind]]["rsp_pred"][start: stop], fs, diff_flag=diff_flag)
-                    # eda_pred_seg = _process_eda_signal(trial_dict[model_names[m_ind]]["eda_pred"][start: stop], fs, diff_flag=diff_flag)
 
                     if tasks in [0, 1, 3]:
                         hr_pred[model_names[m_ind]] = _calculate_fft_hr(bvp_pred_seg, fs=fs)
@@ -444,8 +492,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                                 ax.plot(x_time, bvp_pred_seg, label=model_names[m_ind] + "; HR = " + str(hr_pred[model_names[m_ind]]))
                             else:
                                 ax.plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
-                        # ax[2].plot(x_time, bp_pred_seg, label=model_names[m_ind])
-                        # ax[3].plot(x_time, eda_pred_seg, label=model_names[m_ind])
+
 
                 if save_plot:
                     if tasks in [0, 3]:

@@ -53,6 +53,19 @@ class ConvBlock3D(nn.Module):
         return self.conv_block_3d(x)
 
 
+class ConvBlock2D(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1], bias=False):
+        super(ConvBlock2D, self).__init__()
+        self.conv_block_2d = nn.Sequential(
+            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation),
+            nn.ReLU(),
+            nn.BatchNorm2d(out_channel),
+        )
+
+    def forward(self, x):
+        return self.conv_block_2d(x)
+
+
 class BVP_FeatureExtractor(nn.Module):
     def __init__(self, inCh, dropout_rate=0.1, debug=False):
         super(BVP_FeatureExtractor, self).__init__()
@@ -261,56 +274,149 @@ class RSP_Head(nn.Module):
             return rBr, voxel_embeddings, appx_error
 
 
-class BP_Head_Phase(nn.Module):
-    def __init__(self, dropout_rate=0.1, debug=False):
-        super(BP_Head_Phase, self).__init__()
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+
+class BP_Estimation_Head(nn.Module):
+    def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
+        super(BP_Estimation_Head, self).__init__()
         self.debug = debug
 
         self.spatial_pool_bvp = nn.AvgPool3d(kernel_size=[1, 7, 7], stride=[1, 1, 1], padding=[0, 0, 0])
 
-        self.final_dense_layer = nn.Sequential(
-            nn.Linear(500, 16),
-            nn.Dropout(0.2),
-            nn.Linear(16, 2)
+        self.device = device
+        self.fs = md_config["FS"]
+
+        self.win_len_bvp = 5 * self.fs
+        self.win_bvp = torch.hann_window(self.win_len_bvp).to(device)
+        self.hop_len_bvp = 50   # for freq_band matched number of windows and 500 signal length, this should be 10
+        self.bvp_feat_res_x = 11    # 200 hop and 10 * 25 win_les, total windows are 11
+        self.min_hr = 35
+        self.max_hr = 185
+        self.bvp_nfft = _next_power_of_2(md_config["FRAME_NUM"])
+        bvp_fft_freq = (60 * self.fs * torch.fft.rfftfreq(self.bvp_nfft))
+        bvp_freq_idx = torch.argwhere((bvp_fft_freq > self.min_hr) & (bvp_fft_freq < self.max_hr))
+        self.bvp_min_freq_id = bvp_freq_idx.min()    # 12 for fs = 25 and T = 500
+        self.bvp_max_freq_id = bvp_freq_idx.max()    # 61 for fs = 25 and T = 500
+        self.bvp_feat_res_y = self.bvp_max_freq_id - self.bvp_min_freq_id
+
+        self.win_len_rsp = 10 * self.fs
+        self.win_rsp = torch.hann_window(self.win_len_rsp).to(device)
+        self.hop_len_rsp = 200  #  for freq_band matched number of windows and 1997 signal length, this should be 53
+        self.rsp_feat_res_x = 10    # 200 hop and 10 * 25 win_les, total windows are 10
+        self.min_rr = 5
+        self.max_rr = 33
+        # signal is to be 4 times concatenated - to increase the freq resolution in the desired band
+        self.rsp_nfft = _next_power_of_2(4 * md_config["FRAME_NUM"])
+        rsp_fft_freq = (60 * self.fs * torch.fft.rfftfreq(self.rsp_nfft))
+        rsp_freq_idx = torch.argwhere((rsp_fft_freq > self.min_rr) & (rsp_fft_freq < self.max_rr))
+        self.rsp_min_freq_id = rsp_freq_idx.min()    # 7 for fs = 25 and T = 4x500
+        self.rsp_max_freq_id = rsp_freq_idx.max()    # 45 for fs = 25 and T = 4x500
+        self.rsp_feat_res_y = self.rsp_max_freq_id - self.rsp_min_freq_id
+
+        self.bvp_fft_magnitude = nn.Sequential(
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 49, 9
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
+            nn.Dropout2d(p=0.2),
+
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 16, 23, 5
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 21, 3
+            nn.Dropout2d(p=0.2),
         )
 
-    def forward(self, rppg_embeddings=None, rBr=None):
+        self.bvp_fft_phase = nn.Sequential(
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 49, 9
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
+            nn.Dropout2d(p=0.2),
+
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 16, 23, 5
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 21, 3
+            nn.Dropout2d(p=0.2),
+        )
+
+        self.bvp_merged = nn.Sequential(
+            ConvBlock2D(32, 16, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 8, 19, 3
+            ConvBlock2D(16, 16, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 8, 17, 3
+            nn.Dropout2d(p=0.2),
+
+            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),    #B, 8, 15, 1
+        )
+
+        self.rsp_fft_magnitude = nn.Sequential(
+            ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),   #B, 16, 36, 8
+            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 34, 6
+            nn.Dropout2d(p=0.2),
+
+            ConvBlock2D(8, 8, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),    #B, 8, 16, 4
+            ConvBlock2D(8, 8, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),     #B, 1, 14, 4
+            nn.Dropout2d(p=0.2),
+
+            ConvBlock2D(8, 8, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),    #B, 8, 12, 4
+            ConvBlock2D(8, 8, kernel_size=[3, 4], stride=[1, 1], padding=[0, 0]),     #B, 1, 10, 1
+            nn.Dropout2d(p=0.2),
+        )
+
+        num_feats = (15 * 8) + (10 * 8)
+        self.final_dense_layer = nn.Sequential(
+            nn.Linear(num_feats, 32),
+            nn.Dropout(0.5),
+            nn.Linear(32, 2)
+        )
+
+
+    def forward(self, bvp_embeddings=None, rsp_vec=None):
 
         if self.debug:
             print(" BP Head")
-            print(" rppg_embeddings.shape", rppg_embeddings.shape)
-            print(" rBr.shape", rBr.shape)
+            print(" rppg_embeddings.shape", bvp_embeddings.shape)
+            print(" rBr.shape", rsp_vec.shape)
 
-        x = self.spatial_pool_bvp(rppg_embeddings)
+        bvp_feats = self.spatial_pool_bvp(bvp_embeddings)
+        bt, ch, t, h, w = bvp_feats.shape
+        bvp_feats = bvp_feats.view(bt, ch, t)   #h = w = 1 is expected here
+
+        feature_map_bvp_fft_magnitude = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+        feature_map_bvp_fft_phase = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+
+        # STFT - magnitude and phase for multiple channels of BVP embeddings - to capture phase differences between different facial sites
+        for cn in range(ch):
+            bvp_stft = torch.stft(bvp_feats[:, cn, :], n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
+            feature_map_bvp_fft_magnitude[:, cn, :, :] = bvp_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+            feature_map_bvp_fft_phase[:, cn, :, :] = bvp_stft.angle()[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+
+        # STFT - magnitude for estimated RSP signal - to capture respiration variability
+        avg_rsp = torch.mean(rsp_vec, dim=1).unsqueeze(1)
+        std_rsp = torch.std(rsp_vec, dim=1).unsqueeze(1)
+        norm_rsp_vec = (rsp_vec - avg_rsp)/std_rsp
+        rep_norm_rsp_vec = norm_rsp_vec.clone()
+        rep_norm_rsp_vec = -1 * rep_norm_rsp_vec.flip(dims=[1])
+        long_rsp_vec = torch.concat([norm_rsp_vec, rep_norm_rsp_vec[:, 1:], norm_rsp_vec[:, 1:], rep_norm_rsp_vec[:, 1:]], dim=1)
+
+        feature_map_rsp_fft_magnitude = torch.zeros((bt, 1, self.rsp_feat_res_y, self.rsp_feat_res_x)).to(self.device)
+        rsp_stft = torch.stft(long_rsp_vec, n_fft=self.rsp_nfft, win_length=self.win_len_rsp, window=self.win_rsp, hop_length=self.hop_len_rsp, return_complex=True)
+        feature_map_rsp_fft_magnitude[:, 0, :, :] = rsp_stft.real[:, self.rsp_min_freq_id:self.rsp_max_freq_id, :]
+
+        # Convolutional blocks - separate feature extraction for BVP (phase, magnitude) and RSP
+        bvp_mag_feats = self.bvp_fft_magnitude(feature_map_bvp_fft_magnitude)
+        bvp_phase_feats = self.bvp_fft_phase(feature_map_bvp_fft_phase)
+        rsp_feats = self.rsp_fft_magnitude(feature_map_rsp_fft_magnitude)
         
-        bt, ch, t, h, w = x.shape
-        nfft = t
-        x = x.view(bt, ch, t)   #h = w = 1 is expected here
+        bvp_feats = torch.concat([bvp_mag_feats, bvp_phase_feats], dim=1)
+        bvp_feats = self.bvp_merged(bvp_feats)
 
-        x_fft = torch.zeros_like(x).to(x.device)
-        for bn in range(bt):
-            for cn in range(ch):
+        # print("bvp_mag_feats.shape", bvp_mag_feats.shape)
+        # print("bvp_phase_feats.shape", bvp_phase_feats.shape)
+        # print("bvp_feats.shape", bvp_feats.shape)
+        # print("rsp_feats.shape", rsp_feats.shape)
+        # exit()
 
-                ppg_fft = torch.fft.rfft(x[bn, cn, :])
-                ppg_fft_angle = torch.angle(ppg_fft)
-                ppg_fft_freq = 60 * 25 * torch.fft.rfftfreq(nfft)
-                # ppg_fft_freq
-                ppg_foi = torch.argwhere((ppg_fft_freq > 40) & (ppg_fft_freq < 200))
-
-
-                x_fft[bn, cn, :] = torch.angle(torch.fft.fft(x[bn, cn, :]))
-
-        x = self.final_layer(x)
-        
-        if self.debug:
-            print(" x.shape", x.shape)
-        
-        x = x.view(x.size(0), -1)
-        
-        if self.debug:
-            print(" Flattened x.shape", x.shape)
-
-        rBP = self.final_dense_layer(x)
+        # Fully connected
+        bvp_feats = bvp_feats.view(bt, -1)
+        rsp_feats = rsp_feats.view(bt, -1)
+        merged_feats = torch.concat([bvp_feats, rsp_feats], dim=1)
+        rBP = self.final_dense_layer(merged_feats)
 
         if self.debug:
             print(" rBP.shape", rBP.shape)
@@ -344,6 +450,8 @@ class MMRPhysLNF(nn.Module):
             pass
         
         self.tasks = md_config["TASKS"]
+        if "BP" in self.tasks:
+            self.wait_epochs_BP = md_config["Wait_Epochs"]
 
         if self.debug:
             print("nf_BVP:", nf_BVP)
@@ -356,7 +464,7 @@ class MMRPhysLNF(nn.Module):
         self.rBr_head = RSP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
 
         if "BP" in self.tasks:
-            self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
+            self.rBP_head = BP_Estimation_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
 
 
     def forward(self, x, label_bvp=None, label_rsp=None, epoch_count=-1): # [batch, Features=3, Temp=frames, Width=72, Height=72]
@@ -380,10 +488,12 @@ class MMRPhysLNF(nn.Module):
         rBr, factorized_embeddings_rsp, appx_error_rsp = self.rBr_head(length-1, rsp_embeddings=rsp_voxel_embeddings, label_rsp=label_rsp)
 
         if "BP" in self.tasks:
-            if (self.training and (epoch_count == -1 or epoch_count > 4)):        # -1 will make BP head learn from very beginning of the training
-                rBP = self.rBP_head(factorized_embeddings_bvp.detach(), rBr.detach())
+            if (self.training and (epoch_count == -1 or epoch_count > self.wait_epochs_BP)):        # -1 will make BP head learn from very beginning of the training
+                rBP = self.rBP_head(bvp_embeddings = factorized_embeddings_bvp.detach(), rsp_vec = rBr.detach())
             elif not self.training:
-                rBP = self.rBP_head(factorized_embeddings_bvp.detach(), rBr.detach())
+                rBP = self.rBP_head(bvp_embeddings = factorized_embeddings_bvp.detach(), rsp_vec = rBr.detach())
+            else:
+                rBP = None
         else:
             rBP = None
 

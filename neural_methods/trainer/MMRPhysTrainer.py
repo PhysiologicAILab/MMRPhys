@@ -69,6 +69,10 @@ class MMRPhysTrainer(BaseTrainer):
             print("Unknown estimation task... BVP, RSP, and BP are supported. Exiting the code...")
             exit()
 
+        if "BP" in self.tasks:
+            self.wait_epochs_BP = 1
+            md_config["Wait_Epochs"] = self.wait_epochs_BP
+
         if model_type == "lef":
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "lnf":
@@ -101,10 +105,10 @@ class MMRPhysTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
             self.criterion_bvp = Neg_Pearson() #BVP
             self.criterion_rsp = Neg_Pearson() #RSP
-            # self.criterion_sbp = torch.nn.MSELoss()  # SBP
-            self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
-            # self.criterion_dbp = torch.nn.MSELoss()  # DBP
-            self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
+            self.criterion_sbp = torch.nn.MSELoss()  # SBP
+            # self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
+            self.criterion_dbp = torch.nn.MSELoss()  # DBP
+            # self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
@@ -225,8 +229,9 @@ class MMRPhysTrainer(BaseTrainer):
                     loss = loss + loss_rsp
                 
                 if "BP" in self.tasks:
-                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
-                    loss = loss + loss_bp
+                    if epoch > self.wait_epochs_BP:
+                        loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
+                        loss = loss + loss_bp
 
                 loss.backward()
 
@@ -235,7 +240,8 @@ class MMRPhysTrainer(BaseTrainer):
                 if "RSP" in self.tasks:
                     running_loss_rsp += loss_rsp.item()
                 if "BP" in self.tasks:
-                    running_loss_bp += loss_bp.item()
+                    if epoch > self.wait_epochs_BP:
+                        running_loss_bp += loss_bp.item()
 
                 if idx % 100 == 99:  # print every 100 mini-batches
                     print(f'[{epoch}, {idx + 1: 5d}]')
@@ -246,8 +252,9 @@ class MMRPhysTrainer(BaseTrainer):
                         print(f'loss_rsp: {running_loss_rsp / 100:.3f}')    
                         running_loss_rsp = 0.0
                     if "BP" in self.tasks:
-                        print(f'loss_bp: {running_loss_bp / 100:.3f}')
-                        running_loss_bp = 0.0
+                        if epoch > self.wait_epochs_BP:
+                            print(f'loss_bp: {running_loss_bp / 100:.3f}')
+                            running_loss_bp = 0.0
 
                 train_loss.append(loss.item())
                 if "BVP" in self.tasks:
@@ -255,7 +262,8 @@ class MMRPhysTrainer(BaseTrainer):
                 if "RSP" in self.tasks:
                     train_loss_rsp.append(loss_rsp.item())
                 if "BP" in self.tasks:
-                    train_loss_bp.append(loss_bp.item())
+                    if epoch > self.wait_epochs_BP:
+                        train_loss_bp.append(loss_bp.item())
 
                 if self.use_fsam:
                     if "BVP" in self.tasks:
@@ -275,7 +283,8 @@ class MMRPhysTrainer(BaseTrainer):
                 if "RSP" in self.tasks:
                     bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
                 if "BP" in self.tasks:
-                    bar_dict["loss_bp"] = round(loss_bp.item(), 2)
+                    if epoch > self.wait_epochs_BP:
+                        bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
                 tbar.set_postfix(bar_dict, loss=loss.item())
 
@@ -285,7 +294,8 @@ class MMRPhysTrainer(BaseTrainer):
             if "RSP" in self.tasks:
                 avg_train_loss_rsp.append(round(np.mean(train_loss_rsp), 2))
             if "BP" in self.tasks:
-                avg_train_loss_bp.append(round(np.mean(train_loss_bp), 2))
+                if epoch > self.wait_epochs_BP:
+                    avg_train_loss_bp.append(round(np.mean(train_loss_bp), 2))
 
             print("Avg train loss: {}".format(np.round(np.mean(train_loss), 2)))
             # TODO: It should ideally be possible to use FSAM selectively for each task. This is current limitation
@@ -299,7 +309,7 @@ class MMRPhysTrainer(BaseTrainer):
 
             if not self.config.TEST.USE_LAST_EPOCH:
                 
-                valid_loss_bvp, valid_loss_rsp, valid_loss_bp = self.valid(data_loader)
+                valid_loss_bvp, valid_loss_rsp, valid_loss_bp = self.valid(data_loader, epoch)
                 total_valid_loss = 0
                 
                 if "BVP" in self.tasks:
@@ -311,9 +321,10 @@ class MMRPhysTrainer(BaseTrainer):
                     avg_valid_loss_rsp.append(valid_loss_rsp)
                     total_valid_loss += valid_loss_rsp
                 if "BP" in self.tasks:
-                    print('Validation loss BP: ', valid_loss_bp)
-                    avg_valid_loss_bp.append(valid_loss_bp)
-                    total_valid_loss += valid_loss_bp
+                    if epoch > self.wait_epochs_BP:
+                        print('Validation loss BP: ', valid_loss_bp)
+                        avg_valid_loss_bp.append(valid_loss_bp)
+                        total_valid_loss += valid_loss_bp
 
                 print('Total validation loss: ', total_valid_loss)
 
@@ -338,7 +349,7 @@ class MMRPhysTrainer(BaseTrainer):
                 self.plot_losses_and_lrs(avg_train_loss_bp, avg_valid_loss_bp, lrs, self.config, suff="BP")
 
 
-    def valid(self, data_loader):
+    def valid(self, data_loader, epoch=-1):
         """ Runs the model on valid sets."""
         if data_loader["valid"] is None:
             raise ValueError("No data for valid")
@@ -430,9 +441,13 @@ class MMRPhysTrainer(BaseTrainer):
                     loss += loss_rsp
                 
                 if "BP" in self.tasks:
-                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP)
-                    valid_loss_bp.append(loss_bp.item())
-                    loss += loss_bp
+                    if epoch > self.wait_epochs_BP:
+                        loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP)
+                        valid_loss_bp.append(loss_bp.item())
+                        loss += loss_bp
+                    else:
+                        loss_bp = 0
+
 
                 valid_step += 1
 
@@ -442,7 +457,8 @@ class MMRPhysTrainer(BaseTrainer):
                 if "RSP" in self.tasks:
                     bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
                 if "BP" in self.tasks:
-                    bar_dict["loss_bp"] = round(loss_bp.item(), 2)
+                    if epoch > self.wait_epochs_BP:
+                        bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
                 # vbar.set_postfix(loss=loss.item())
                 vbar.set_postfix(bar_dict, loss=loss.item())
@@ -452,7 +468,10 @@ class MMRPhysTrainer(BaseTrainer):
             if "RSP" in self.tasks:
                 avg_valid_loss_rsp = np.mean(np.asarray(valid_loss_rsp))
             if "BP" in self.tasks:
-                avg_valid_loss_bp = np.mean(np.asarray(valid_loss_bp))
+                if epoch > self.wait_epochs_BP:
+                    avg_valid_loss_bp = np.mean(np.asarray(valid_loss_bp))
+                else:
+                    avg_valid_loss_bp = 0
 
         return avg_valid_loss_bvp, avg_valid_loss_rsp, avg_valid_loss_bp
 
@@ -608,13 +627,13 @@ class MMRPhysTrainer(BaseTrainer):
                             pred_bvp_dict[subj_index][sort_index] = pred_bvp_test[idx]
 
                     if "RSP" in self.tasks:
-                        if std_label_rsp_test[idx] > 0.001:
-                            label_rsp_dict[subj_index][sort_index] = (label_rsp_test[idx] - mean_label_rsp_test[idx]) / std_label_rsp_test[idx]   #label_rsp_test[idx]    # standardize
+                        if (std_label_rsp_test[idx]) > 0.001:
+                            label_rsp_dict[subj_index][sort_index] = (label_rsp_test[idx] - mean_label_rsp_test[idx]) / (std_label_rsp_test[idx])   #label_rsp_test[idx]    # standardize
                         else:
                             label_rsp_dict[subj_index][sort_index] = label_rsp_test[idx]
 
-                        if std_pred_rsp_test[idx] > 0.001:
-                            pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / std_pred_rsp_test[idx]   #pred_rsp_test[idx]    # standardize
+                        if (std_pred_rsp_test[idx]) > 0.001:
+                            pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / (std_pred_rsp_test[idx])  #pred_rsp_test[idx]    # standardize
                         else:
                             pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
 

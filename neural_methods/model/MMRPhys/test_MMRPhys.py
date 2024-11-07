@@ -16,7 +16,7 @@ from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["RSP"],
+    "TASKS": ["BVP", "BP", "RSP"],
     "FS": 25,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
@@ -37,7 +37,8 @@ model_config = {
     "visualize": False,
     "ckpt_path": "",
     "data_path": "",
-    "label_path": ""
+    "label_path": "",
+    "Wait_Epochs": 4,
 }
 
 
@@ -95,6 +96,7 @@ class TestMMRPhys(object):
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
         md_config["TASKS"] = model_config["TASKS"]
+        md_config["Wait_Epochs"] = model_config["Wait_Epochs"]
 
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
@@ -148,9 +150,9 @@ class TestMMRPhys(object):
             t0 = time.time()
 
         out = self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.resp_label)
-        self.pred_ppg = out[0]
-        self.pred_rBr = out[1]
-        self.pred_eBP = out[2]
+        self.pred_bvp = out[0]
+        self.pred_rsp = out[1]
+        self.pred_rBP = out[2]
         self.vox_embed_ppg = out[3]
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
@@ -163,10 +165,12 @@ class TestMMRPhys(object):
 
         if self.debug:
             if "BVP" in self.tasks:
-                print("pred.shape", self.pred_ppg.shape)
+                print("pred_bvp.shape", self.pred_bvp.shape)
             if "RSP" in self.tasks:
-                print("pred.shape", self.pred_rBr.shape)
-            
+                print("pred_rsp.shape", self.pred_rsp.shape)
+            if "BP" in self.tasks:
+                print("pred_rBP.shape", self.pred_rBP.shape)
+
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
                 if "BVP" in self.tasks:
                     self.appx_error_list.append(self.appx_error_ppg.item())
