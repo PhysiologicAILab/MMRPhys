@@ -321,8 +321,8 @@ class BP_Estimation_Head(nn.Module):
             ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 16, 23, 5
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 21, 3
+            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 32, 23, 5
+            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 32, 21, 3
             nn.Dropout2d(p=0.2),
         )
 
@@ -331,38 +331,33 @@ class BP_Estimation_Head(nn.Module):
             ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 47, 7
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 16, 23, 5
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 21, 3
+            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, 32, 23, 5
+            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 32, 21, 3
             nn.Dropout2d(p=0.2),
         )
 
         self.bvp_merged = nn.Sequential(
-            ConvBlock2D(32, 16, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 8, 19, 3
-            ConvBlock2D(16, 16, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 8, 17, 3
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),    #B, 8, 15, 1
+            ConvBlock2D(64, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 32, 19, 3
+            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),   #B, 32, 17, 3
+            ConvBlock2D(32, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),    #B, 16, 15, 1
         )
 
         self.rsp_fft_magnitude = nn.Sequential(
             ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),   #B, 16, 36, 8
-            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 34, 6
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 34, 6
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(8, 8, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),    #B, 8, 16, 4
-            ConvBlock2D(8, 8, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),     #B, 1, 14, 4
+            ConvBlock2D(16, 32, kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),    #B, 32, 16, 4
+            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),     #B, 32, 14, 4
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(8, 8, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),    #B, 8, 12, 4
-            ConvBlock2D(8, 8, kernel_size=[3, 4], stride=[1, 1], padding=[0, 0]),     #B, 1, 10, 1
-            nn.Dropout2d(p=0.2),
+            ConvBlock2D(32, 32, kernel_size=[3, 1], stride=[1, 1], padding=[0, 0]),    #B, 32, 12, 4
+            ConvBlock2D(32, 16, kernel_size=[3, 4], stride=[1, 1], padding=[0, 0]),     #B, 16, 10, 1
         )
 
-        num_feats = (15 * 8) + (10 * 8)
+        num_feats = (16 * 15) + (16 * 10)
         self.final_dense_layer = nn.Sequential(
-            nn.Linear(num_feats, 32),
-            nn.Dropout(0.5),
-            nn.Linear(32, 2)
+            nn.Linear(num_feats, 2)
         )
 
 
