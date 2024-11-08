@@ -9,6 +9,67 @@ import pandas as pd
 import glob
 import os
 import torch
+import scipy
+
+# %%
+
+# %%
+
+def _next_power_of_2(x):
+    """Calculate the nearest power of 2."""
+    return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
+fs = 25
+
+# %%
+rsp_nfft = _next_power_of_2(2000)
+rsp_fft_freq = (60 * fs * torch.fft.rfftfreq(rsp_nfft))
+rsp_freq_idx = torch.argwhere((rsp_fft_freq > 5) & (rsp_fft_freq < 33))
+
+bvp_nfft = _next_power_of_2(1500)
+bvp_fft_freq = (60 * fs * torch.fft.rfftfreq(bvp_nfft))
+bvp_freq_idx = torch.argwhere((bvp_fft_freq > 35) & (bvp_fft_freq < 185))
+
+print(rsp_freq_idx.min(), rsp_freq_idx.max())
+print(bvp_freq_idx.min(), bvp_freq_idx.max())
+
+# %%
+
+ppg_gen = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=70)
+ppg = ppg_gen[200: 700]
+
+# %%
+f_ppg, pxx_ppg = scipy.signal.periodogram(ppg, fs=fs, nfft=bvp_nfft, detrend=False)
+fmask_ppg = np.argwhere((f_ppg >= 0.6) & (f_ppg <= 3.3))
+print(len(fmask_ppg))
+
+# %%
+ppg = torch.from_numpy(ppg_gen[200: 1697])
+
+bvp_win = torch.hann_window(250)
+bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(1497), win_length=250, hop_length=150, window=bvp_win, return_complex=True)
+
+bvp_stft_mag = bvp_stft.real
+bvp_stft_phase = bvp_stft.angle()
+bvp_stft_phase = bvp_stft_mag * bvp_stft_phase
+print(bvp_stft_phase[48:252, :].shape)
+fig, ax = plt.subplots(1, 3)
+ax[0].imshow(bvp_stft_mag[48:252, :])
+ax[1].imshow(bvp_stft_phase[48:252, :])
+
+rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
+rsp = rsp[0: 1997]
+rsp = torch.from_numpy(rsp)
+rsp = rsp.unsqueeze(0)
+rsp = rsp.repeat(2, 1)
+print(rsp.shape)
+
+rsp_win = torch.hann_window(500)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=500, hop_length=200, window=rsp_win, return_complex=True)
+print(rsp_stft.real[0, 7:45, :].shape)
+ax[2].imshow(rsp_stft.real[0, 7:45, :])
+
+
 
 
 # %%
@@ -337,33 +398,6 @@ data = np.load(pth)
 print(data.shape)
 
 # %%
-def _next_power_of_2(x):
-    """Calculate the nearest power of 2."""
-    return 1 if x == 0 else 2 ** (x - 1).bit_length()
-
-fs = 25
-ppg = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=140)
-ppg = ppg[200: 700]
-ppg = torch.from_numpy(ppg)
-bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(500), win_length=125, hop_length=50, return_complex=True)
-
-print(bvp_stft.angle()[12:63, :].shape)
-fig, ax = plt.subplots(1, 3)
-ax[0].imshow(bvp_stft.real[12:63, :])
-ax[1].imshow(bvp_stft.angle()[12:63, :])
-
-rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
-rsp = rsp[0: 1997]
-rsp = torch.from_numpy(rsp)
-rsp = rsp.unsqueeze(0)
-rsp = rsp.repeat(2,1)
-print(rsp.shape)
-rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=250, hop_length=200, return_complex=True)
-print(rsp_stft.real[0, 7:45, :].shape)
-ax[2].imshow(rsp_stft.real[0, 7:45, :])
-
-
-# %%
 
 
 def _next_power_of_2(x):
@@ -397,3 +431,4 @@ print(bt.shape)
 print(at)
 print(bt)
 # %%
+

@@ -302,17 +302,17 @@ class BP_Estimation_Head(nn.Module):
         self.device = device
         self.fs = md_config["FS"]
 
-        self.win_len_bvp = 5 * self.fs
+        self.win_len_bvp = 10 * self.fs
         self.win_bvp = torch.hann_window(self.win_len_bvp).to(device)
-        self.hop_len_bvp = 50   # for freq_band matched number of windows and 500 signal length, this should be 10
-        self.bvp_feat_res_x = 11    # 200 hop and 10 * 25 win_les, total windows are 11
+        self.hop_len_bvp = 150   # for freq_band matched number of windows and 500 signal length, this should be 10; len=1500, hop=150, gives 10 
+        self.bvp_feat_res_x = 10    # 200 hop and 10 * 25 win_les, total windows are 11
         self.min_hr = 35
         self.max_hr = 185
-        self.bvp_nfft = _next_power_of_2(md_config["FRAME_NUM"])
+        self.bvp_nfft = _next_power_of_2(3 * md_config["FRAME_NUM"])
         bvp_fft_freq = (60 * self.fs * torch.fft.rfftfreq(self.bvp_nfft))
         bvp_freq_idx = torch.argwhere((bvp_fft_freq > self.min_hr) & (bvp_fft_freq < self.max_hr))
-        self.bvp_min_freq_id = bvp_freq_idx.min()    # 12 for fs = 25 and T = 500
-        self.bvp_max_freq_id = bvp_freq_idx.max()    # 61 for fs = 25 and T = 500
+        self.bvp_min_freq_id = bvp_freq_idx.min()    # 12 for fs = 25 and T = 500; 48 for fs=25, T=1500 
+        self.bvp_max_freq_id = bvp_freq_idx.max()    # 61 for fs = 25 and T = 500; 252 for fs=25, T=1500 
         self.bvp_feat_res_y = self.bvp_max_freq_id - self.bvp_min_freq_id
 
         self.win_len_rsp = 10 * self.fs
@@ -331,45 +331,45 @@ class BP_Estimation_Head(nn.Module):
 
         # Convolution groups are used to separately process magnitude and phase features of STFT
         self.bvp_embeddings_stft_feature_extractor = nn.Sequential(
-            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 2], dilation=2, groups=2),  #B, 32, 49, 11
-            ConvBlock2D(32, 32, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2, groups=2),  #B, 32, 47, 9
+            ConvBlock2D(17, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 1]),  #B, 16, 198, 10
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 192, 8
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(32, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2, groups=2),  #B, 16, 45, 7
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2, groups=2),  #B, 16, 43, 5
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[3, 1], padding=[0, 0]),  #B, 16, 62, 6
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 56, 4
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0], dilation=1, groups=2),   #B, 8, 41, 3
-            ConvBlock2D(8, 2, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0], dilation=1, groups=2),   #B, 2, 39, 1
+            ConvBlock2D(16, 8, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),   #B, 8, 50, 2
+            ConvBlock2D(8, 4, kernel_size=[7, 2], stride=[1, 1], padding=[0, 0]),   #B, 2, 44, 1
         )
 
         self.bvp_stft_feature_extractor = nn.Sequential(
-            ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 2], dilation=2),  #B, 16, 49, 11
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),  #B, 16, 47, 9
+            ConvBlock2D(1, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 1]),  #B, 16, 198, 10
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 192, 8
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),  #B, 16, 45, 7
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),  #B, 16, 43, 5
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[3, 1], padding=[0, 0]),  #B, 16, 62, 6
+            ConvBlock2D(16, 16, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 56, 4
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0], dilation=1),   #B, 8, 41, 3
-            ConvBlock2D(8, 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0], dilation=1),   #B, 1, 39, 1
+            ConvBlock2D(16, 8, kernel_size=[7, 3], stride=[1, 1], padding=[0, 0]),   #B, 8, 50, 2
+            ConvBlock2D(8, 4, kernel_size=[7, 2], stride=[1, 1], padding=[0, 0]),   #B, 1, 44, 1
         )
 
         self.rsp_stft_feature_extractor = nn.Sequential(
-            ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 2], dilation=2),   #B, 16, 36, 10
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),  #B, 16, 34, 8
+            ConvBlock2D(1, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1]),   #B, 16, 36, 10
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, 16, 34, 8
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),    #B, 16, 32, 6
-            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 1], dilation=2),     #B, 16, 30, 4
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),    #B, 16, 32, 6
+            ConvBlock2D(16, 16, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),     #B, 16, 30, 4
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0], dilation=1),     #B, 8, 28, 4
-            ConvBlock2D(8, 1, kernel_size=[3, 2], stride=[1, 1], padding=[0, 0], dilation=1),    #B, 1, 26, 1
+            ConvBlock2D(16, 8, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),     #B, 8, 28, 4
+            ConvBlock2D(8, 1, kernel_size=[3, 2], stride=[1, 1], padding=[0, 0]),    #B, 1, 26, 1
         )
 
-        num_feats = (2 * 39)  + (1 * 39) + (1 * 26)
+        num_feats = (4 * 44)  + (4 * 44) + (1 * 26)
         self.final_dense_layer = nn.Sequential(
             nn.Linear(num_feats, 2),
         )
@@ -386,26 +386,33 @@ class BP_Estimation_Head(nn.Module):
         bt, ch, t, h, w = bvp_embeddings_feats.shape
         bvp_embeddings_feats = bvp_embeddings_feats.view(bt, ch, t)   #h = w = 1 is expected here
 
-        feature_map_bvp_emb_fft_magnitude = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
-        feature_map_bvp_emb_fft_phase = torch.zeros((bt, ch, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
-
-        # STFT - magnitude and phase for multiple channels of BVP embeddings - to capture phase differences between different facial sites
-        for cn in range(ch):
-            emb_feats = bvp_embeddings_feats[:, cn, :]
-            avg_feats = torch.mean(emb_feats, dim=1).unsqueeze(1)
-            std_feats = torch.std(emb_feats, dim=1).unsqueeze(1)
-            emb_feats = (emb_feats - avg_feats) / std_feats
-            bvp_emb_stft = torch.stft(emb_feats, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
-            feature_map_bvp_emb_fft_magnitude[:, cn, :, :] = bvp_emb_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
-            feature_map_bvp_emb_fft_phase[:, cn, :, :] = bvp_emb_stft.angle()[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
-
         # STFT - magnitude for estimated BVP signal - to capture heart-rate and HRV
         avg_bvp = torch.mean(bvp_vec, dim=1).unsqueeze(1)
         std_bvp = torch.std(bvp_vec, dim=1).unsqueeze(1)
         norm_bvp_vec = (bvp_vec - avg_bvp)/std_bvp
+        rep_norm_bvp_vec = norm_bvp_vec.clone()
+        rep_norm_bvp_vec = -1 * rep_norm_bvp_vec.flip(dims=[1])
+        long_bvp_vec = torch.concat([norm_bvp_vec, rep_norm_bvp_vec[:, 1:], norm_bvp_vec[:, 1:]], dim=1)
+
         feature_map_bvp_fft_magnitude = torch.zeros((bt, 1, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
-        bvp_stft = torch.stft(norm_bvp_vec, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
+        bvp_stft = torch.stft(long_bvp_vec, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
         feature_map_bvp_fft_magnitude[:, 0, :, :] = bvp_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+
+        feature_map_bvp_emb_fft_phase = torch.zeros((bt, ch+1, self.bvp_feat_res_y, self.bvp_feat_res_x)).to(self.device)
+        # STFT - magnitude and phase for multiple channels of BVP embeddings - to capture phase differences between different facial sites
+        
+        feature_map_bvp_emb_fft_phase[:, 0, :, :] = bvp_stft.real[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
+        for cn in range(ch):
+            emb_feats = bvp_embeddings_feats[:, cn, :]
+            avg_feats = torch.mean(emb_feats, dim=1).unsqueeze(1)
+            std_feats = torch.std(emb_feats, dim=1).unsqueeze(1)
+            norm_emb_feats = (emb_feats - avg_feats) / std_feats
+            rep_norm_emb_feats = norm_emb_feats.clone()
+            rep_norm_emb_feats = -1 * rep_norm_emb_feats.flip(dims=[1])
+            long_emb_feats = torch.concat([norm_emb_feats, rep_norm_emb_feats[:, 1:], norm_emb_feats[:, 1:]], dim=1)
+            bvp_emb_stft = torch.stft(long_emb_feats, n_fft=self.bvp_nfft, win_length=self.win_len_bvp, window=self.win_bvp, hop_length=self.hop_len_bvp, return_complex=True)
+            bvp_emb_stft_phase = bvp_emb_stft.angle() * bvp_stft
+            feature_map_bvp_emb_fft_phase[:, cn+1, :, :] = bvp_emb_stft_phase[:, self.bvp_min_freq_id:self.bvp_max_freq_id, :]
 
         # STFT - magnitude for estimated RSP signal - to capture Resp Rate and respiration variability
         avg_rsp = torch.mean(rsp_vec, dim=1).unsqueeze(1)
@@ -420,8 +427,7 @@ class BP_Estimation_Head(nn.Module):
         feature_map_rsp_fft_magnitude[:, 0, :, :] = rsp_stft.real[:, self.rsp_min_freq_id:self.rsp_max_freq_id, :]
 
         # Convolutional blocks - separate feature extraction for BVP Embeddings (phase, magnitude), BVP (magnitude) and RSP (magnitude)
-        bvp_emb_feats = torch.concat([feature_map_bvp_emb_fft_magnitude, feature_map_bvp_emb_fft_phase], dim=1)
-        bvp_emb_feats = self.bvp_embeddings_stft_feature_extractor(bvp_emb_feats)
+        bvp_emb_feats = self.bvp_embeddings_stft_feature_extractor(feature_map_bvp_emb_fft_phase)
         bvp_feats = self.bvp_stft_feature_extractor(feature_map_bvp_fft_magnitude)
         rsp_feats = self.rsp_stft_feature_extractor(feature_map_rsp_fft_magnitude)
 
