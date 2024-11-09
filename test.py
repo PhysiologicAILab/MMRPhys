@@ -26,7 +26,7 @@ rsp_nfft = _next_power_of_2(2000)
 rsp_fft_freq = (60 * fs * torch.fft.rfftfreq(rsp_nfft))
 rsp_freq_idx = torch.argwhere((rsp_fft_freq > 5) & (rsp_fft_freq < 33))
 
-bvp_nfft = _next_power_of_2(1500)
+bvp_nfft = _next_power_of_2(2000)
 bvp_fft_freq = (60 * fs * torch.fft.rfftfreq(bvp_nfft))
 bvp_freq_idx = torch.argwhere((bvp_fft_freq > 35) & (bvp_fft_freq < 185))
 
@@ -44,32 +44,57 @@ fmask_ppg = np.argwhere((f_ppg >= 0.6) & (f_ppg <= 3.3))
 print(len(fmask_ppg))
 
 # %%
-ppg = torch.from_numpy(ppg_gen[200: 1697])
+ppg = torch.from_numpy(ppg_gen[200: 2200])
 
-bvp_win = torch.hann_window(250)
-bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(1497), win_length=250, hop_length=150, window=bvp_win, return_complex=True)
+bvp_win = torch.hann_window(400)
+# bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), return_complex=True)
+bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), win_length=400, hop_length=200, window=bvp_win, return_complex=True)
 
-bvp_stft_mag = bvp_stft.real
-bvp_stft_phase = bvp_stft.angle()
-bvp_stft_phase = bvp_stft_mag * bvp_stft_phase
-print(bvp_stft_phase[48:252, :].shape)
+bvp_stft_mag = bvp_stft.real[48:252, :]
+
+bvp_stft_mag_min = torch.min(bvp_stft_mag, dim=0, keepdim=True).values
+bvp_stft_mag_max = torch.max(bvp_stft_mag, dim=0, keepdim=True).values
+bvp_stft_mag_norm = (bvp_stft_mag - bvp_stft_mag_min) / (bvp_stft_mag_max - bvp_stft_mag_min)
+
+bvp_stft_phase = bvp_stft.angle()[48:252, :]   # torch.rad2deg(bvp_stft.angle())
+bvp_stft_phase_min = torch.min(bvp_stft_phase, dim=0, keepdim=True).values
+bvp_stft_phase_max = torch.max(bvp_stft_phase, dim=0, keepdim=True).values
+bvp_stft_phase_norm = (bvp_stft_phase - bvp_stft_phase_min) / (bvp_stft_phase_max - bvp_stft_phase_min)
+
+# print(bvp_stft_phase.min(), bvp_stft_phase.max())
+
+# Imp Note: Normalize the fft mag for BVP and RSP; Normalize Phase angle.
+# Normalize all inputs to BP estimation head.
+
+# %%
+thresh_mag = 0.7
+bvp_stft_mag_mask = torch.ones_like(bvp_stft_mag_norm)
+bvp_stft_mag_mask[bvp_stft_mag_norm < thresh_mag] = 0
+bvp_stft_phase_norm = bvp_stft_mag_mask * bvp_stft_phase_norm
+print(bvp_stft_phase_norm.shape)
 fig, ax = plt.subplots(1, 3)
-ax[0].imshow(bvp_stft_mag[48:252, :])
-ax[1].imshow(bvp_stft_phase[48:252, :])
+ax[0].imshow(bvp_stft_mag_norm)
+ax[1].imshow(bvp_stft_phase_norm)
 
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
-rsp = rsp[0: 1997]
+rsp = rsp[0: 2000]
 rsp = torch.from_numpy(rsp)
 rsp = rsp.unsqueeze(0)
 rsp = rsp.repeat(2, 1)
 print(rsp.shape)
 
 rsp_win = torch.hann_window(500)
+# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), return_complex=True)
 rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=500, hop_length=200, window=rsp_win, return_complex=True)
-print(rsp_stft.real[0, 7:45, :].shape)
-ax[2].imshow(rsp_stft.real[0, 7:45, :])
 
+rsp_stft_mag = rsp_stft.real[0, 7:45, :]
+print("rsp_stft_mag.shape", rsp_stft_mag.shape)
+rsp_stft_mag_min = torch.min(rsp_stft_mag, dim=0, keepdim=True).values
+rsp_stft_mag_max = torch.max(rsp_stft_mag, dim=0, keepdim=True).values
+rsp_stft_mag_norm = (rsp_stft_mag - rsp_stft_mag_min) / (rsp_stft_mag_max - rsp_stft_mag_min)
 
+print(rsp_stft_mag_norm.shape)
+ax[2].imshow(rsp_stft_mag_norm)
 
 
 # %%
