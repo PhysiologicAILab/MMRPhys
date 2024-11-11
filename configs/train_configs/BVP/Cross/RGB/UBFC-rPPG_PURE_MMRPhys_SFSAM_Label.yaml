@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 10
   LR: 1e-3
-  MODEL_FILE_NAME: UBFC-rPPG_FactorizePhys_SFSAM_Label
+  MODEL_FILE_NAME: UBFC-rPPG_MMRPhys_SFSAM_Label
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 30
@@ -99,10 +99,12 @@ LOG:
   PATH: runs/exp
 MODEL:
   DROP_RATE: 0.1
-  NAME: FactorizePhys
-  FactorizePhys:
+  NAME: MMRPhys
+  MMRPhys:
     CHANNELS: 3
     FRAME_NUM: 160
+    TYPE: "LEF"
+    TASKS: ["BVP"]
     MD_FSAM: True
     MD_TYPE: "SNMF_Label"
     MD_R: 1

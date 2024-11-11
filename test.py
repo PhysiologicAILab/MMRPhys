@@ -46,9 +46,9 @@ print(len(fmask_ppg))
 # %%
 ppg = torch.from_numpy(ppg_gen[200: 2200])
 
-bvp_win = torch.hann_window(400)
+bvp_win = torch.hann_window(800)
 # bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), return_complex=True)
-bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), win_length=400, hop_length=200, window=bvp_win, return_complex=True)
+bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), win_length=800, hop_length=200, window=bvp_win, return_complex=True)
 
 bvp_stft_mag = bvp_stft.real[48:252, :]
 
@@ -67,14 +67,14 @@ bvp_stft_phase_norm = (bvp_stft_phase - bvp_stft_phase_min) / (bvp_stft_phase_ma
 # Normalize all inputs to BP estimation head.
 
 # %%
-thresh_mag = 0.7
+thresh_mag = 0.9
 bvp_stft_mag_mask = torch.ones_like(bvp_stft_mag_norm)
 bvp_stft_mag_mask[bvp_stft_mag_norm < thresh_mag] = 0
 bvp_stft_phase_norm = bvp_stft_mag_mask * bvp_stft_phase_norm
 print(bvp_stft_phase_norm.shape)
 fig, ax = plt.subplots(1, 3)
-ax[0].imshow(bvp_stft_mag_norm)
-ax[1].imshow(bvp_stft_phase_norm)
+ax[0].imshow(bvp_stft_mag_norm, cmap="coolwarm")
+ax[1].imshow(bvp_stft_phase_norm, cmap="coolwarm")
 
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
 rsp = rsp[0: 2000]
@@ -83,9 +83,9 @@ rsp = rsp.unsqueeze(0)
 rsp = rsp.repeat(2, 1)
 print(rsp.shape)
 
-rsp_win = torch.hann_window(500)
+rsp_win = torch.hann_window(800)
 # rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), return_complex=True)
-rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=500, hop_length=200, window=rsp_win, return_complex=True)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=800, hop_length=200, window=rsp_win, return_complex=True)
 
 rsp_stft_mag = rsp_stft.real[0, 7:45, :]
 print("rsp_stft_mag.shape", rsp_stft_mag.shape)
@@ -94,7 +94,7 @@ rsp_stft_mag_max = torch.max(rsp_stft_mag, dim=0, keepdim=True).values
 rsp_stft_mag_norm = (rsp_stft_mag - rsp_stft_mag_min) / (rsp_stft_mag_max - rsp_stft_mag_min)
 
 print(rsp_stft_mag_norm.shape)
-ax[2].imshow(rsp_stft_mag_norm)
+ax[2].imshow(rsp_stft_mag_norm, cmap="coolwarm")
 
 
 # %%

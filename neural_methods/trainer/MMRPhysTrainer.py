@@ -183,14 +183,14 @@ class MMRPhysTrainer(BaseTrainer):
                 elif "RSP" in self.tasks:
                     label_rsp = labels
 
-                # if "BVP" in self.tasks:
-                #     mean_label_bvp = torch.mean(label_bvp, dim=1).unsqueeze(1)
-                #     std_label_bvp = torch.std(label_bvp, dim=1).unsqueeze(1)
-                #     label_bvp = (label_bvp - mean_label_bvp) / std_label_bvp  # normalize
-                # if "RSP" in self.tasks:
-                #     mean_label_rsp = torch.mean(label_rsp, dim=1).unsqueeze(1)
-                #     std_label_rsp = torch.std(label_rsp, dim=1).unsqueeze(1)
-                #     label_rsp = (label_rsp - mean_label_rsp) / std_label_rsp  # normalize
+                if "BVP" in self.tasks:
+                    mean_label_bvp = torch.mean(label_bvp, dim=1, keepdim=True)
+                    std_label_bvp = torch.std(label_bvp, dim=1, keepdim=True)
+                    label_bvp = (label_bvp - mean_label_bvp) / std_label_bvp  # normalize
+                if "RSP" in self.tasks:
+                    mean_label_rsp = torch.mean(label_rsp, dim=1, keepdim=True)
+                    std_label_rsp = torch.std(label_rsp, dim=1, keepdim=True)
+                    label_rsp = (label_rsp - mean_label_rsp) / std_label_rsp  # normalize
                 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -215,16 +215,16 @@ class MMRPhysTrainer(BaseTrainer):
                 loss = 0
 
                 if "BVP" in self.tasks:
-                    # mean_pred_bvp = torch.mean(pred_bvp, dim=1).unsqueeze(1)
-                    # std_pred_bvp = torch.std(pred_bvp, dim=1).unsqueeze(1)
-                    # pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
+                    mean_pred_bvp = torch.mean(pred_bvp, dim=1, keepdim=True)
+                    std_pred_bvp = torch.std(pred_bvp, dim=1, keepdim=True)
+                    pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
                     loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
                     loss = loss + loss_bvp
 
                 if "RSP" in self.tasks:
-                    # mean_pred_rsp = torch.mean(pred_rsp, dim=1).unsqueeze(1)
-                    # std_pred_rsp = torch.std(pred_rsp, dim=1).unsqueeze(1)
-                    # pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
+                    mean_pred_rsp = torch.mean(pred_rsp, dim=1, keepdim=True)
+                    std_pred_rsp = torch.std(pred_rsp, dim=1, keepdim=True)
+                    pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
                     loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
                     loss = loss + loss_rsp
                 
@@ -388,7 +388,7 @@ class MMRPhysTrainer(BaseTrainer):
                         SBP = torch.median(label_sysBP, dim=1).values
                         DBP = torch.median(label_diaBP, dim=1).values
 
-                    elif labels.shape[-1] >= 3:     #SCAMPS dataset
+                    elif labels.shape[-1] >= 1:     #SCAMPS dataset
                         label_bvp = labels[..., 0]
                         label_rsp = labels[..., 1]
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
@@ -398,14 +398,14 @@ class MMRPhysTrainer(BaseTrainer):
                 elif "RSP" in self.tasks:
                     label_rsp = labels
 
-                # if "BVP" in self.tasks:
-                #     mean_label_bvp = torch.mean(label_bvp, dim=1).unsqueeze(1)
-                #     std_label_bvp = torch.std(label_bvp, dim=1).unsqueeze(1)
-                #     label_bvp = (label_bvp - mean_label_bvp) / std_label_bvp  # normalize
-                # if "RSP" in self.tasks:
-                #     mean_label_rsp = torch.mean(label_rsp, dim=1).unsqueeze(1)
-                #     std_label_rsp = torch.std(label_rsp, dim=1).unsqueeze(1)
-                #     label_rsp = (label_rsp - mean_label_rsp) / std_label_rsp  # normalize
+                if "BVP" in self.tasks:
+                    mean_label_bvp = torch.mean(label_bvp, dim=1, keepdim=True)
+                    std_label_bvp = torch.std(label_bvp, dim=1, keepdim=True)
+                    label_bvp = (label_bvp - mean_label_bvp) / std_label_bvp  # normalize
+                if "RSP" in self.tasks:
+                    mean_label_rsp = torch.mean(label_rsp, dim=1, keepdim=True)
+                    std_label_rsp = torch.std(label_rsp, dim=1, keepdim=True)
+                    label_rsp = (label_rsp - mean_label_rsp) / std_label_rsp  # normalize
 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -425,17 +425,17 @@ class MMRPhysTrainer(BaseTrainer):
                 loss = 0
 
                 if "BVP" in self.tasks:
-                    # mean_pred_bvp = torch.mean(pred_bvp, dim=1).unsqueeze(1)
-                    # std_pred_bvp = torch.std(pred_bvp, dim=1).unsqueeze(1)
-                    # pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
+                    mean_pred_bvp = torch.mean(pred_bvp, dim=1, keepdim=True)
+                    std_pred_bvp = torch.std(pred_bvp, dim=1, keepdim=True)
+                    pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
                     loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
                     valid_loss_bvp.append(loss_bvp.item())
                     loss += loss_bvp
 
                 if "RSP" in self.tasks:
-                    # mean_pred_rsp = torch.mean(pred_rsp, dim=1).unsqueeze(1)
-                    # std_pred_rsp = torch.std(pred_rsp, dim=1).unsqueeze(1)
-                    # pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
+                    mean_pred_rsp = torch.mean(pred_rsp, dim=1, keepdim=True)
+                    std_pred_rsp = torch.std(pred_rsp, dim=1, keepdim=True)
+                    pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
                     loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
                     valid_loss_rsp.append(loss_rsp.item())
                     loss += loss_rsp
@@ -534,7 +534,7 @@ class MMRPhysTrainer(BaseTrainer):
                         SBP_test = torch.median(label_sysBP_test, dim=1).values
                         DBP_test = torch.median(label_diaBP_test, dim=1).values
 
-                    elif labels_test.shape[-1] >= 3:     #SCAMPS dataset
+                    elif labels_test.shape[-1] >= 1:     #SCAMPS dataset
                         label_bvp_test = labels_test[..., 0]
                         label_rsp_test = labels_test[..., 1]
                     else:                           # All other rPPG datasets (UBFC-rPPG, PURE, iBVP)
@@ -545,14 +545,14 @@ class MMRPhysTrainer(BaseTrainer):
                 elif "RSP" in self.tasks:
                     label_rsp_test = labels_test
 
-                # if "BVP" in self.tasks:
-                #     mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1)
-                #     std_label_bvp_test = torch.std(label_bvp_test, dim=1).unsqueeze(1)
-                #     label_bvp_test = (label_bvp_test - mean_label_bvp_test) / std_label_bvp_test  # normalize
-                # if "RSP" in self.tasks:
-                #     mean_label_rsp_test = torch.mean(label_rsp_test, dim=1).unsqueeze(1)
-                #     std_label_rsp_test = torch.std(label_rsp_test, dim=1).unsqueeze(1)
-                #     label_rsp_test = (label_rsp_test - mean_label_rsp_test) / std_label_rsp_test  # normalize
+                if "BVP" in self.tasks:
+                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1, keepdim=True)
+                    std_label_bvp_test = torch.std(label_bvp_test, dim=1, keepdim=True)
+                    label_bvp_test = (label_bvp_test - mean_label_bvp_test) / std_label_bvp_test  # normalize
+                if "RSP" in self.tasks:
+                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1, keepdim=True)
+                    std_label_rsp_test = torch.std(label_rsp_test, dim=1, keepdim=True)
+                    label_rsp_test = (label_rsp_test - mean_label_rsp_test) / std_label_rsp_test  # normalize
 
                 last_frame = torch.unsqueeze(data[:, :, -1, :, :], 2).repeat(1, 1, max(self.num_of_gpu, 1), 1, 1)
                 data = torch.cat((data, last_frame), 2)
@@ -570,16 +570,16 @@ class MMRPhysTrainer(BaseTrainer):
                 pred_bp_test = out[2]
 
                 if "BVP" in self.tasks:
-                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1).unsqueeze(1).cpu()
-                    std_label_bvp_test = torch.std(label_bvp_test, dim=1).unsqueeze(1).cpu()
-                    mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1).unsqueeze(1).cpu()
-                    std_pred_bvp_test = torch.std(pred_bvp_test, dim=1).unsqueeze(1).cpu()
+                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1, keepdim=True).cpu()
+                    std_label_bvp_test = torch.std(label_bvp_test, dim=1, keepdim=True).cpu()
+                    mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1, keepdim=True).cpu()
+                    std_pred_bvp_test = torch.std(pred_bvp_test, dim=1, keepdim=True).cpu()
                     # pred_bvp_test = (pred_bvp_test - mean_pred_bvp_test) / std_pred_bvp_test  # normalize
                 if "RSP" in self.tasks:
-                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1).unsqueeze(1).cpu()
-                    std_label_rsp_test = torch.std(label_rsp_test, dim=1).unsqueeze(1).cpu()
-                    mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1).unsqueeze(1).cpu()
-                    std_pred_rsp_test = torch.std(pred_rsp_test, dim=1).unsqueeze(1).cpu()
+                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1, keepdim=True).cpu()
+                    std_label_rsp_test = torch.std(label_rsp_test, dim=1, keepdim=True).cpu()
+                    mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1, keepdim=True).cpu()
+                    std_pred_rsp_test = torch.std(pred_rsp_test, dim=1, keepdim=True).cpu()
                     # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
 
 
