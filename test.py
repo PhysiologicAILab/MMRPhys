@@ -13,8 +13,6 @@ import scipy
 
 # %%
 
-# %%
-
 def _next_power_of_2(x):
     """Calculate the nearest power of 2."""
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
@@ -22,14 +20,16 @@ def _next_power_of_2(x):
 fs = 25
 
 # %%
-rsp_nfft = _next_power_of_2(2000)
+rsp_nfft = _next_power_of_2(500)
 rsp_fft_freq = (60 * fs * torch.fft.rfftfreq(rsp_nfft))
 rsp_freq_idx = torch.argwhere((rsp_fft_freq > 5) & (rsp_fft_freq < 33))
 
-bvp_nfft = _next_power_of_2(2000)
+bvp_nfft = _next_power_of_2(500)
 bvp_fft_freq = (60 * fs * torch.fft.rfftfreq(bvp_nfft))
 bvp_freq_idx = torch.argwhere((bvp_fft_freq > 35) & (bvp_fft_freq < 185))
 
+bvp_freq_idx_min = bvp_freq_idx.min()
+bvp_freq_idx_max = bvp_freq_idx.max()
 print(rsp_freq_idx.min(), rsp_freq_idx.max())
 print(bvp_freq_idx.min(), bvp_freq_idx.max())
 
@@ -37,6 +37,14 @@ print(bvp_freq_idx.min(), bvp_freq_idx.max())
 
 ppg_gen = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=70)
 ppg = ppg_gen[200: 700]
+
+# %%
+ppg_tensor = torch.from_numpy(ppg_gen[200: 700])
+
+ppg_fft = torch.fft.rfft(ppg_tensor)
+ppg_fft_foi = ppg_fft[bvp_freq_idx_min: bvp_freq_idx_max]
+bvp_freq_foi = bvp_fft_freq[bvp_freq_idx_min: bvp_freq_idx_max]
+plt.plot(bvp_freq_foi, ppg_fft_foi)
 
 # %%
 f_ppg, pxx_ppg = scipy.signal.periodogram(ppg, fs=fs, nfft=bvp_nfft, detrend=False)
