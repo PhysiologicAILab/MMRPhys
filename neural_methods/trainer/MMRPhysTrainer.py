@@ -105,10 +105,10 @@ class MMRPhysTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
             self.criterion_bvp = Neg_Pearson() #BVP
             self.criterion_rsp = Neg_Pearson() #RSP
-            self.criterion_sbp = torch.nn.MSELoss()  # SBP
-            # self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
-            self.criterion_dbp = torch.nn.MSELoss()  # DBP
-            # self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
+            # self.criterion_sbp = torch.nn.MSELoss()  # SBP
+            self.criterion_sbp = torch.nn.SmoothL1Loss()    # SBP
+            # self.criterion_dbp = torch.nn.MSELoss()  # DBP
+            self.criterion_dbp = torch.nn.SmoothL1Loss()  # DBP
             self.optimizer = optim.Adam(
                 self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html

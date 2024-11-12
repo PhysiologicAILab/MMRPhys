@@ -12,6 +12,20 @@ import torch
 import scipy
 
 # %%
+a = torch.rand((2, 4, 3, 3,))
+b = torch.mean(a, dim=(2,3))
+print(b)
+b_max_idx = torch.max(b, dim=1).indices
+b_min_idx = torch.min(b, dim=1).indices
+
+print(b_max_idx.shape)
+
+diff_a = torch.zeros((2, 1, 3, 3))
+for bt in range(2):
+    diff_a[bt, ...] = a[bt, b_max_idx[bt], :, :] - a[bt, b_min_idx[bt], :, :]
+print(diff_a.shape)
+
+# %%
 
 def _next_power_of_2(x):
     """Calculate the nearest power of 2."""
@@ -52,19 +66,19 @@ fmask_ppg = np.argwhere((f_ppg >= 0.6) & (f_ppg <= 3.3))
 print(len(fmask_ppg))
 
 # %%
-ppg = torch.from_numpy(ppg_gen[200: 2200])
+ppg = torch.from_numpy(ppg_gen[200: 700])
 
-bvp_win = torch.hann_window(800)
-# bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), return_complex=True)
-bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), win_length=800, hop_length=200, window=bvp_win, return_complex=True)
+bvp_win = torch.hann_window(250)
+# bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(500), return_complex=True)
+bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(500), win_length=250, hop_length=25, window=bvp_win, return_complex=True)
 
-bvp_stft_mag = bvp_stft.real[48:252, :]
+bvp_stft_mag = bvp_stft.real[12:63, :]
 
 bvp_stft_mag_min = torch.min(bvp_stft_mag, dim=0, keepdim=True).values
 bvp_stft_mag_max = torch.max(bvp_stft_mag, dim=0, keepdim=True).values
 bvp_stft_mag_norm = (bvp_stft_mag - bvp_stft_mag_min) / (bvp_stft_mag_max - bvp_stft_mag_min)
 
-bvp_stft_phase = bvp_stft.angle()[48:252, :]   # torch.rad2deg(bvp_stft.angle())
+bvp_stft_phase = bvp_stft.angle()[12:63, :]   # torch.rad2deg(bvp_stft.angle())
 bvp_stft_phase_min = torch.min(bvp_stft_phase, dim=0, keepdim=True).values
 bvp_stft_phase_max = torch.max(bvp_stft_phase, dim=0, keepdim=True).values
 bvp_stft_phase_norm = (bvp_stft_phase - bvp_stft_phase_min) / (bvp_stft_phase_max - bvp_stft_phase_min)
@@ -85,17 +99,17 @@ ax[0].imshow(bvp_stft_mag_norm, cmap="coolwarm")
 ax[1].imshow(bvp_stft_phase_norm, cmap="coolwarm")
 
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
-rsp = rsp[0: 2000]
+rsp = rsp[0: 500]
 rsp = torch.from_numpy(rsp)
 rsp = rsp.unsqueeze(0)
 rsp = rsp.repeat(2, 1)
 print(rsp.shape)
 
-rsp_win = torch.hann_window(800)
-# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), return_complex=True)
-rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=800, hop_length=200, window=rsp_win, return_complex=True)
+rsp_win = torch.hann_window(250)
+# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(500), return_complex=True)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(500), win_length=250, hop_length=25, window=rsp_win, return_complex=True)
 
-rsp_stft_mag = rsp_stft.real[0, 7:45, :]
+rsp_stft_mag = rsp_stft.real[0, 2:11, :]
 print("rsp_stft_mag.shape", rsp_stft_mag.shape)
 rsp_stft_mag_min = torch.min(rsp_stft_mag, dim=0, keepdim=True).values
 rsp_stft_mag_max = torch.max(rsp_stft_mag, dim=0, keepdim=True).values
