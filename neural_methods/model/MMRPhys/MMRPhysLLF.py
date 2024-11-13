@@ -440,7 +440,7 @@ class MMRPhysLLF(nn.Module):
             self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
 
 
-    def forward(self, x, label_bvp=None, label_rsp=None, epoch_count=-1): # [batch, Features=3, Temp=frames, Width=72, Height=72]
+    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=72, Height=72]
         
         [batch, channel, length, width, height] = x.shape        
 

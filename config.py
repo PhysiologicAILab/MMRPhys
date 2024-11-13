@@ -307,7 +307,9 @@ _C.MODEL.RESUME = ''
 _C.MODEL.DROP_RATE = 0.0
 _C.MODEL.MODEL_DIR = 'PreTrainedModels'
 
-# Specific parameters for physnet parameters
+# -----------------------------------------------------------------------------
+# Specific parameters for PhysNet parameters
+# -----------------------------------------------------------------------------
 _C.MODEL.PHYSNET = CN()
 _C.MODEL.PHYSNET.FRAME_NUM = 160
 _C.MODEL.PHYSNET.CHANNELS = 3
@@ -341,8 +343,10 @@ _C.MODEL.MMRPhys.MD_R = 1
 _C.MODEL.MMRPhys.MD_S = 1
 _C.MODEL.MMRPhys.MD_STEPS = 4
 _C.MODEL.MMRPhys.MD_INFERENCE = False
-_C.MODEL.MMRPhys.MD_RESIDUAL = False
+_C.MODEL.MMRPhys.MD_RESIDUAL = True
 _C.MODEL.MMRPhys.TASKS = ["BVP"]
+_C.MODEL.MMRPhys.PRETRAINED = ''
+
 
 # -----------------------------------------------------------------------------
 # Model Settings for TS-CAN

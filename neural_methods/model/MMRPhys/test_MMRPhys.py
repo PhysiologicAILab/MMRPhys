@@ -17,13 +17,14 @@ from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 
 model_config = {
     "TASKS": ["BVP", "BP", "RSP"],
+    # "TASKS": ["BP"],
     "FS": 25,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
     "MD_R": 1,
     "MD_S": 1,
     "MD_STEPS": 5,
-    "MD_INFERENCE": True,
+    "MD_INFERENCE": False,
     "MD_RESIDUAL": True,
     "in_channels": 4,
     "data_channels": 4,
@@ -35,10 +36,8 @@ model_config = {
     "assess_latency": False,
     "num_trials": 20,
     "visualize": False,
-    "ckpt_path": "",
-    "data_path": "",
-    "label_path": "",
-    "Wait_Epochs": 4,
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch9.pth",
+    "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
 }
 
 
@@ -46,7 +45,6 @@ class TestMMRPhys(object):
     def __init__(self) -> None:
         self.ckpt_path = Path(model_config["ckpt_path"])
         self.data_path = Path(model_config["data_path"])
-        self.label_path = Path(model_config["label_path"])
 
         self.tasks = model_config["TASKS"]
         self.use_fsam = model_config["MD_FSAM"]
@@ -96,12 +94,11 @@ class TestMMRPhys(object):
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
         md_config["TASKS"] = model_config["TASKS"]
-        md_config["Wait_Epochs"] = model_config["Wait_Epochs"]
 
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
-            self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
+            self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device, weights_only=True))
         else:
             self.net = MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
@@ -119,8 +116,12 @@ class TestMMRPhys(object):
         if self.visualize:
             self.np_data = np.load(str(self.data_files[num_trial]))
             self.np_label = np.load(str(self.label_files[num_trial]))
-            self.np_label = np.expand_dims(self.np_label, 0)
-            self.np_label = torch.tensor(self.np_label)
+            
+            self.bvp_label = np.expand_dims(self.np_label[:, 0], 0)
+            self.bvp_label = torch.tensor(self.bvp_label)
+
+            self.rsp_label = np.expand_dims(self.np_label[:, 1], 0)
+            self.rsp_label = torch.tensor(self.rsp_label)
 
             # bvp_label
             # resp_label
@@ -140,7 +141,7 @@ class TestMMRPhys(object):
             self.test_data = torch.rand(self.batch_size, self.data_channels, self.frames + 1, self.height, self.width)
             self.test_data = self.test_data.to(torch.float32).to(self.device)
             self.bvp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
-            self.resp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
+            self.rsp_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
 
     def run_inference(self, num_trial):
 
@@ -149,11 +150,12 @@ class TestMMRPhys(object):
         if self.assess_latency:
             t0 = time.time()
 
-        out = self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.resp_label)
+        out = self.net(self.test_data, label_bvp=self.bvp_label, label_rsp=self.rsp_label)
         self.pred_bvp = out[0]
         self.pred_rsp = out[1]
         self.pred_rBP = out[2]
-        self.vox_embed_ppg = out[3]
+        # self.vox_embed_ppg = out[3]
+        self.vox_embed_ppg = out[5]
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
             self.factorized_embed_ppg = out[5]
@@ -181,14 +183,19 @@ class TestMMRPhys(object):
 
     def save_attention_maps(self, num_trial):
         b, channels, enc_frames, enc_height, enc_width = self.vox_embed_ppg.shape
-        label_matrix = self.np_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+        label_matrix = self.bvp_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
             2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+
+        print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
+        print("self.bvp_label.shape", self.bvp_label.shape)
+        print("label_matrix.shape", label_matrix.shape)
+
         label_matrix = label_matrix.to(device=self.device)
         corr_matrix = F.cosine_similarity(self.vox_embed_ppg, label_matrix, dim=2).abs()
 
         # avg_emb = torch.mean(self.vox_embed_ppg, dim=1)
         # b, enc_frames, enc_height, enc_width = avg_emb.shape
-        # label_matrix = np_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
+        # label_matrix = bvp_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
         # label_matrix = label_matrix.to(device=device)
         # corr_matrix = F.cosine_similarity(avg_emb, label_matrix, dim=1)
 
@@ -299,6 +306,7 @@ if __name__ == "__main__":
     for trial_num in range(testObj.num_trials):
         testObj.load_data(trial_num)
         testObj.run_inference(trial_num)
+
 
     testObj.output_summary_results()
 

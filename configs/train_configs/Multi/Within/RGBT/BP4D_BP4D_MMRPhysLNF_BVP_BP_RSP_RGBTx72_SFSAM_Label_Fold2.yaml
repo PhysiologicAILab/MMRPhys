@@ -2,7 +2,7 @@ BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
   BATCH_SIZE: 4
-  EPOCHS: 10
+  EPOCHS: 50
   LR: 1e-3
   MODEL_FILE_NAME: BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold2
   PLOT_LOSSES_AND_LR: True
@@ -117,7 +117,7 @@ MODEL:
     CHANNELS: 4
     FRAME_NUM: 500
     TYPE: "LNF"
-    TASKS: ["BVP", "BP", "RSP"]
+    TASKS: ["BP"]
     MD_FSAM: True
     MD_TYPE: "SNMF_Label"
     MD_R: 1
