@@ -222,9 +222,9 @@ class RSP_Head(nn.Module):
         self.md_res = md_config["MD_RESIDUAL"]
 
         md_config = deepcopy(md_config)
-        md_config["MD_R"] = 2
+        md_config["MD_R"] = 32
         md_config["MD_S"] = 1
-        md_config["MD_STEPS"] = 6
+        md_config["MD_STEPS"] = 8
 
         # if self.use_fsam:
         self.fsam = FeaturesFactorizationModule(nf_RSP[2], device, md_config, dim="3D", debug=debug)
