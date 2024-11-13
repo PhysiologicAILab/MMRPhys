@@ -50,7 +50,6 @@ class MMRPhysTrainer(BaseTrainer):
 
         md_config = {}
         md_config["FRAME_NUM"] = self.config.MODEL.MMRPhys.FRAME_NUM
-        md_config["FS"] = self.config.TRAIN.DATA.FS
         md_config["MD_TYPE"] = self.config.MODEL.MMRPhys.MD_TYPE
         md_config["MD_FSAM"] = self.config.MODEL.MMRPhys.MD_FSAM
         md_config["MD_S"] = self.config.MODEL.MMRPhys.MD_S
@@ -59,6 +58,10 @@ class MMRPhysTrainer(BaseTrainer):
         md_config["MD_INFERENCE"] = self.config.MODEL.MMRPhys.MD_INFERENCE
         md_config["MD_RESIDUAL"] = self.config.MODEL.MMRPhys.MD_RESIDUAL        
         md_config["TASKS"] = self.config.MODEL.MMRPhys.TASKS
+        if self.config.TOOLBOX_MODE == "train_and_test" or self.config.TOOLBOX_MODE == "only_train":
+            md_config["FS"] = self.config.TRAIN.DATA.FS
+        else:
+            md_config["FS"] = self.config.TEST.DATA.FS
 
         self.md_infer = self.config.MODEL.MMRPhys.MD_INFERENCE
         self.use_fsam = self.config.MODEL.MMRPhys.MD_FSAM
