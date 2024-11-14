@@ -67,47 +67,56 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        # "BP4D_500x72_Fold1": {
-        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
-        #     "exp" : {
-        #         # "MMRPhys_FuseL_SFSAM_Label":
-        #         # {
-        #         #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-        #         #     "rsp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_rsp_outputs.pickle",
-        #         #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
-        #         #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
-        #         # },
-        #         # "MMRPhys_FuseL_Base":
-        #         # {
-        #         #     "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
-        #         #     "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
-        #         #     "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
-        #         #     # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
-        #         # },
-        #         # "MMRPhys_LEF_SFSAM_Thermal":
-        #         # {
-        #         #     "rsp": "BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-        #         # },
-        #         # "MMRPhys_LLF_SFSAM":
-        #         # {
-        #         #     "bvp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-        #         #     "rsp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
-        #         # },
-        #         # "MMRPhys_LEF_SFSAM_RGB":
-        #         # {
-        #         #     "rsp": "BP4D_MMRPhysLEF_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-        #         # },
+        "BP4D_500x72_Fold1": {
+            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+            "exp" : {
+                # "MMRPhys_FuseL_SFSAM_Label":
+                # {
+                #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                #     "bp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bp_outputs.pickle",
+                #     # "eda": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_eda_outputs.pickle",
+                # },
+                # "MMRPhys_FuseL_Base":
+                # {
+                #     "bvp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bvp_outputs.pickle",
+                #     "rsp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_rsp_outputs.pickle",
+                #     "bp":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_bp_outputs.pickle",
+                #     # "eda":"BP4D_MMRPhys_All_RGBT_FuseLx500x72_Base_Fold1_eda_outputs.pickle",
+                # },
+                # "MMRPhys_LEF_SFSAM_Thermal":
+                # {
+                #     "rsp": "BP4D_MMRPhysLEF_RSP_Tx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
+                # "MMRPhys_LLF_SFSAM":
+                # {
+                #     "bvp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLLF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                # },
+                # "MMRPhys_LEF_SFSAM_RGB":
+                # {
+                #     "rsp": "BP4D_MMRPhysLEF_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
 
-        #         "MMRPhysLNF_Base_Fold1":{
-        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_bvp_outputs.pickle",
-        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_rsp_outputs.pickle"
-        #         },
-        #         "MMRPhysLNF_SFSAM_Fold1": {
-        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-        #         },
-        #     },
-        # },
+                # "MMRPhysLNF_Base_Fold1":{
+                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold1_rsp_outputs.pickle"
+                # },
+                # "MMRPhysLNF_SFSAM_Fold1": {
+                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
+                "MMRPhys_RGB":{
+                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                },
+                "MMRPhys_BVP-RGB_RSP-Thermal":{
+                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                }
+
+            },
+        },
         # "BP4D_500x72_Fold2": {
         #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
         #     "exp": {
@@ -121,25 +130,25 @@ path_dict_within_dataset = {
         #         },
         #     }
         # },
-        "BP4D_500x72_Fold3": {
-            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
-            "exp": {
-                # "MMRPhysLNF_Base_Fold3": {
-                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_bvp_outputs.pickle",
-                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_rsp_outputs.pickle"
-                # },
-                # "MMRPhysLNF_SFSAM_Fold3": {
-                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
-                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle"
-                # },
-                "MMRPhysLNF_SFSAM_Fold3":{
-                    "bvp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle",
-                    "SBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_SBP_outputs.pickle",
-                    "DBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_DBP_outputs.pickle",
-                },
-            }
-        },
+        # "BP4D_500x72_Fold3": {
+        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        #     "exp": {
+        #         # "MMRPhysLNF_Base_Fold3": {
+        #         #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_bvp_outputs.pickle",
+        #         #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_Base_Fold3_rsp_outputs.pickle"
+        #         # },
+        #         # "MMRPhysLNF_SFSAM_Fold3": {
+        #         #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
+        #         #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle"
+        #         # },
+        #         "MMRPhysLNF_SFSAM_Fold3":{
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_rsp_outputs.pickle",
+        #             "SBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_SBP_outputs.pickle",
+        #             "DBP": "BP4D_MMRPhysLNF_BVP_BP_RSP_RGBTx72_SFSAM_Label_Fold3_DBP_outputs.pickle",
+        #         },
+        #     }
+        # },
 
         # "BP4D_500x9_Fold1_RGBT": {
         #     "root": "runs/exp/BP4D_RGBT_500_9x9/saved_test_outputs/",

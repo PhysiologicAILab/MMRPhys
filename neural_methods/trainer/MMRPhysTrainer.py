@@ -121,12 +121,12 @@ class MMRPhysTrainer(BaseTrainer):
             pretrained_model_path = self.config.MODEL.MMRPhys.PRETRAINED
             if pretrained_model_path != "":
                 print("Loading pretrained model:", pretrained_model_path)
-                self.model.load_state_dict(torch.load(pretrained_model_path, map_location=self.device, weights_only=True), strict=True)   # BVP and RSP will be trained first with SFSAM, and when training for BP, SFSAM is not needed.
+                self.model.load_state_dict(torch.load(pretrained_model_path, map_location=self.device, weights_only=True), strict=False)   # BVP and RSP will be trained first with SFSAM, and when training for BP, SFSAM is not needed.
 
-            if "BP" in self.tasks and pretrained_model_path == "":
-                print("Pretrained model not specified, which is required for training the model for BP estimation... ")
-                print("Exiting the code ...")
-                exit()
+            # if "BP" in self.tasks and pretrained_model_path == "":
+            #     print("Pretrained model not specified, which is required for training the model for BP estimation... ")
+            #     print("Exiting the code ...")
+            #     exit()
         
         elif self.config.TOOLBOX_MODE == "only_test":
             pass
