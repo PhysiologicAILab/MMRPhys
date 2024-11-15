@@ -36,7 +36,7 @@ model_config = {
     "assess_latency": False,
     "num_trials": 20,
     "visualize": False,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch9.pth",
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch29.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
 }
 
@@ -154,8 +154,8 @@ class TestMMRPhys(object):
         self.pred_bvp = out[0]
         self.pred_rsp = out[1]
         self.pred_rBP = out[2]
-        # self.vox_embed_ppg = out[3]
-        self.vox_embed_ppg = out[5]
+        self.vox_embed_bvp = out[3]
+        self.vox_embed_rsp = out[4]
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
             self.factorized_embed_ppg = out[5]
@@ -182,102 +182,240 @@ class TestMMRPhys(object):
 
 
     def save_attention_maps(self, num_trial):
-        b, channels, enc_frames, enc_height, enc_width = self.vox_embed_ppg.shape
-        label_matrix = self.bvp_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
-            2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+        if "BVP" in self.tasks:
+            b, channels, enc_frames, enc_height, enc_width = self.vox_embed_bvp.shape
+            
+            label_matrix = self.bvp_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+                2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
 
-        print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
-        print("self.bvp_label.shape", self.bvp_label.shape)
-        print("label_matrix.shape", label_matrix.shape)
+            print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
+            print("self.bvp_label.shape", self.bvp_label.shape)
+            print("label_matrix.shape", label_matrix.shape)
 
-        label_matrix = label_matrix.to(device=self.device)
-        corr_matrix = F.cosine_similarity(self.vox_embed_ppg, label_matrix, dim=2).abs()
+            label_matrix = label_matrix.to(device=self.device)
+            corr_matrix = F.cosine_similarity(self.vox_embed_bvp, label_matrix, dim=2).abs()
 
-        # avg_emb = torch.mean(self.vox_embed_ppg, dim=1)
-        # b, enc_frames, enc_height, enc_width = avg_emb.shape
-        # label_matrix = bvp_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
-        # label_matrix = label_matrix.to(device=device)
-        # corr_matrix = F.cosine_similarity(avg_emb, label_matrix, dim=1)
+            # avg_emb = torch.mean(self.vox_embed_bvp, dim=1)
+            # b, enc_frames, enc_height, enc_width = avg_emb.shape
+            # label_matrix = bvp_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
+            # label_matrix = label_matrix.to(device=device)
+            # corr_matrix = F.cosine_similarity(avg_emb, label_matrix, dim=1)
 
-        if self.debug:
-            print("corr_matrix.shape", corr_matrix.shape)
-            print("self.test_data.shape:", self.test_data.shape)
-            print("self.vox_embed_ppg.shape:", self.vox_embed_ppg.shape)
+            if self.debug:
+                print("corr_matrix.shape", corr_matrix.shape)
+                print("self.test_data.shape:", self.test_data.shape)
+                print("self.vox_embed_bvp.shape:", self.vox_embed_bvp.shape)
 
-        self.test_data = self.test_data.detach().cpu().numpy()
-        self.vox_embed_ppg = self.vox_embed_ppg.detach().cpu().numpy()
-        corr_matrix = corr_matrix.detach().cpu().numpy()
+            self.test_data = self.test_data.detach().cpu().numpy()
+            self.vox_embed_bvp = self.vox_embed_bvp.detach().cpu().numpy()
+            corr_matrix = corr_matrix.detach().cpu().numpy()
 
-        fig, ax = plt.subplots(4, 4, figsize=[16, 16])
-        fig.tight_layout()
-        cmap = "coolwarm"
+            fig, ax = plt.subplots(5, 4, figsize=[12, 16])
+            fig.tight_layout()
+            cmap = "coolwarm"
 
-        ax[0, 0].imshow(self.np_data[enc_frames//2, ...].astype(np.uint8))
-        ax[0, 0].axis('off')
+            n_row = 0
+            ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
+            ax[n_row, 0].axis('off')
 
-        ch = 0
-        ax[0, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 1].axis('off')
+            ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, 0:3])
+            ax[n_row, 1].axis('off')
 
-        ch = 1
-        ax[0, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 2].axis('off')
+            ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 2].axis('off')
 
-        ch = 2
-        ax[0, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 3].axis('off')     
+            ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, 0:3])
+            ax[n_row, 3].axis('off')
 
-        ch = 3
-        ax[1, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[1, 0].axis('off')
+            n_row = 1
+            ch = 0
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
 
-        ch = 4
-        ax[1, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[1, 1].axis('off')
+            ch = 1
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
 
-        ch = 5
-        ax[1, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[1, 2].axis('off')
+            ch = 2
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
 
-        ch = 6
-        ax[1, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[1, 3].axis('off')
+            ch = 3
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')     
 
-        ch = 7
-        ax[2, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[2, 0].axis('off')
+            n_row = 2
+            ch = 4
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
 
-        ch = 8
-        ax[2, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[2, 1].axis('off')
+            ch = 5
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
 
-        ch = 9
-        ax[2, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[2, 2].axis('off')
+            ch = 6
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
 
-        ch = 10
-        ax[2, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[2, 3].axis('off')
+            ch = 7
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
 
-        ch = 11
-        ax[3, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[3, 0].axis('off')
+            n_row = 3
+            ch = 8
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
 
-        ch = 12
-        ax[3, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[3, 1].axis('off')
+            ch = 9
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
 
-        ch = 13
-        ax[3, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[3, 2].axis('off')
+            ch = 10
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
 
-        ch = 14
-        ax[3, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[3, 3].axis('off')
+            ch = 11
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
 
-        # plt.show()
-        plt.savefig(str(self.attention_map_dir.joinpath(str(self.data_files[num_trial].name.replace(".npy", "_attention_map.jpg")))))
-        plt.close(fig)
+            n_row = 4
+            ch = 12
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
+
+            ch = 13
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
+
+            ch = 14
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
+
+            ch = 15
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
+
+
+            # plt.show()
+            plt.savefig(str(self.attention_map_dir.joinpath(str(self.data_files[num_trial].name.replace(".npy", "_BVP_attention_map.jpg")))))
+            plt.close(fig)
+
+        if "RSP" in self.tasks:
+            b, channels, enc_frames, enc_height, enc_width = self.vox_embed_rsp.shape
+
+            label_matrix = self.rsp_label.to(device=self.device)
+            label_matrix = F.avg_pool1d(label_matrix, kernel_size=5, stride=4, padding=2)   #downsampling 4 times, aligning with the temporal dimensions of the embeddings
+
+            label_matrix = label_matrix.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+                2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+
+            print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
+            print("self.rsp_label.shape", self.rsp_label.shape)
+            print("label_matrix.shape", label_matrix.shape)
+
+            corr_matrix = F.cosine_similarity(self.vox_embed_rsp, label_matrix, dim=2).abs()
+
+            # avg_emb = torch.mean(self.vox_embed_rsp, dim=1)
+            # b, enc_frames, enc_height, enc_width = avg_emb.shape
+            # label_matrix = rsp_label.unsqueeze(0).unsqueeze(2).permute(0, 3, 2, 1).repeat(1, 1, enc_height, enc_width)
+            # label_matrix = label_matrix.to(device=device)
+            # corr_matrix = F.cosine_similarity(avg_emb, label_matrix, dim=1)
+
+            if self.debug:
+                print("corr_matrix.shape", corr_matrix.shape)
+                print("self.vox_embed_rsp.shape:", self.vox_embed_rsp.shape)
+
+            self.vox_embed_rsp = self.vox_embed_rsp.detach().cpu().numpy()
+            corr_matrix = corr_matrix.detach().cpu().numpy()
+
+            fig, ax = plt.subplots(5, 4, figsize=[12, 16])
+            fig.tight_layout()
+            cmap = "coolwarm"
+
+            n_row = 0
+            ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
+            ax[n_row, 0].axis('off')
+
+            ax[n_row, 1].imshow(self.np_data[4 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 1].axis('off')
+
+            ax[n_row, 2].imshow(self.np_data[4 * 2 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 2].axis('off')
+
+            ax[n_row, 3].imshow(self.np_data[4 * enc_frames-1, :, :, 0:3])
+            ax[n_row, 3].axis('off')
+
+            n_row = 1
+            ch = 0
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
+
+            ch = 1
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
+
+            ch = 2
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
+
+            ch = 3
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')     
+
+            n_row = 2
+            ch = 4
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
+
+            ch = 5
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
+
+            ch = 6
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
+
+            ch = 7
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
+
+            n_row = 3
+            ch = 8
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
+
+            ch = 9
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
+
+            ch = 10
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
+
+            ch = 11
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
+
+            n_row = 4
+            ch = 12
+            ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 0].axis('off')
+
+            ch = 13
+            ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 1].axis('off')
+
+            ch = 14
+            ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 2].axis('off')
+
+            ch = 15
+            ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
+            ax[n_row, 3].axis('off')
+
+            # plt.show()
+            plt.savefig(str(self.attention_map_dir.joinpath(str(self.data_files[num_trial].name.replace(".npy", "_RSP_attention_map.jpg")))))
+            plt.close(fig)
 
 
     def output_summary_results(self):
