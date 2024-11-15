@@ -117,17 +117,21 @@ class MMRPhysTrainer(BaseTrainer):
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.config.TRAIN.LR)
             # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
             self.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config.TRAIN.LR, epochs=self.config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
-
+            
             pretrained_model_path = self.config.MODEL.MMRPhys.PRETRAINED
-            if pretrained_model_path != "":
-                print("Loading pretrained model:", pretrained_model_path)
-                self.model.load_state_dict(torch.load(pretrained_model_path, map_location=self.device, weights_only=True), strict=False)   # BVP and RSP will be trained first with SFSAM, and when training for BP, SFSAM is not needed.
+            if pretrained_model_path == "" and "BP" in self.tasks:
+                print("Pretrained model not specified, which is required for training the model for BP estimation... ")
+                print("Exiting the code ...")
+                exit()            
+            else:
+                if ("BVP" in self.tasks or "RSP" in self.tasks):            
+                    print("Loading pretrained model:", pretrained_model_path)
+                    self.model.load_state_dict(torch.load(pretrained_model_path, map_location=self.device, weights_only=True), strict=True)   # BVP and RSP will be trained first with SFSAM, and when training for BP, SFSAM is not needed.
+                else:
+                    model_weights = torch.load(pretrained_model_path, map_location=self.device, weights_only=True)
+                    weights_trimmed = {k:v for k, v in model_weights.items() if not k.startswith('module.rBP_head')}
+                    self.model.load_state_dict(weights_trimmed, strict=False)
 
-            # if "BP" in self.tasks and pretrained_model_path == "":
-            #     print("Pretrained model not specified, which is required for training the model for BP estimation... ")
-            #     print("Exiting the code ...")
-            #     exit()
-        
         elif self.config.TOOLBOX_MODE == "only_test":
             pass
         else:
