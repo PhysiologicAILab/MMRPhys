@@ -12,6 +12,12 @@ import torch
 import scipy
 
 # %%
+a = np.random.random((4, 500))
+a = np.delete(a, [0, 3], axis=0)
+print(a.shape)
+
+
+# %%
 a = torch.rand((2, 4, 3, 3,))
 b = torch.mean(a, dim=(2,3))
 print(b)
@@ -32,64 +38,96 @@ def _next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
 fs = 25
+# %%
+rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=5)
+rsp = rsp[0: 500]
+rsp_tensor = torch.from_numpy(rsp).unsqueeze(0)
+rsp_tensor = rsp_tensor.repeat(4, 1)
+
+print(rsp_tensor.shape)
+last_zero_crossing = torch.zeros_like(rsp_tensor)
+sign = torch.sign(rsp_tensor, out=last_zero_crossing)
+last_zero_crossing = torch.where(torch.diff(last_zero_crossing))
+index_tensor = torch.stack(last_zero_crossing, dim=1)
+
+print(index_tensor.shape)
+# plt.plot(last_zero_crossing[0, ])
 
 # %%
+rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=5)
+rsp = rsp[0: 500]
+rsp_tensor = torch.from_numpy(rsp)
+
+last_zero_crossing = torch.where(torch.diff(torch.sign(rsp_tensor)))[0][-1].numpy()
+print("last_zero_crossing:", last_zero_crossing)
+new_rsp_tensor = rsp_tensor[0:last_zero_crossing].unsqueeze(0)
+
+rsp_tensor_rep = -1 * new_rsp_tensor.fliplr()
+long_rsp_tensor = torch.concat([new_rsp_tensor, rsp_tensor_rep[:,1:],
+                               new_rsp_tensor[:,1:], rsp_tensor_rep[:,1:], new_rsp_tensor[:,1:]], dim=1)
+long_rsp_tensor = long_rsp_tensor[:, 0:2000]
 rsp_nfft = _next_power_of_2(2000)
 rsp_fft_freq = (60 * fs * torch.fft.rfftfreq(rsp_nfft))
 rsp_freq_idx = torch.argwhere((rsp_fft_freq > 5) & (rsp_fft_freq < 33))
+rsp_freq_idx_min = rsp_freq_idx.min()
+rsp_freq_idx_max = rsp_freq_idx.max()
+print(rsp_freq_idx.min(), rsp_freq_idx.max())
 
+rsp_fft = torch.fft.rfft(long_rsp_tensor[0, :]).real.abs()
+rsp_fft_foi = rsp_fft[rsp_freq_idx_min: rsp_freq_idx_max]
+rsp_freq_foi = rsp_fft_freq[rsp_freq_idx_min: rsp_freq_idx_max]
+plt.plot(rsp_freq_foi, rsp_fft_foi)
+
+# %%
+plt.plot(long_rsp_tensor[0, :])
+
+# %%
+zero_crossings = torch.where(torch.diff(torch.sign(rsp_tensor[0,:])))[0]
+zero_crossings[-1]
+
+# %%
+fs = 25
 bvp_nfft = _next_power_of_2(2000)
 bvp_fft_freq = (60 * fs * torch.fft.rfftfreq(bvp_nfft))
 bvp_freq_idx = torch.argwhere((bvp_fft_freq > 35) & (bvp_fft_freq < 185))
 
 bvp_freq_idx_min = bvp_freq_idx.min()
 bvp_freq_idx_max = bvp_freq_idx.max()
-print(rsp_freq_idx.min(), rsp_freq_idx.max())
 print(bvp_freq_idx.min(), bvp_freq_idx.max())
 
-# %%
-
 ppg_gen = nk.ppg_simulate(120, sampling_rate=fs, heart_rate=70)
-ppg = ppg_gen[200: 700]
-
-# %%
 ppg_tensor = torch.from_numpy(ppg_gen[200: 2200])
-
 ppg_fft = torch.fft.rfft(ppg_tensor).real.abs()
 ppg_fft_foi = ppg_fft[bvp_freq_idx_min: bvp_freq_idx_max]
 bvp_freq_foi = bvp_fft_freq[bvp_freq_idx_min: bvp_freq_idx_max]
 plt.plot(bvp_freq_foi, ppg_fft_foi)
 
-# %%
-f_ppg, pxx_ppg = scipy.signal.periodogram(ppg, fs=fs, nfft=bvp_nfft, detrend=False)
-fmask_ppg = np.argwhere((f_ppg >= 0.6) & (f_ppg <= 3.3))
-print(len(fmask_ppg))
 
-# %%
-ppg = torch.from_numpy(ppg_gen[200: 2200])
+bvp_win = torch.hann_window(400)
+bvp_stft = torch.stft(ppg_tensor, n_fft=bvp_nfft, win_length=400, hop_length=100, window=bvp_win, return_complex=True)
 
-bvp_win = torch.hann_window(1000)
-# bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), return_complex=True)
-bvp_stft = torch.stft(ppg, n_fft=_next_power_of_2(2000), win_length=1000, hop_length=100, window=bvp_win, return_complex=True)
-
-bvp_stft_mag = bvp_stft.real[48:252, :].abs()
+bvp_stft_mag = bvp_stft.real[bvp_freq_idx_min:bvp_freq_idx_max, :].abs()
 
 bvp_stft_mag_min = torch.min(bvp_stft_mag, dim=0, keepdim=True).values
 bvp_stft_mag_max = torch.max(bvp_stft_mag, dim=0, keepdim=True).values
 bvp_stft_mag_norm = (bvp_stft_mag - bvp_stft_mag_min) / (bvp_stft_mag_max - bvp_stft_mag_min)
 
-bvp_stft_phase = bvp_stft.angle()[48:252, :]   # torch.rad2deg(bvp_stft.angle())
-bvp_stft_phase_min = torch.min(bvp_stft_phase, dim=0, keepdim=True).values
-bvp_stft_phase_max = torch.max(bvp_stft_phase, dim=0, keepdim=True).values
-bvp_stft_phase_norm = (bvp_stft_phase - bvp_stft_phase_min) / (bvp_stft_phase_max - bvp_stft_phase_min)
 
 # print(bvp_stft_phase.min(), bvp_stft_phase.max())
 
 # Imp Note: Normalize the fft mag for BVP and RSP; Normalize Phase angle.
 # Normalize all inputs to BP estimation head.
 
+plt.imshow(bvp_stft_mag_norm, cmap="coolwarm")
+
+
 # %%
 thresh_mag = 0.7
+bvp_stft_phase = bvp_stft.angle()[bvp_freq_idx_min:bvp_freq_idx_max, :]   # torch.rad2deg(bvp_stft.angle())
+bvp_stft_phase_min = torch.min(bvp_stft_phase, dim=0, keepdim=True).values
+bvp_stft_phase_max = torch.max(bvp_stft_phase, dim=0, keepdim=True).values
+bvp_stft_phase_norm = (bvp_stft_phase - bvp_stft_phase_min) / (bvp_stft_phase_max - bvp_stft_phase_min)
+
 bvp_stft_mag_mask = torch.ones_like(bvp_stft_mag_norm)
 bvp_stft_mag_mask[bvp_stft_mag_norm < thresh_mag] = 0
 bvp_stft_phase_norm = bvp_stft_mag_mask * bvp_stft_phase_norm
@@ -98,18 +136,19 @@ fig, ax = plt.subplots(1, 3)
 ax[0].imshow(bvp_stft_mag_norm, cmap="coolwarm")
 ax[1].imshow(bvp_stft_phase_norm, cmap="coolwarm")
 
+# %%
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
-rsp = rsp[0: 2000]
+rsp = rsp[0: 500]
 rsp = torch.from_numpy(rsp)
 rsp = rsp.unsqueeze(0)
 rsp = rsp.repeat(2, 1)
 print(rsp.shape)
 
-rsp_win = torch.hann_window(1000)
-# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(500), return_complex=True)
-rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=1000, hop_length=100, window=rsp_win, return_complex=True)
+rsp_win = torch.hann_window(400)
+# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(800), return_complex=True)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(800), win_length=400, hop_length=100, window=rsp_win, return_complex=True)
 
-rsp_stft_mag = rsp_stft.real[0, 7:45, :].abs()
+rsp_stft_mag = rsp_stft.real[0, 4:22, :].abs()
 print("rsp_stft_mag.shape", rsp_stft_mag.shape)
 rsp_stft_mag_min = torch.min(rsp_stft_mag, dim=0, keepdim=True).values
 rsp_stft_mag_max = torch.max(rsp_stft_mag, dim=0, keepdim=True).values
@@ -118,6 +157,16 @@ rsp_stft_mag_norm = (rsp_stft_mag - rsp_stft_mag_min) / (rsp_stft_mag_max - rsp_
 print(rsp_stft_mag_norm.shape)
 ax[2].imshow(rsp_stft_mag_norm, cmap="coolwarm")
 
+
+# %%
+
+# %%
+f_ppg, pxx_ppg = scipy.signal.periodogram(ppg_gen[200: 700], fs=fs, nfft=bvp_nfft, detrend=False)
+fmask_ppg = np.argwhere((f_ppg >= 0.6) & (f_ppg <= 3.3))
+print(len(fmask_ppg))
+
+# %%
+ppg = torch.from_numpy(ppg_gen[200: 700])
 
 # %%
 run_cell = 12

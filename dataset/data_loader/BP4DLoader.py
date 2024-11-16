@@ -42,6 +42,17 @@ class BP4DLoader(BaseLoader):
                 config_data(CfgNode): data settings(ref:config.py).
         """
         self.config_data = config_data
+
+        self.HR_min = 35
+        self.HR_max = 185
+        self.RR_min = 4
+        self.RR_max = 32
+        self.rawBP_min = 20
+        self.SBP_min = 90
+        self.SBP_max = 180
+        self.DBP_min = 60
+        self.DBP_max = 120
+
         super().__init__(name, data_path, config_data, device)
 
     def get_raw_data(self, data_path):
@@ -184,27 +195,27 @@ class BP4DLoader(BaseLoader):
         # print("diaBP:", np.min(diaBP), np.max(diaBP), np.mean(diaBP))
         # print("rawBP:", np.min(rawBP), np.max(rawBP), np.mean(rawBP))
         
-        # REMOVE BP OUTLIERS
-        sysBP[sysBP < 5] = 5
-        sysBP[sysBP > 250] = 250
-        avgBP[avgBP < 5] = 5
-        avgBP[avgBP > 250] = 250
-        diaBP[diaBP < 5] = 5
-        diaBP[diaBP > 200] = 200
-        rawBP[rawBP < 5] = 5
-        rawBP[rawBP > 200] = 200
+        # # REMOVE BP OUTLIERS
+        # sysBP[sysBP < 5] = 5
+        # sysBP[sysBP > 250] = 250
+        # avgBP[avgBP < 5] = 5
+        # avgBP[avgBP > 250] = 250
+        # diaBP[diaBP < 5] = 5
+        # diaBP[diaBP > 200] = 200
+        # rawBP[rawBP < 5] = 5
+        # rawBP[rawBP > 200] = 200
 
-        # REMOVE EDA OUTLIERS
-        eda[eda < 1] = 1
-        eda[eda > 40] = 40
+        # # REMOVE EDA OUTLIERS
+        # eda[eda < 1] = 1
+        # eda[eda > 40] = 40
 
-        # REMOVE HR OUTLIERS
-        hr[hr < 30] = 30
-        hr[hr > 200] = 200
+        # # REMOVE HR OUTLIERS
+        # hr[hr < 30] = 30
+        # hr[hr > 200] = 200
 
-        # REMOVE RR OUTLIERS
-        rr[rr < 3] = 3
-        rr[rr > 42] = 42
+        # # REMOVE RR OUTLIERS
+        # rr[rr < 3] = 3
+        # rr[rr > 42] = 42
 
         bvp = np.expand_dims(bvp, 1)
         rsp = np.expand_dims(rsp, 1)
@@ -229,11 +240,30 @@ class BP4DLoader(BaseLoader):
         # sq_vec = np.delete(sq_vec, del_idx, axis=0)
 
         frames_clips, phys_clips = self.preprocess(frames, phys, config_preprocess, phys_axis=[0, 1, 2, 3], process_frames=process_frames)
+        num_clips = phys_clips.shape[0]
+        del_idx = []
+
+        for n_clip in range(num_clips):
+            HR = int(round(np.median(phys_clips[n_clip, :, 4])))
+            RR = int(round(np.median(phys_clips[n_clip, :, 5])))
+            SBP = int(round(np.median(phys_clips[n_clip, :, 6])))
+            DBP = int(round(np.median(phys_clips[n_clip, :, 7])))
+            min_BP = int(round(np.min(phys_clips[n_clip, :, 9])))
+
+            # print("[HR, RR, SBP, DBP, min_BP] = " + str([HR, RR, SBP, DBP, min_BP]))
+
+            if SBP < self.SBP_min or SBP > self.SBP_max or DBP < self.DBP_min or DBP > self.DBP_max or min_BP < self.rawBP_min or RR < self.RR_min or RR > self.RR_max or HR < self.HR_min or HR > self.HR_max:
+                del_idx.append(n_clip)
+                # pass  # noisy
+            else:
+                pass  # good
         
-        # TODO: drop the chunks based on the basic quality check.
-        
-        input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)
-        file_list_dict[i] = input_name_list
+        if len(del_idx) > 0:
+            phys_clips = np.delete(phys_clips, del_idx, axis=0)
+
+        if phys_clips.shape[0] > 0:
+            input_name_list, label_name_list = self.save_multi_process(frames_clips, phys_clips, saved_filename)
+            file_list_dict[i] = input_name_list
 
     @staticmethod
     def read_video(video_file):

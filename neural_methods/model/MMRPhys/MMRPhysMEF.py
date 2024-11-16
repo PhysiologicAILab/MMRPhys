@@ -28,8 +28,8 @@ model_config = {
     "in_channels": 3,
     "data_channels": 4,
     "align_channels": nf_BVP[2] // 2,
-    "height": 72,
-    "weight": 72,
+    "height": 36,
+    "weight": 36,
     "batch_size": 4,
     "frames": 180,
     "debug": False,
@@ -68,43 +68,17 @@ class ConvTransposeBlock3D(nn.Module):
         return self.conv_trans_block_3d(x)
 
 
-class ConvBlock2D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1], bias=True, groups=1):
-        super(ConvBlock2D, self).__init__()
-        self.conv_block_2d = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
-            nn.ReLU(),
-            nn.InstanceNorm2d(out_channel),
-        )
-
-    def forward(self, x):
-        return self.conv_block_2d(x)
-
-
-class ConvBlock1D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=1, bias=True, groups=1):
-        super(ConvBlock1D, self).__init__()
-        self.conv_block_1d = nn.Sequential(
-            nn.Conv1d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
-            nn.ReLU(),
-            nn.InstanceNorm1d(out_channel),
-        )
-
-    def forward(self, x):
-        return self.conv_block_1d(x)
-
-
 class BVP_FeatureExtractor(nn.Module):
     def __init__(self, inCh, dropout_rate=0.1, debug=False):
         super(BVP_FeatureExtractor, self).__init__()
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, T, 72, 72
+        #                                                        Input: #B, inCh, T, 36, 36
         self.bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0]),      #B, nf_BVP[0], T, 35, 35
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 33, 33
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 31, 31
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),      #B, nf_BVP[0], T, 36, 36
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 34, 34
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 32, 32
             nn.Dropout3d(p=dropout_rate),
 
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf_BVP[2], T, 15, 15
@@ -195,14 +169,14 @@ class RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                                                     Input: #B, inCh, T, 72, 72
+        #                                                                                     Input: #B, inCh, T, 36, 36
         self.rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 36, 36
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 36, 36
+            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 32, 32
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 13, 13
         )
@@ -288,9 +262,9 @@ class RSP_Head(nn.Module):
         return rBr, factorized_embeddings, appx_error
 
 
-class MMRPhysLEF(nn.Module):
+class MMRPhysMEF(nn.Module):
     def __init__(self, frames, md_config, in_channels=4, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhysLEF, self).__init__()
+        super(MMRPhysMEF, self).__init__()
         self.debug = debug
         self.in_channels = in_channels
 
@@ -335,7 +309,7 @@ class MMRPhysLEF(nn.Module):
         if "BP" in self.tasks:
             self.rBP_head = BP_Estimation_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
 
-    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=72, Height=72]
+    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=36, Height=36]
 
         [batch, channel, length, width, height] = x.shape        
 

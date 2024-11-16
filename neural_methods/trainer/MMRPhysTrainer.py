@@ -645,10 +645,18 @@ class MMRPhysTrainer(BaseTrainer):
                     if "BP" in self.tasks:
                         label_sbp_dict[subj_index][sort_index] = SBP_test[idx]
                         label_dbp_dict[subj_index][sort_index] = DBP_test[idx]
-                        pred_sbp_dict[subj_index][sort_index] = pred_bp_test[idx][0]
-                        pred_dbp_dict[subj_index][sort_index] = pred_bp_test[idx][1]
-
-
+                        pred_SBP = pred_bp_test[idx][0]
+                        pred_DBP = pred_bp_test[idx][1]
+                        # if pred_SBP < 90:
+                        #     pred_SBP = 90
+                        # elif pred_SBP > 180:
+                        #     pred_SBP = 180
+                        # if pred_DBP < 60:
+                        #     pred_DBP = 60
+                        # elif pred_DBP > 120:
+                        #     pred_DBP = 120
+                        pred_sbp_dict[subj_index][sort_index] = pred_SBP
+                        pred_dbp_dict[subj_index][sort_index] = pred_DBP
 
         print('')
         if "BVP" in self.tasks:
