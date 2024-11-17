@@ -4,12 +4,12 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 30
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhysLNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1
+  MODEL_FILE_NAME: BP4D_MMRPhysMEF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
@@ -77,7 +77,7 @@ TEST:
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
@@ -116,7 +116,7 @@ MODEL:
   MMRPhys:
     CHANNELS: 4
     FRAME_NUM: 500
-    TYPE: "LNF"
+    TYPE: "MEF"
     TASKS: ["BVP", "RSP"]
     MD_FSAM: True
     MD_TYPE: "SNMF_Label"

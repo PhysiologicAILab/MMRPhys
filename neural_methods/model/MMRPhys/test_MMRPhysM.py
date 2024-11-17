@@ -12,11 +12,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "BP", "RSP"],
+    "TASKS": ["BVP", "RSP"],
     # "TASKS": ["BP"],
     "FS": 25,
     "MD_FSAM": True,
@@ -35,7 +35,7 @@ model_config = {
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
-    "visualize": False,
+    "visualize": True,
     "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_36x36",
 }
@@ -98,7 +98,14 @@ class TestMMRPhys(object):
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
-            self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device, weights_only=True))
+            pretrained_model_path = str(self.ckpt_path)
+            model_weights = torch.load(pretrained_model_path, map_location=self.device, weights_only=True)
+            if "BP" not in self.tasks:
+                weights_trimmed = {k:v for k, v in model_weights.items() if not k.startswith('module.rBP_head')}
+                self.net.load_state_dict(weights_trimmed, strict=False)
+            else:
+                self.net.load_state_dict(model_weights)
+
         else:
             self.net = MMRPhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)

@@ -7,7 +7,9 @@ import neurokit2 as nk
 from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
 from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
+from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF
 from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
+from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF
 from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
@@ -76,6 +78,10 @@ class MMRPhysTrainer(BaseTrainer):
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "lnf":
             self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "mef":
+            self.model = MMRPhysMEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "mnf":
+            self.model = MMRPhysMNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "llf":
             self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "big":
@@ -123,7 +129,7 @@ class MMRPhysTrainer(BaseTrainer):
                 print("Pretrained model not specified, which is required for training the model for BP estimation... ")
                 print("Exiting the code ...")
                 exit()            
-            else:
+            elif pretrained_model_path != "":
                 if ("BVP" in self.tasks or "RSP" in self.tasks):            
                     print("Loading pretrained model:", pretrained_model_path)
                     self.model.load_state_dict(torch.load(pretrained_model_path, map_location=self.device, weights_only=True), strict=True)   # BVP and RSP will be trained first with SFSAM, and when training for BP, SFSAM is not needed.
@@ -187,8 +193,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
-                        # label_bp = labels[..., 9]
-                        label_bp = labels[..., 10]
+                        label_bp = labels[..., 9]
+                        # label_bp = labels[..., 10]
                         SBP = torch.median(label_sysBP, dim=1).values
                         DBP = torch.median(label_diaBP, dim=1).values
 
@@ -396,8 +402,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP = labels[..., 6]
                         label_avgBP = labels[..., 7]
                         label_diaBP = labels[..., 8]
-                        # label_bp = labels[..., 9]
-                        label_bp = labels[..., 10]
+                        label_bp = labels[..., 9]
+                        # label_bp = labels[..., 10]
                         SBP = torch.median(label_sysBP, dim=1).values
                         DBP = torch.median(label_diaBP, dim=1).values
 
@@ -534,8 +540,8 @@ class MMRPhysTrainer(BaseTrainer):
                         label_sysBP_test = labels_test[..., 6]
                         label_avgBP_test = labels_test[..., 7]
                         label_diaBP_test = labels_test[..., 8]
-                        # label_bp_test = labels_test[..., 9]
-                        label_bp_test = labels_test[..., 10]
+                        label_bp_test = labels_test[..., 9]
+                        # label_bp_test = labels_test[..., 10]
                         SBP_test = torch.median(label_sysBP_test, dim=1).values
                         DBP_test = torch.median(label_diaBP_test, dim=1).values
 

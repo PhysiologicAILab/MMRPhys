@@ -28,8 +28,8 @@ model_config = {
     "in_channels": 3,
     "data_channels": 4,
     "align_channels": nf_BVP[2] // 2,
-    "height": 72,
-    "weight": 72,
+    "height": 36,
+    "weight": 36,
     "batch_size": 4,
     "frames": 180,
     "debug": False,
@@ -74,11 +74,11 @@ class BVP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                        Input: #B, inCh, T, 72, 72
+        #                                                        Input: #B, inCh, T, 36, 36
         self.bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0]),      #B, nf_BVP[0], T, 35, 35
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 33, 33
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 31, 31
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 1, 1]),      #B, nf_BVP[0], T, 36, 36
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 34, 34
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 32, 32
             nn.Dropout3d(p=dropout_rate),
 
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf_BVP[2], T, 15, 15
@@ -169,14 +169,14 @@ class RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                                                     Input: #B, inCh, T, 72, 72
+        #                                                                                     Input: #B, inCh, T, 36, 36
         self.rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 36, 36
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 36, 36
+            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 32, 32
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
             ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 13, 13
         )
@@ -262,9 +262,9 @@ class RSP_Head(nn.Module):
         return rBr, factorized_embeddings, appx_error
 
 
-class MMRPhysLNF(nn.Module):
+class MMRPhysMNF(nn.Module):
     def __init__(self, frames, md_config, in_channels=4, dropout=0.2, device=torch.device("cpu"), debug=False):
-        super(MMRPhysLNF, self).__init__()
+        super(MMRPhysMNF, self).__init__()
         self.debug = debug
         self.in_channels = in_channels
 
@@ -300,7 +300,7 @@ class MMRPhysLNF(nn.Module):
         # if "BP" in self.tasks:
         self.rBP_head = BP_Estimation_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=self.debug)
 
-    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=72, Height=72]
+    def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=36, Height=36]
 
         [batch, channel, length, width, height] = x.shape        
 
