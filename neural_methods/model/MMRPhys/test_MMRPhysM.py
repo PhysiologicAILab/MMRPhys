@@ -11,8 +11,8 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF as MMRPhys
 
 model_config = {
@@ -36,7 +36,7 @@ model_config = {
     "assess_latency": False,
     "num_trials": 20,
     "visualize": True,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth",
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_V2_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_36x36",
 }
 
