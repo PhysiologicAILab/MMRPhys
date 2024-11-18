@@ -238,34 +238,29 @@ def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
 
 # RSP Metrics
 # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.05, high_pass=0.7):
-# def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
+# def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
 def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
     """Calculate respiration rate using Fast Fourier transform (FFT)."""
     resp_signal = deepcopy(rsp_signal)
+    sig_len = len(resp_signal)
     avg_resp = np.mean(resp_signal)
     std_resp = np.std(resp_signal)
     resp_signal = (resp_signal - avg_resp) / std_resp   # Standardize to remove DC level - which was due to min-max normalization
 
+    last_zero_crossing = np.where(np.diff(np.sign(resp_signal)))[0][-1]
+    resp_signal = resp_signal[: last_zero_crossing]
     inv_resp_signal = deepcopy(resp_signal)
     inv_resp_signal = -1 * inv_resp_signal[::-1]
+    
     # Higher signal length is needed to reliably compute FFT for low frequencies
     resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
                                  inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
-
-    # print(len(rsp_signal), len(resp_signal))
-    # fig, ax = plt.subplots(2, 1)
-    # ax[0].plot(rsp_signal)
-    # ax[1].plot(resp_signal)
-    # plt.savefig("temp.jpg")
-    # exit()
-
+    
+    resp_signal = resp_signal[:4*sig_len]
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
     f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
     fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
-    # print(fmask_resp)
-    # exit()
-
     mask_resp = np.take(f_resp, fmask_resp)
     mask_pxx = np.take(pxx_resp, fmask_resp)
     fft_rr = np.take(mask_resp, np.argmax(mask_pxx, 0))[0] * 60
@@ -416,6 +411,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 stop = (c_ind+1)*chunk_size
                 samples = stop - start
                 
+                # print("start, stop, samples: ", [start, stop, len(bvp_label[start: stop])])
                 if tasks in [0, 1, 3]:
                     bvp_seg = _process_bvp_signal(bvp_label[start: stop], fs, diff_flag=diff_flag)
                     hr_label = _calculate_fft_hr(bvp_seg, fs=fs)
@@ -427,12 +423,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 if tasks in [0, 2, 3]:
                     rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
                     
-                    try:
-                        rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
-                        rr_label = int(np.round(rr_label))
-                    except:
-                        rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
-                        rr_label = int(np.round(rr_label))
+                    # try:
+                    #     rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
+                    #     rr_label = int(np.round(rr_label))
+                    # except:
+                    rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
+                    rr_label = int(np.round(rr_label))
                 
                     # print("rr_label:", rr_label)
 
@@ -462,7 +458,6 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                                 all_rr_labels[model_names[m_ind]] = []
                                 all_rr_preds[model_names[m_ind]] = []
 
-
                     # Process label and prediction signals
                     if tasks in [0, 1, 3]:
                         bvp_pred_seg = _process_bvp_signal(trial_dict[model_names[m_ind]]["bvp_pred"][start: stop], fs, diff_flag=diff_flag)
@@ -475,14 +470,14 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                         # print("m_ind:", m_ind, "; hr_pred: ", hr_pred[model_names[m_ind]])
 
                     if tasks in [0, 2, 3]:
-                        try:
-                            rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
-                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
-                        except:
-                            rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
-                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        # try:
+                        #     rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
+                        #     rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        # except:
+                        rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
+                        rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
 
-                         # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
+                        # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
 
                     if tasks in [0, 1, 3]:
                         all_hr_labels[model_names[m_ind]].append(hr_label)
@@ -503,37 +498,37 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                                 ax.plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
 
 
-                if save_plot:
-                    if tasks in [0, 3]:
-                        ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                        ax[0].legend(loc="upper right")
-                        ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                        ax[1].legend(loc="upper right")
-                    else:
-                        if tasks in [1, 3]:
-                            ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                            ax.legend(loc="upper right")
+                    if save_plot:
+                        if tasks in [0, 3]:
+                            ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                            ax[0].legend(loc="upper right")
+                            ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                            ax[1].legend(loc="upper right")
                         else:
-                            ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                            ax.legend(loc="upper right")
+                            if tasks in [1, 3]:
+                                ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                                ax.legend(loc="upper right")
+                            else:
+                                ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                                ax.legend(loc="upper right")
 
 
-                    # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
-                    # ax[2].legend(loc="upper right")
-                    # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
-                    # ax[3].legend(loc="upper right")
-                
-                    plt.suptitle("Dataset: " + test_dataset + '; Trial: ' + trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
+                        # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
+                        # ax[2].legend(loc="upper right")
+                        # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
+                        # ax[3].legend(loc="upper right")
+                    
+                        plt.suptitle("Dataset: " + test_dataset + '; Trial: ' + trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
 
-                    # plt.show()
-                    save_fn = plot_test_dir.joinpath(str(trial_list[trial_ind]) + "_" + str(c_ind) + ".jpg")
-                    plt.xlabel('Time (s)')
-                    plt.savefig(save_fn)
-                    plt.close()
+                        # plt.show()
+                        save_fn = plot_test_dir.joinpath(str(trial_list[trial_ind]) + "_" + str(c_ind) + ".jpg")
+                        plt.xlabel('Time (s)')
+                        plt.savefig(save_fn)
+                        plt.close()
 
-                    # except Exception as e:
-                    #     print("Encoutered error:", e)
-                    #     exit()
+                        # except Exception as e:
+                        #     print("Encoutered error:", e)
+                        #     exit()
 
 
         all_test_data = {}

@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
+from neural_methods.model.MMRPhys.MMRPhysBP import BP_Estimation_Head
 from copy import deepcopy
 
 nf_BVP = [8, 12, 16]
@@ -67,31 +68,6 @@ class ConvTransposeBlock3D(nn.Module):
         return self.conv_trans_block_3d(x)
 
 
-class ConvBlock2D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=[1, 1], bias=True, groups=1):
-        super(ConvBlock2D, self).__init__()
-        self.conv_block_2d = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
-            nn.ReLU(),
-            nn.InstanceNorm2d(out_channel),
-        )
-
-    def forward(self, x):
-        return self.conv_block_2d(x)
-
-
-class ConvBlock1D(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size, stride, padding, dilation=1, bias=True, groups=1):
-        super(ConvBlock1D, self).__init__()
-        self.conv_block_1d = nn.Sequential(
-            nn.Conv1d(in_channel, out_channel, kernel_size, stride, padding=padding, bias=bias, dilation=dilation, groups=groups),
-            nn.ReLU(),
-            nn.InstanceNorm1d(out_channel),
-        )
-
-    def forward(self, x):
-        return self.conv_block_1d(x)
-
 
 class RGB_BVP_FeatureExtractor(nn.Module):
     def __init__(self, inCh=3, dropout_rate=0.1, debug=False):
@@ -101,17 +77,13 @@ class RGB_BVP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                        Input: #B, inCh, T, 72, 72
         self.rgb_bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 35, 35
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 33, 33
-            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 31, 31
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 1, 1]),      #B, nf_BVP[0], T, 36, 36
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 15, 15
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 13, 13
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 11, 11
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 9, 9
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 32, 32
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf_BVP[2], T, 15, 15
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[2], T, 13, 13
         )
 
     def forward(self, x):
@@ -131,17 +103,13 @@ class Thermal_BVP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                        Input: #B, inCh, T, 72, 72
         self.thermal_bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_BVP[0], T, 35, 35
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 33, 33
-            ConvBlock3D(nf_BVP[1], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[1], T, 31, 31
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 1, 1]),      #B, nf_BVP[0], T, 36, 36
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 15, 15
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 13, 13
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 11, 11
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 9, 9
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 32, 32
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf_BVP[2], T, 15, 15
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[2], T, 13, 13
         )
 
     def forward(self, x):
@@ -158,6 +126,16 @@ class BVP_Head(nn.Module):
         super(BVP_Head, self).__init__()
         self.debug = debug
 
+        self.conv_layer_rgb = nn.Sequential(
+            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[2], T, 11, 11
+        )
+
+        self.conv_layer_thermal = nn.Sequential(
+            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[2], T, 11, 11
+        )
+
         self.use_fsam = md_config["MD_FSAM"]
         self.md_type = md_config["MD_TYPE"]
         self.md_infer = md_config["MD_INFERENCE"]
@@ -171,17 +149,18 @@ class BVP_Head(nn.Module):
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
         self.conv_fusion_layer = nn.Sequential(
-            ConvBlock3D(inC, nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 7, 7
+            ConvBlock3D(inC, nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]), #B, nf_BVP[2], T, 5, 5
         )
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(nf_BVP[2], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                   #B, nf_BVP[1], T, 5, 5
-            ConvBlock3D(nf_BVP[1], nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                   #B, nf_BVP[0], T, 3, 3
+            ConvBlock3D(nf_BVP[2], nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                   #B, nf_BVP[0], T, 3, 3
             nn.Conv3d(nf_BVP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, T, 1, 1
         )
 
     def forward(self, length, rgb_embeddings=None, thermal_embeddings=None, label_bvp=None):
 
+        rgb_embeddings = self.conv_layer_rgb(rgb_embeddings)
+        thermal_embeddings = self.conv_layer_thermal(thermal_embeddings)
         voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
         # voxel_embeddings = self.conv_layer(rgb_embeddings + thermal_embeddings) + self.conv_fusion_layer(voxel_embeddings)
 
@@ -198,20 +177,17 @@ class BVP_Head(nn.Module):
             if self.debug:
                 print("att_mask.shape", att_mask.shape)
 
-            if self.md_res:
-                # Multiplication with Residual connection
-                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-                factorized_embeddings = self.fsam_norm(x)
-                factorized_embeddings = voxel_embeddings + factorized_embeddings
-            else:
-                # Multiplication
-                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-                factorized_embeddings = self.fsam_norm(x)            
+            # Multiplication with Residual connection
+            x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+            factorized_embeddings = self.fsam_norm(x)
+            factorized_embeddings = voxel_embeddings + factorized_embeddings
 
             factorized_embeddings = self.conv_fusion_layer(factorized_embeddings)
             x = self.final_layer(factorized_embeddings)
 
         else:
+            appx_error = 0
+            factorized_embeddings = None
             voxel_embeddings = self.conv_fusion_layer(voxel_embeddings)
             x = self.final_layer(voxel_embeddings)
 
@@ -224,10 +200,7 @@ class BVP_Head(nn.Module):
         if self.debug:
             print("     rPPG.shape", rPPG.shape)
         
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            return rPPG, factorized_embeddings, appx_error
-        else:
-            return rPPG
+        return rPPG, factorized_embeddings, appx_error
 
 
 class RGB_RSP_FeatureExtractor(nn.Module):
@@ -239,19 +212,12 @@ class RGB_RSP_FeatureExtractor(nn.Module):
         #                                                                                     Input: #B, inCh, T, 72, 72
         self.rgb_rsp_feature_extractor = nn.Sequential(
             ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 29, 29
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 27, 27
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 25, 25
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 23, 23
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 21, 21
-            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 32, 32
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
         )
 
     def forward(self, x):
@@ -271,19 +237,12 @@ class Thermal_RSP_FeatureExtractor(nn.Module):
         #                                                                                     Input: #B, inCh, T, 72, 72
         self.thermal_rsp_feature_extractor = nn.Sequential(
             ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[0], T//4, 35, 35
-            ConvBlock3D(nf_RSP[1], nf_RSP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 33, 33
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 31, 31
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 29, 29
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 27, 27
-            nn.Dropout3d(p=dropout_rate),
-
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 25, 25
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 23, 23
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 21, 21
-            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 32, 32
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
         )
 
     def forward(self, x):
@@ -298,10 +257,20 @@ class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
         self.debug = debug
-        self.temporal_scale_factor = 4
+        self.temporal_scale_factor = 2
 
-        self.upsample = nn.Sequential(
-            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),       #B, nf_RSP[2], T, 21, 21
+        self.conv_block_rgb = nn.Sequential(
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_RSP[2], T//4, 13, 13
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),           #B, nf_RSP[2], T//2, 13, 13
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_RSP[2], T//2, 11, 11
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),           #B, nf_RSP[2], T, 11, 11
+        )
+
+        self.conv_block_thermal = nn.Sequential(
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_RSP[2], T//4, 13, 13
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),           #B, nf_RSP[2], T//2, 13, 13
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_RSP[2], T//2, 11, 11
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),           #B, nf_RSP[2], T, 11, 11
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -320,16 +289,19 @@ class RSP_Head(nn.Module):
             self.fsam_norm = nn.InstanceNorm3d(inC)
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
+        self.conv_fusion_layer = nn.Sequential(
+            ConvBlock3D(inC, nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),           #B, nf_RSP[2], T, 5, 5
+        )
+
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf_RSP[2], [5, 3, 3], [1, 3, 3], [4, 0, 0], dilation=[2, 1, 1]),           #B, nf_RSP[2], T, 7, 7
-            ConvBlock3D(nf_RSP[2], nf_RSP[1], [3, 3, 3], [1, 2, 2], [2, 0, 0], dilation=[2, 1, 1]),     #B, nf_RSP[1], T, 3, 3
-            nn.Conv3d(nf_RSP[1], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),        #B, 1, T, 1, 1
+            ConvBlock3D(nf_RSP[2], nf_RSP[0], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]),     #B, nf_RSP[0], T, 3, 3
+            nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),        #B, 1, T, 1, 1
         )
 
     def forward(self, length, rgb_embeddings=None, thermal_embeddings=None, label_rsp=None):
 
-        rgb_embeddings = self.upsample(rgb_embeddings)
-        thermal_embeddings = self.upsample(thermal_embeddings)
+        rgb_embeddings = self.conv_block_rgb(rgb_embeddings)
+        thermal_embeddings = self.conv_block_thermal(thermal_embeddings)
         voxel_embeddings = torch.concat([rgb_embeddings, thermal_embeddings], dim=1)
         # voxel_embeddings = self.conv_layer(rgb_embeddings + thermal_embeddings) + self.conv_fusion_layer(voxel_embeddings)
 
@@ -346,16 +318,18 @@ class RSP_Head(nn.Module):
             if self.debug:
                 print("att_mask.shape", att_mask.shape)
 
-            if self.md_res:
-                # Multiplication with Residual connection
-                x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
-                factorized_embeddings = self.fsam_norm(x)
-                factorized_embeddings = voxel_embeddings + factorized_embeddings
-          
+            # Multiplication with Residual connection
+            x = torch.mul(voxel_embeddings - voxel_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
+            factorized_embeddings = self.fsam_norm(x)
+            factorized_embeddings = voxel_embeddings + factorized_embeddings
+
+            factorized_embeddings = self.conv_fusion_layer(factorized_embeddings)
             x = self.final_layer(factorized_embeddings)
         
         else:
-            # voxel_embeddings = self.upsample(voxel_embeddings)                
+            appx_error = 0
+            factorized_embeddings = None
+            voxel_embeddings = self.conv_fusion_layer(voxel_embeddings)
             x = self.final_layer(voxel_embeddings)
 
         if self.debug:
@@ -367,67 +341,7 @@ class RSP_Head(nn.Module):
         if self.debug:
             print("     rBr.shape", rBr.shape)
         
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            return rBr, factorized_embeddings, appx_error
-        else:
-            return rBr
-
-
-class BP_Head_Phase(nn.Module):
-    def __init__(self, dropout_rate=0.1, debug=False):
-        super(BP_Head_Phase, self).__init__()
-        self.debug = debug
-        self.inCh = nf_BVP[2] + nf_RSP[2]
-        self.outCh = (nf_BVP[2] + nf_RSP[2]) // 2
-
-        self.spatial_pool = nn.AvgPool3d(kernel_size=[1, 7, 7], stride=[1, 1, 1], padding=[0, 0, 0])
-
-        # self.final_layer = nn.Sequential(
-        #     nn.Conv1d(self.inCh, self.outCh, 1),
-        #     nn.Conv1d(self.outCh, 1, 1),
-        # )
-
-        self.final_dense_layer = nn.Sequential(
-            nn.Linear(500, 16),
-            nn.Dropout(0.2),
-            nn.Linear(16, 2)
-        )
-
-    def forward(self, rppg_embeddings=None, rbr_embeddings=None):
-
-        if self.debug:
-            print(" BP Head")
-            print(" rppg_embeddings.shape", rppg_embeddings.shape)
-            print(" rbr_embeddings.shape", rbr_embeddings.shape)
-
-        x = torch.concat([rppg_embeddings, rbr_embeddings], dim=1)
-        x = self.spatial_pool(x)
-        
-        bt, ch, t, h, w = x.shape
-        
-        x = x.view(bt, ch, t)   #h = w = 1 is expected here
-
-        x_fft = torch.zeros_like(x).to(x.device)
-        for bn in range(bt):
-            for cn in range(ch):
-                x_fft[bn, cn, :] = torch.angle(torch.fft.fft(x[bn, cn, :]))
-
-        x = self.final_layer(x)
-        
-        if self.debug:
-            print(" x.shape", x.shape)
-        
-        x = x.view(x.size(0), -1)
-        
-        if self.debug:
-            print(" Flattened x.shape", x.shape)
-
-        rBP = self.final_dense_layer(x)
-
-        if self.debug:
-            print(" rBP.shape", rBP.shape)
-
-        return rBP
+        return rBr, factorized_embeddings, appx_error
 
 
 class MMRPhysLLF(nn.Module):
@@ -447,14 +361,12 @@ class MMRPhysLLF(nn.Module):
             if key not in md_config:
                 md_config[key] = model_config[key]
 
-        self.use_fsam = False
-        self.md_infer = False
-
         if md_config["MD_FSAM"]:
             self.use_fsam = True
             self.md_infer = md_config["MD_INFERENCE"]
         else:
-            pass
+            self.use_fsam = False
+            self.md_infer = False
         
         self.tasks = md_config["TASKS"]
 
@@ -462,101 +374,72 @@ class MMRPhysLLF(nn.Module):
             print("nf_BVP:", nf_BVP)
             print("nf_RSP:", nf_RSP)
 
-        if "BVP" in self.tasks or "BP" in self.tasks:
-            self.thermal_bvp_feature_extractor = Thermal_BVP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
-            self.rgb_bvp_feature_extractor = RGB_BVP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
-            self.rppg_head = BVP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
+        self.thermal_bvp_feature_extractor = Thermal_BVP_FeatureExtractor(1, dropout_rate=dropout, debug=self.debug)
+        self.rgb_bvp_feature_extractor = RGB_BVP_FeatureExtractor(3, dropout_rate=dropout, debug=self.debug)
+        self.rppg_head = BVP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=self.debug)
         
-        if "RSP" in self.tasks or "BP" in self.tasks:
-            self.thermal_rsp_feature_extractor = Thermal_RSP_FeatureExtractor(1, dropout_rate=dropout, debug=debug)
-            self.rgb_rsp_feature_extractor = RGB_RSP_FeatureExtractor(3, dropout_rate=dropout, debug=debug)
-            self.rBr_head = RSP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=debug)
+        self.thermal_rsp_feature_extractor = Thermal_RSP_FeatureExtractor(1, dropout_rate=dropout, debug=self.debug)
+        self.rgb_rsp_feature_extractor = RGB_RSP_FeatureExtractor(3, dropout_rate=dropout, debug=self.debug)
+        self.rBr_head = RSP_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=self.debug)
 
-            
-        if "BP" in self.tasks:
-            self.rBP_head = BP_Head_Phase(dropout_rate=dropout, debug=debug)
-
+        # if "BP" in self.tasks:
+        self.rBP_head = BP_Estimation_Head(md_config=md_config, device=device, dropout_rate=dropout, debug=self.debug)
 
     def forward(self, x, label_bvp=None, label_rsp=None): # [batch, Features=3, Temp=frames, Width=72, Height=72]
-        
+
         [batch, channel, length, width, height] = x.shape        
 
         if self.debug:
             print("Input.shape", x.shape)
 
         x = torch.diff(x, dim=2)
-        if self.in_channels == 4:
-            rgb_x = self.rgb_norm(x[:, :3, :, :, :])
-            thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
-        else:
-            try:
-                print("Specified input channels:", self.in_channels)
-                print("Data channels", channel)
-                assert self.in_channels <= channel
-            except:
-                print("Incorrectly preprocessed data provided as input. Number of channels exceed the specified or default channels")
-                print("Default or specified channels:", self.in_channels)
-                print("Data channels [B, C, N, W, H]", x.shape)
-                print("Exiting")
-                exit()
         if self.debug:
             print("Diff Normalized shape", x.shape)
 
-        if "BVP" in self.tasks or "BP" in self.tasks:
+        rgb_x = self.rgb_norm(x[:, :3, :, :, :])
+        thermal_x = self.thermal_norm(x[:, -1:, :, :, :])
+
+        if "BVP" in self.tasks:
             rgb_bvp_voxel_embeddings = self.rgb_bvp_feature_extractor(rgb_x)
             thermal_bvp_voxel_embeddings = self.thermal_bvp_feature_extractor(thermal_x)
+        elif "BP" in self.tasks:
+            with torch.no_grad():
+                rgb_bvp_voxel_embeddings = self.rgb_bvp_feature_extractor(rgb_x)
+                thermal_bvp_voxel_embeddings = self.thermal_bvp_feature_extractor(thermal_x)
         else:
             rgb_bvp_voxel_embeddings = thermal_bvp_voxel_embeddings = None
 
-        if "RSP" in self.tasks or "BP" in self.tasks:
+        if "RSP" in self.tasks:
             rgb_rsp_voxel_embeddings = self.rgb_rsp_feature_extractor(rgb_x)
             thermal_rsp_voxel_embeddings = self.thermal_rsp_feature_extractor(thermal_x)
+        elif "BP" in self.tasks:
+            with torch.no_grad():
+                rgb_rsp_voxel_embeddings = self.rgb_rsp_feature_extractor(rgb_x)
+                thermal_rsp_voxel_embeddings = self.thermal_rsp_feature_extractor(thermal_x)
         else:
             rgb_rsp_voxel_embeddings = thermal_rsp_voxel_embeddings = None
 
-        if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            if "BVP" in self.tasks or "BP" in self.tasks:
-                rPPG, factorized_embeddings_ppg, appx_error_ppg = self.rppg_head(
-                    length-1, rgb_embeddings=rgb_bvp_voxel_embeddings, thermal_embeddings=thermal_bvp_voxel_embeddings, label_bvp=label_bvp)
-            else:
-                rPPG = factorized_embeddings_ppg = appx_error_ppg = None
-
-            if "RSP" in self.tasks or "BP" in self.tasks:
-                rBr, factorized_embeddings_br, appx_error_br = self.rBr_head(
-                    length-1, rgb_embeddings=rgb_rsp_voxel_embeddings, thermal_embeddings=thermal_rsp_voxel_embeddings, label_rsp=label_rsp)
-            else:
-                rBr = factorized_embeddings_br = appx_error_br = None
+        if "BVP" in self.tasks:
+            rPPG, factorized_embeddings_bvp, appx_error_bvp = self.rppg_head(length-1, rgb_embeddings=rgb_bvp_voxel_embeddings, thermal_embeddings=thermal_bvp_voxel_embeddings, label_bvp=label_bvp)
+        elif "BP" in self.tasks:
+            with torch.no_grad():
+                rPPG, factorized_embeddings_bvp, appx_error_bvp = self.rppg_head(length-1, rgb_embeddings=rgb_bvp_voxel_embeddings, thermal_embeddings=thermal_bvp_voxel_embeddings, label_bvp=label_bvp)
         else:
-            if "BVP" in self.tasks or "BP" in self.tasks:
-                rPPG = self.rppg_head(length-1, rgb_embeddings=rgb_bvp_voxel_embeddings,
-                                    thermal_embeddings=thermal_bvp_voxel_embeddings,)
-            else:
-                rPPG = None
+            rPPG = factorized_embeddings_bvp = appx_error_bvp = None
 
-            if "RSP" in self.tasks or "BP" in self.tasks:
-                rBr = self.rBr_head(length-1, rgb_embeddings=rgb_rsp_voxel_embeddings,
-                                    thermal_embeddings=thermal_rsp_voxel_embeddings)
-            else:
-                rBr = None
+        if "RSP" in self.tasks:
+            rBr, factorized_embeddings_rsp, appx_error_rsp = self.rBr_head(length-1, rgb_embeddings=rgb_rsp_voxel_embeddings, thermal_embeddings=thermal_rsp_voxel_embeddings, label_rsp=label_rsp)
+        elif "BP" in self.tasks:
+            with torch.no_grad():
+                rBr, factorized_embeddings_rsp, appx_error_rsp = self.rBr_head(length-1, rgb_embeddings=rgb_rsp_voxel_embeddings, thermal_embeddings=thermal_rsp_voxel_embeddings, label_rsp=label_rsp)
+        else:
+            rBr = factorized_embeddings_rsp = appx_error_rsp = None
 
         if "BP" in self.tasks:
-            if self.in_channels == 1:
-                rBP = self.rBP_head(thermal_bvp_voxel_embeddings.detach(), thermal_rsp_voxel_embeddings.detach())
-            elif self.in_channels == 3:
-                rBP = self.rBP_head(rgb_bvp_voxel_embeddings.detach(), rgb_rsp_voxel_embeddings.detach())
-            elif self.in_channels == 4:
-                rBP = self.rBP_head(rgb_bvp_voxel_embeddings.detach(), thermal_rsp_voxel_embeddings.detach())
+            rBP = self.rBP_head(bvp_embeddings=rgb_bvp_voxel_embeddings.detach(), bvp_vec=rPPG.detach(), rsp_vec=rBr.detach())
         else:
             rBP = None
 
-        # if self.debug:
-        #     print("rppg_feats.shape", rppg_feats.shape)
-
-        # rPPG = rppg_feats.view(-1, length-1)
-
-        if (self.training or self.debug or self.md_infer) and self.use_fsam:
-            return_list = [rPPG, rBr, rBP, rgb_bvp_voxel_embeddings, thermal_rsp_voxel_embeddings, factorized_embeddings_ppg, appx_error_ppg, factorized_embeddings_br, appx_error_br]
-        else:
-            return_list = [rPPG, rBr, rBP, rgb_bvp_voxel_embeddings, thermal_rsp_voxel_embeddings]
+        return_list = [rPPG, rBr, rBP, rgb_bvp_voxel_embeddings, thermal_rsp_voxel_embeddings, factorized_embeddings_bvp, appx_error_bvp, factorized_embeddings_rsp, appx_error_rsp]
 
         return return_list

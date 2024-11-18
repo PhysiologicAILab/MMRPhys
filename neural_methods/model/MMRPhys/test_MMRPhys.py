@@ -12,11 +12,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "RSP"],
+    "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
     "FS": 25,

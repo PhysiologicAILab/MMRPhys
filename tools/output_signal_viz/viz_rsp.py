@@ -126,7 +126,8 @@ def _next_power_of_2(x):
 # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.05, high_pass=0.7):
 # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.08, high_pass=0.6):
 # def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.08, high_pass=0.5):
-def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
+# def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.13, high_pass=0.5):
+def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
     """Calculate respiration rate based on RSP using Fast Fourier transform (FFT)."""
     rsp_signal = np.expand_dims(rsp_signal, 0)
     N = _next_power_of_2(rsp_signal.shape[1])

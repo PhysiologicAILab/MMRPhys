@@ -11,6 +11,7 @@ from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF
 from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
 from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF
 from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
+from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF
 from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
 from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
 from neural_methods.model.MMRPhys.MMRPhysFuseL import MMRPhysFuseL
@@ -86,6 +87,8 @@ class MMRPhysTrainer(BaseTrainer):
             self.model = MMRPhysMNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "llf":
             self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "mlf":
+            self.model = MMRPhysMLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "big":
             self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 144, 144]
         elif model_type == "medium":
