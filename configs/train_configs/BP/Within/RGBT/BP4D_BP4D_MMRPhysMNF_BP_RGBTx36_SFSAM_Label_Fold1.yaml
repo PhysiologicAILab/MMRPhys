@@ -2,7 +2,7 @@ BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
   BATCH_SIZE: 32
-  EPOCHS: 300
+  EPOCHS: 100
   LR: 5e-3
   MODEL_FILE_NAME: BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
@@ -125,7 +125,7 @@ MODEL:
     MD_STEPS: 5
     MD_RESIDUAL: True
     MD_INFERENCE: False
-    PRETRAINED: "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_V2_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth"
+    PRETRAINED: "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth"
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"

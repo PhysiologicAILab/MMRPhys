@@ -1,8 +1,8 @@
 BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
-  BATCH_SIZE: 4
-  EPOCHS: 10
+  BATCH_SIZE: 16
+  EPOCHS: 30
   LR: 1e-3
   MODEL_FILE_NAME: BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True

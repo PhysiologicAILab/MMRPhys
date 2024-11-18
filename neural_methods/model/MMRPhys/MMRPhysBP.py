@@ -87,31 +87,19 @@ class BP_Estimation_Head(nn.Module):
             print("[self.rsp_feat_res_x, self.rsp_feat_res_y]", [self.rsp_feat_res_x, self.rsp_feat_res_y])
 
         self.bvp_embeddings_phase_extractor_SBP = nn.Sequential(
-            nn.InstanceNorm2d(1),                                                                  #B, 1, 28, 28
-            ConvBlock2D(1, nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),          #B, nf_BVP[2], 26, 26
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 24, 24
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_BVP[2], 11, 11
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 9, 9
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 7, 7
-            nn.Conv2d(nf_BVP[2], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, 1, 5, 5
+            nn.InstanceNorm2d(1),                                                                  #B, 1, 13, 13
+            ConvBlock2D(1, nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[2, 2]),          #B, nf_BVP[2], 13, 13
+            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[1, 1]),  #B, nf_BVP[2], 11, 11
+            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[1, 1]),  #B, nf_BVP[2], 9, 9
+            nn.Conv2d(nf_BVP[2], 1, kernel_size=[5, 5], stride=[1, 1], padding=[0, 0]),            #B, nf_BVP[2], 5, 5
         )
 
         self.bvp_embeddings_phase_extractor_DBP = nn.Sequential(
-            nn.InstanceNorm2d(1),                                                                  #B, 1, 28, 28
-            ConvBlock2D(1, nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),          #B, nf_BVP[2], 26, 26
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 24, 24
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_BVP[2], 11, 11
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 9, 9
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[2], 7, 7
-            nn.Conv2d(nf_BVP[2], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, 1, 5, 5
+            nn.InstanceNorm2d(1),                                                                  #B, 1, 13, 13
+            ConvBlock2D(1, nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[2, 2]),          #B, nf_BVP[2], 13, 13
+            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[1, 1]),  #B, nf_BVP[2], 11, 11
+            ConvBlock2D(nf_BVP[2], nf_BVP[2], kernel_size=[5, 5], stride=[1, 1], padding=[1, 1]),  #B, nf_BVP[2], 9, 9
+            nn.Conv2d(nf_BVP[2], 1, kernel_size=[5, 5], stride=[1, 1], padding=[0, 0]),            #B, nf_BVP[2], 5, 5
         )
 
         self.bvp_stft_feature_extractor_SBP = nn.Sequential(
@@ -147,34 +135,28 @@ class BP_Estimation_Head(nn.Module):
         )
 
         self.rsp_stft_feature_extractor_SBP = nn.Sequential(
-            ConvBlock2D(1, nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[1, 1]),          #B, nf_RSP[0], 38, 21
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_RSP[0], 18, 10
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 16, 8
+            ConvBlock2D(1, nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),          #B, nf_RSP[0], 36, 19
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_RSP[0], 17, 9
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 14, 6
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 12, 4
-            
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_RSP[0], 5, 2
-            nn.Conv2d(nf_RSP[0], 1, kernel_size=[1, 1], stride=[1, 1], padding=[0, 0]),            #B, 1, 5, 2
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 15, 7
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_RSP[0], 7, 5
+            nn.Conv2d(nf_RSP[0], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, nf_RSP[0], 5, 3
         )
 
         self.rsp_stft_feature_extractor_DBP = nn.Sequential(
-            ConvBlock2D(1, nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[1, 1]),          #B, nf_RSP[0], 38, 21
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_RSP[0], 18, 10
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 16, 8
+            ConvBlock2D(1, nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),          #B, nf_RSP[0], 36, 19
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 2], padding=[0, 0]),  #B, nf_RSP[0], 17, 9
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 14, 6
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 12, 4
-            
-            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_RSP[0], 5, 2
-            nn.Conv2d(nf_RSP[0], 1, kernel_size=[1, 1], stride=[1, 1], padding=[0, 0]),            #B, 1, 5, 2
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_RSP[0], 15, 7
+            ConvBlock2D(nf_RSP[0], nf_RSP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_RSP[0], 7, 5
+            nn.Conv2d(nf_RSP[0], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, nf_RSP[0], 5, 3
         )
 
         num_feats_bvp_phase_corr = 1 * 5 * 5
         num_feats_bvp_stft = 1 * 7 * 3
-        num_feats_rsp_stft = 1 * 5 * 2
+        num_feats_rsp_stft = 1 * 5 * 3
     
         total_feats = num_feats_bvp_stft + num_feats_rsp_stft + num_feats_bvp_phase_corr
         hidden_feats = total_feats
@@ -200,8 +182,14 @@ class BP_Estimation_Head(nn.Module):
             print(" rBr.shape", rsp_vec.shape)
 
         with torch.no_grad():            
+
+            # Normalize estimated BVP signals
+            avg_bvp = torch.mean(bvp_vec, dim=1, keepdim=True)
+            std_bvp = torch.std(bvp_vec, dim=1, keepdim=True)
+            norm_bvp_vec = (bvp_vec - avg_bvp)/std_bvp
+
             bt, ch, t, h, w = bvp_embeddings.shape      # Expected dimensions: Batch, 16, 500, 11, 11
-            bvp_matrix = bvp_vec.unsqueeze(1).repeat(1, ch, 1).unsqueeze(3).unsqueeze(3).repeat(1, 1, 1, h, w)
+            bvp_matrix = norm_bvp_vec.unsqueeze(1).repeat(1, ch, 1).unsqueeze(3).unsqueeze(3).repeat(1, 1, 1, h, w)
             bvp_corr_matrix = F.cosine_similarity(bvp_embeddings, bvp_matrix, dim=2).abs()
             if self.debug:
                 print("bvp_corr_matrix.shape:", bvp_corr_matrix.shape)
@@ -214,23 +202,20 @@ class BP_Estimation_Head(nn.Module):
     
             # bvp_corr_matrix_std_across_channels = torch.std(bvp_corr_matrix, dim=1, keepdim=True) #can be added to bvp_corr_matrix as additional channel
 
-            # STFT - magnitude for estimated BVP signal - to capture heart-rate and HRV
-            avg_bvp = torch.mean(bvp_vec, dim=1, keepdim=True)
-            std_bvp = torch.std(bvp_vec, dim=1, keepdim=True)
-            norm_bvp_vec = (bvp_vec - avg_bvp)/std_bvp
 
             # to increase the signal length for sufficient freqs in low-freq range
             # flipped_norm_bvp_vec = -1 * torch.fliplr(norm_bvp_vec)      
             # long_bvp_vec = torch.concat([norm_bvp_vec, flipped_norm_bvp_vec[:, 1:], norm_bvp_vec[:, 1:], flipped_norm_bvp_vec[:, 1:], norm_bvp_vec[:, 1:4]], dim=1)
 
+            # STFT - magnitude for estimated BVP signal - to capture heart-rate and HRV
             long_norm_bvp_vec = torch.zeros((bt, t * self.time_scaling)).to(self.device)
             for b_idx in range(bt):
                 temp_vec = norm_bvp_vec[b_idx, :]
                 last_zero_crossing = torch.where(torch.diff(torch.sign(temp_vec)))[0][-1].cpu().numpy()
                 trimmed_bvp_vec = temp_vec[:last_zero_crossing].unsqueeze(0)
                 flipped_bvp_vec = -1 * torch.fliplr(trimmed_bvp_vec)
-                temp_long_vec = torch.concat([trimmed_bvp_vec, flipped_bvp_vec[:, 1:],
-                                             trimmed_bvp_vec[:, 1:], flipped_bvp_vec[:, 1:], trimmed_bvp_vec[:, 1:], flipped_bvp_vec[:, 1:]], dim=1)
+                temp_long_vec = torch.concat([trimmed_bvp_vec, flipped_bvp_vec[:, 1:], trimmed_bvp_vec[:, 1:],
+                                             flipped_bvp_vec[:, 1:], trimmed_bvp_vec[:, 1:], flipped_bvp_vec[:, 1:],  trimmed_bvp_vec[:, 1:]], dim=1)
                 temp_long_vec = temp_long_vec[0, :t*self.time_scaling]
                 long_norm_bvp_vec[b_idx, :] = temp_long_vec
             
@@ -246,7 +231,7 @@ class BP_Estimation_Head(nn.Module):
             bvp_stft_mag = (bvp_stft_mag - bvp_stft_mag_min) / (bvp_stft_mag_max - bvp_stft_mag_min)
             feature_map_bvp_fft_magnitude[:, 0, :, :] = bvp_stft_mag
 
-            # STFT - magnitude for estimated RSP signal - to capture Resp Rate and respiration variability
+            # Normalize estimated RSP signals
             avg_rsp = torch.mean(rsp_vec, dim=1, keepdim=True)
             std_rsp = torch.std(rsp_vec, dim=1, keepdim=True)
             norm_rsp_vec = (rsp_vec - avg_rsp)/std_rsp
@@ -254,14 +239,16 @@ class BP_Estimation_Head(nn.Module):
             # to increase the signal length for sufficient freqs in low-freq range
             # flipped_norm_rsp_vec = -1 * torch.fliplr(norm_rsp_vec)
             # long_rsp_vec = torch.concat([norm_rsp_vec, flipped_norm_rsp_vec[:, 1:], norm_rsp_vec[:, 1:], flipped_norm_rsp_vec[:, 1:], norm_rsp_vec[:, 1:4]], dim=1)
+            
+            # STFT - magnitude for estimated RSP signal - to capture Resp Rate and respiration variability
             long_norm_rsp_vec = torch.zeros((bt, t * self.time_scaling)).to(self.device)
             for b_idx in range(bt):
                 temp_vec = norm_rsp_vec[b_idx, :]
                 last_zero_crossing = torch.where(torch.diff(torch.sign(temp_vec)))[0][-1].cpu().numpy()
                 trimmed_rsp_vec = temp_vec[:last_zero_crossing].unsqueeze(0)
                 flipped_rsp_vec = -1 * torch.fliplr(trimmed_rsp_vec)
-                temp_long_vec = torch.concat([trimmed_rsp_vec, flipped_rsp_vec[:, 1:],
-                                             trimmed_rsp_vec[:, 1:], flipped_rsp_vec[:, 1:], trimmed_rsp_vec[:, 1:], flipped_rsp_vec[:, 1:]], dim=1)
+                temp_long_vec = torch.concat([trimmed_rsp_vec, flipped_rsp_vec[:, 1:], trimmed_rsp_vec[:, 1:],
+                                             flipped_rsp_vec[:, 1:], trimmed_rsp_vec[:, 1:], flipped_rsp_vec[:, 1:], trimmed_rsp_vec[:, 1:]], dim=1)
                 temp_long_vec = temp_long_vec[0, :t*self.time_scaling]
                 long_norm_rsp_vec[b_idx, :] = temp_long_vec
 

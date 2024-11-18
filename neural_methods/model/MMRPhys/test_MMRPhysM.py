@@ -16,7 +16,7 @@ from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "RSP"],
+    "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "FS": 25,
     "MD_FSAM": True,
@@ -35,8 +35,8 @@ model_config = {
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
-    "visualize": True,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_V2_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth",
+    "visualize": False,
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_36x36",
 }
 
