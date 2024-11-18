@@ -18,6 +18,7 @@ from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 model_config = {
     "TASKS": ["BVP", "RSP"],
     # "TASKS": ["BP"],
+    "BP_USE_RSP": True,
     "FS": 25,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
@@ -94,6 +95,7 @@ class TestMMRPhys(object):
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
         md_config["TASKS"] = model_config["TASKS"]
+        md_config["BP_USE_RSP"] = model_config["BP_USE_RSP"]
 
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,

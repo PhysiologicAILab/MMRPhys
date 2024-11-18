@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 32
   EPOCHS: 40
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1
+  MODEL_FILE_NAME: BP4D_MMRPhysMNF_BP_NoRSP_RGBTx36_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -106,7 +106,7 @@ TEST:
       RESIZE:
         H: 36
         W: 36
-DEVICE: cuda:1
+DEVICE: cuda:2
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -118,6 +118,7 @@ MODEL:
     FRAME_NUM: 500
     TYPE: "MNF"
     TASKS: ["BP"]
+    BP_USE_RSP: False
     MD_FSAM: False
     MD_TYPE: "SNMF_Label"
     MD_R: 1

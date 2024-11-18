@@ -16,8 +16,9 @@ from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "RSP"],
+    "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
+    "BP_USE_RSP": True,
     "FS": 25,
     "MD_FSAM": True,
     "MD_TYPE": "SNMF_Label",
@@ -32,11 +33,11 @@ model_config = {
     "weight": 36,
     "batch_size": 2,
     "frames": 500,
-    "debug": False,
+    "debug": True,
     "assess_latency": False,
     "num_trials": 20,
-    "visualize": True,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch9.pth",
+    "visualize": False,
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch39.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_36x36",
 }
 
@@ -94,6 +95,7 @@ class TestMMRPhys(object):
         md_config["MD_INFERENCE"] = model_config["MD_INFERENCE"]
         md_config["MD_RESIDUAL"] = model_config["MD_RESIDUAL"]
         md_config["TASKS"] = model_config["TASKS"]
+        md_config["BP_USE_RSP"] = model_config["BP_USE_RSP"]
 
         if self.visualize:
             self.net = nn.DataParallel(MMRPhys(frames=self.frames, md_config=md_config,

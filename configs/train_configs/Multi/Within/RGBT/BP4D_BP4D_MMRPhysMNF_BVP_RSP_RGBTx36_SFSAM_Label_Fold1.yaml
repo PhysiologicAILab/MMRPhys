@@ -1,8 +1,8 @@
 BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
-  BATCH_SIZE: 4
-  EPOCHS: 10
+  BATCH_SIZE: 32
+  EPOCHS: 40
   LR: 1e-3
   MODEL_FILE_NAME: BP4D_MMRPhysMNF_BVP_RSP_RGBTx36_SFSAM_Label_Fold1
   PLOT_LOSSES_AND_LR: True
@@ -73,7 +73,7 @@ VALID:
         W: 36
 TEST:
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
-  USE_LAST_EPOCH: True                   # to use provided validation dataset to find the best epoch, should be false
+  USE_LAST_EPOCH: False                   # to use provided validation dataset to find the best epoch, should be false
   DATA:
     FS: 25
     DATASET: BP4D

@@ -60,6 +60,8 @@ class MMRPhysTrainer(BaseTrainer):
         md_config["MD_INFERENCE"] = self.config.MODEL.MMRPhys.MD_INFERENCE
         md_config["MD_RESIDUAL"] = self.config.MODEL.MMRPhys.MD_RESIDUAL        
         md_config["TASKS"] = self.config.MODEL.MMRPhys.TASKS
+        md_config["BP_USE_RSP"] = self.config.MODEL.MMRPhys.BP_USE_RSP
+
         if self.config.TOOLBOX_MODE == "train_and_test" or self.config.TOOLBOX_MODE == "only_train":
             md_config["FS"] = self.config.TRAIN.DATA.FS
         else:
