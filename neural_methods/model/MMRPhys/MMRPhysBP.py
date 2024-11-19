@@ -174,13 +174,67 @@ class BP_Estimation_Head(nn.Module):
             total_feats = num_feats_bvp_stft + num_feats_bvp_phase_corr
         hidden_feats = total_feats
 
-        self.final_dense_layer_SBP = nn.Sequential(
+        self.bvp_phase_dense_SBP = nn.Sequential(
+            nn.Linear(num_feats_bvp_phase_corr, num_feats_bvp_phase_corr),
+            nn.ReLU(),
+            nn.Linear(num_feats_bvp_phase_corr, 1)
+        )
+
+        self.bvp_phase_dense_DBP = nn.Sequential(
+            nn.Linear(num_feats_bvp_phase_corr, num_feats_bvp_phase_corr),
+            nn.ReLU(),
+            nn.Linear(num_feats_bvp_phase_corr, 1)
+        )
+
+        self.bvp_stft_dense_SBP = nn.Sequential(
+            nn.Linear(num_feats_bvp_stft, num_feats_bvp_stft),
+            nn.ReLU(),
+            nn.Linear(num_feats_bvp_stft, 1)
+        )
+
+        self.bvp_stft_dense_DBP = nn.Sequential(
+            nn.Linear(num_feats_bvp_stft, num_feats_bvp_stft),
+            nn.ReLU(),
+            nn.Linear(num_feats_bvp_stft, 1)
+        )
+
+        if self.use_rsp:
+            self.rsp_stft_dense_SBP = nn.Sequential(
+                nn.Linear(num_feats_rsp_stft, num_feats_rsp_stft),
+                nn.ReLU(),
+                nn.Linear(num_feats_rsp_stft, 1)
+            )
+
+            self.rsp_stft_dense_DBP = nn.Sequential(
+                nn.Linear(num_feats_rsp_stft, num_feats_rsp_stft),
+                nn.ReLU(),
+                nn.Linear(num_feats_rsp_stft, 1)
+            )
+
+        if self.use_rsp:
+            residual_feats = 3
+        else:
+            residual_feats = 2
+        
+        self.final_residual_dense_layer_SBP = nn.Sequential(
+            nn.Linear(residual_feats, residual_feats),
+            nn.ReLU(),
+            nn.Linear(residual_feats, 1)
+        )
+
+        self.final_residual_dense_layer_DBP = nn.Sequential(
+            nn.Linear(residual_feats, residual_feats),
+            nn.ReLU(),
+            nn.Linear(residual_feats, 1)
+        )
+
+        self.final_all_feats_dense_layer_SBP = nn.Sequential(
             nn.Linear(total_feats, hidden_feats),
             nn.ReLU(),
             nn.Linear(hidden_feats, 1)
         )
 
-        self.final_dense_layer_DBP = nn.Sequential(
+        self.final_all_feats_dense_layer_DBP = nn.Sequential(
             nn.Linear(total_feats, hidden_feats),
             nn.ReLU(),
             nn.Linear(hidden_feats, 1)
@@ -286,41 +340,51 @@ class BP_Estimation_Head(nn.Module):
 
         # Convolutional blocks - separate feature extraction for BVP Embeddings (phase, magnitude), BVP (magnitude) and RSP (magnitude)
         bvp_corr_feats_SBP = self.bvp_embeddings_phase_extractor_SBP(bvp_corr_feats)
-        bvp_STFT_feats_SBP = self.bvp_stft_feature_extractor_SBP(feature_map_bvp_fft_magnitude)
+        bvp_stft_feats_SBP = self.bvp_stft_feature_extractor_SBP(feature_map_bvp_fft_magnitude)
         if self.use_rsp:
-            rsp_STFT_feats_SBP = self.rsp_stft_feature_extractor_SBP(feature_map_rsp_fft_magnitude)
+            rsp_stft_feats_SBP = self.rsp_stft_feature_extractor_SBP(feature_map_rsp_fft_magnitude)
 
         bvp_corr_feats_DBP = self.bvp_embeddings_phase_extractor_DBP(bvp_corr_feats)
-        bvp_STFT_feats_DBP = self.bvp_stft_feature_extractor_DBP(feature_map_bvp_fft_magnitude)
+        bvp_stft_feats_DBP = self.bvp_stft_feature_extractor_DBP(feature_map_bvp_fft_magnitude)
         if self.use_rsp:
-            rsp_STFT_feats_DBP = self.rsp_stft_feature_extractor_DBP(feature_map_rsp_fft_magnitude)
+            rsp_stft_feats_DBP = self.rsp_stft_feature_extractor_DBP(feature_map_rsp_fft_magnitude)
 
         if self.debug:
             print("bvp_corr_feats_SBP.shape", bvp_corr_feats_SBP.shape)
-            print("bvp_STFT_feats_SBP.shape", bvp_STFT_feats_SBP.shape)
+            print("bvp_stft_feats_SBP.shape", bvp_stft_feats_SBP.shape)
             if self.use_rsp:
-                print("rsp_STFT_feats_SBP.shape", rsp_STFT_feats_SBP.shape)
+                print("rsp_stft_feats_SBP.shape", rsp_stft_feats_SBP.shape)
 
         # Fully connected layers
         bvp_corr_feats_SBP = bvp_corr_feats_SBP.view(bt, -1)
-        bvp_STFT_feats_SBP = bvp_STFT_feats_SBP.view(bt, -1)
-        if self.use_rsp:
-            rsp_STFT_feats_SBP = rsp_STFT_feats_SBP.view(bt, -1)
-
         bvp_corr_feats_DBP = bvp_corr_feats_DBP.view(bt, -1)
-        bvp_STFT_feats_DBP = bvp_STFT_feats_DBP.view(bt, -1)
-        if self.use_rsp:
-            rsp_STFT_feats_DBP = rsp_STFT_feats_DBP.view(bt, -1)
+        bvp_corr_residual_feats_SBP = self.bvp_phase_dense_SBP(bvp_corr_feats_SBP)
+        bvp_corr_residual_feats_DBP = self.bvp_phase_dense_DBP(bvp_corr_feats_DBP)
+
+        bvp_stft_feats_SBP = bvp_stft_feats_SBP.view(bt, -1)
+        bvp_stft_feats_DBP = bvp_stft_feats_DBP.view(bt, -1)
+        bvp_stft_residual_feats_SBP = self.bvp_stft_dense_SBP(bvp_stft_feats_SBP)
+        bvp_stft_residual_feats_DBP = self.bvp_stft_dense_DBP(bvp_stft_feats_DBP)
 
         if self.use_rsp:
-            all_feats_SBP = torch.concat([bvp_corr_feats_SBP, bvp_STFT_feats_SBP, rsp_STFT_feats_SBP], dim=1)
-            all_feats_DBP = torch.concat([bvp_corr_feats_DBP, bvp_STFT_feats_DBP, rsp_STFT_feats_DBP], dim=1)
+            rsp_stft_feats_SBP = rsp_stft_feats_SBP.view(bt, -1)
+            rsp_stft_feats_DBP = rsp_stft_feats_DBP.view(bt, -1)
+            rsp_stft_residual_feats_SBP = self.rsp_stft_dense_SBP(rsp_stft_feats_SBP)
+            rsp_stft_residual_feats_DBP = self.rsp_stft_dense_DBP(rsp_stft_feats_DBP)
+
+        if self.use_rsp:
+            res_feats_SBP = torch.concat([bvp_corr_residual_feats_SBP, bvp_stft_residual_feats_SBP, rsp_stft_residual_feats_SBP], dim=1)
+            res_feats_DBP = torch.concat([bvp_corr_residual_feats_DBP, bvp_stft_residual_feats_DBP, rsp_stft_residual_feats_DBP], dim=1)
+            all_feats_SBP = torch.concat([bvp_corr_feats_SBP, bvp_stft_feats_SBP, rsp_stft_feats_SBP], dim=1)
+            all_feats_DBP = torch.concat([bvp_corr_feats_DBP, bvp_stft_feats_DBP, rsp_stft_feats_DBP], dim=1)
         else:
-            all_feats_SBP = torch.concat([bvp_corr_feats_SBP, bvp_STFT_feats_SBP], dim=1)
-            all_feats_DBP = torch.concat([bvp_corr_feats_DBP, bvp_STFT_feats_DBP], dim=1)
+            res_feats_SBP = torch.concat([bvp_corr_residual_feats_SBP, bvp_stft_residual_feats_SBP], dim=1)
+            res_feats_DBP = torch.concat([bvp_corr_residual_feats_DBP, bvp_stft_residual_feats_DBP], dim=1)
+            all_feats_SBP = torch.concat([bvp_corr_feats_SBP, bvp_stft_feats_SBP], dim=1)
+            all_feats_DBP = torch.concat([bvp_corr_feats_DBP, bvp_stft_feats_DBP], dim=1)
 
-        SBP = self.final_dense_layer_SBP(all_feats_SBP)
-        DBP = self.final_dense_layer_DBP(all_feats_DBP)
+        SBP = self.final_residual_dense_layer_SBP(res_feats_SBP) + self.final_all_feats_dense_layer_SBP(all_feats_SBP)
+        DBP = self.final_residual_dense_layer_DBP(res_feats_DBP) + self.final_all_feats_dense_layer_DBP(all_feats_DBP)
         
         rBP = torch.concat([SBP, DBP], dim=1)
 

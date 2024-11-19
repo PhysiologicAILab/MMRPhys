@@ -12,8 +12,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 # from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
     "TASKS": ["BVP", "BP", "RSP"],
@@ -37,7 +37,7 @@ model_config = {
     "assess_latency": False,
     "num_trials": 20,
     "visualize": False,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch29.pth",
+    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch4.pth",
     "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
 }
 
