@@ -106,15 +106,27 @@ path_dict_within_dataset = {
                 #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
                 #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
                 # },
-                "MMRPhys_RGB":{
-                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
-                },
-                "MMRPhys_BVP-RGB_RSP-Thermal":{
-                    "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
-                }
+                # "MMRPhys_RGB":{
+                #     "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_Fold1_rsp_outputs.pickle",
+                # },
+                # "MMRPhys_BVP-RGB_RSP-Thermal":{
+                #     "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
+                # },
 
+                "MMRPhysLNF_SFSAM": {
+                    "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
+                    "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
+                    "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
+                },
+                "MMRPhysLNF_Base" : {
+                    "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
+                    "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
+                    "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
+                },
             },
         },
         # "BP4D_500x72_Fold2": {
@@ -183,7 +195,7 @@ def _reform_BP_data_from_dict(data):
     """Helper func for calculate metrics: reformat predictions and labels from dicts. """
     sort_data = sorted(data.items(), key=lambda x: x[0])
     sort_data = [i[1] for i in sort_data]
-    sort_data = float(sort_data[0])
+    sort_data = float(sort_data[0].cpu())
     return sort_data
 
 
@@ -310,7 +322,8 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
         if tasks in [0, 1, 3]:
             bvp_dict = {}
             if tasks == 3:
-                bp_dict = {}
+                sbp_dict = {}
+                dbp_dict = {}
 
         if tasks in [0, 2, 3]:
             rsp_dict = {}
@@ -326,6 +339,8 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
         # if save_plot:
         plot_test_dir = plot_dir.joinpath(test_dataset)
         plot_test_dir.mkdir(parents=True, exist_ok=True)
+        plot_test_dir_detailed = plot_test_dir.joinpath("Detailed")
+        plot_test_dir_detailed.mkdir(parents=True, exist_ok=True)
 
         for train_model in path_dict_within_dataset["test_datasets"][test_dataset]["exp"]:
             print("Model:", train_model)
@@ -333,8 +348,11 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 bvp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bvp"])
                 bvp_dict[train_model] = CPU_Unpickler(open(bvp_fn, "rb")).load()
                 if tasks == 3:
-                    bp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["bp"])
-                    bp_dict[train_model] = CPU_Unpickler(open(bp_fn, "rb")).load()
+                    sbp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["sbp"])
+                    sbp_dict[train_model] = CPU_Unpickler(open(sbp_fn, "rb")).load()
+                    dbp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["dbp"])
+                    dbp_dict[train_model] = CPU_Unpickler(open(dbp_fn, "rb")).load()
+
             if tasks in [0, 2, 3]:
                 rsp_fn = root_dir.joinpath(path_dict_within_dataset["test_datasets"][test_dataset]["exp"][train_model]["rsp"])
                 rsp_dict[train_model] = CPU_Unpickler(open(rsp_fn, "rb")).load()
@@ -362,6 +380,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
         if tasks in [0, 2, 3]:
             all_rr_labels = {}
             all_rr_preds = {}
+        if tasks == 3:
+            all_sbp_labels = {}
+            all_sbp_pred = {}
+            all_dbp_labels = {}
+            all_dbp_pred = {}
+
 
         for trial_ind in range(len(trial_list)):
             # print("."*25)
@@ -387,8 +411,6 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
 
             if tasks in [0, 1, 3]:
                 bvp_label = np.array(_reform_data_from_dict(bvp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
-                if tasks == 3:
-                    bp_label = np.array(_reform_data_from_dict(bp_dict[model_names[0]]['labels'][trial_list[trial_ind]]))
                 hr_pred = {}
 
             if tasks in [0, 2, 3]:
@@ -417,18 +439,16 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                     hr_label = _calculate_fft_hr(bvp_seg, fs=fs)
                     hr_label = int(np.round(hr_label))
                     # print("hr_label:", hr_label)
-                    if tasks == 3:
-                        bp_seg = bp_label[start: stop]
 
                 if tasks in [0, 2, 3]:
                     rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
                     
-                    # try:
-                    #     rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
-                    #     rr_label = int(np.round(rr_label))
-                    # except:
-                    rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
-                    rr_label = int(np.round(rr_label))
+                    try:
+                        rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
+                        rr_label = int(np.round(rr_label))
+                    except:
+                        rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
+                        rr_label = int(np.round(rr_label))
                 
                     # print("rr_label:", rr_label)
 
@@ -442,13 +462,10 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                         # Reform label and prediction vectors from multiple trial chunks
                         if tasks in [0, 1, 3]:
                             trial_dict[model_names[m_ind]]["bvp_pred"] = np.array(_reform_data_from_dict(bvp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))                        
-                            if tasks == 3:
-                                trial_dict[model_names[m_ind]]["bp_pred"] = np.array(_reform_data_from_dict(bp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
 
                         if tasks in [0, 2, 3]:
                             trial_dict[model_names[m_ind]]["rsp_pred"] = np.array(_reform_data_from_dict(rsp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
 
-                    
                         if tasks in [0, 1, 3]:
                             if model_names[m_ind] not in all_hr_labels:
                                 all_hr_labels[model_names[m_ind]] = []
@@ -457,6 +474,13 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                             if model_names[m_ind] not in all_rr_labels:
                                 all_rr_labels[model_names[m_ind]] = []
                                 all_rr_preds[model_names[m_ind]] = []
+
+                        if tasks == 3:
+                            if model_names[m_ind] not in all_sbp_labels:
+                                all_sbp_labels[model_names[m_ind]] = []
+                                all_sbp_pred[model_names[m_ind]] = []
+                                all_dbp_labels[model_names[m_ind]] = []
+                                all_dbp_pred[model_names[m_ind]] = []
 
                     # Process label and prediction signals
                     if tasks in [0, 1, 3]:
@@ -470,12 +494,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                         # print("m_ind:", m_ind, "; hr_pred: ", hr_pred[model_names[m_ind]])
 
                     if tasks in [0, 2, 3]:
-                        # try:
-                        #     rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
-                        #     rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
-                        # except:
-                        rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
-                        rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        try:
+                            rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
+                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        except:
+                            rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
+                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
 
                         # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
 
@@ -486,6 +510,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                     if tasks in [0, 2, 3]:
                         all_rr_labels[model_names[m_ind]].append(rr_label)
                         all_rr_preds[model_names[m_ind]].append(rr_pred[model_names[m_ind]])
+
+                    if tasks == 3:
+                        all_sbp_labels[model_names[m_ind]].append(_reform_BP_data_from_dict(sbp_dict[model_names[m_ind]]['labels'][trial_list[trial_ind]]))
+                        all_sbp_pred[model_names[m_ind]].append(_reform_BP_data_from_dict(sbp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
+                        all_dbp_labels[model_names[m_ind]].append(_reform_BP_data_from_dict(dbp_dict[model_names[m_ind]]['labels'][trial_list[trial_ind]]))
+                        all_dbp_pred[model_names[m_ind]].append(_reform_BP_data_from_dict(dbp_dict[model_names[m_ind]]['predictions'][trial_list[trial_ind]]))
 
                     if save_plot:
                         if tasks in [0, 3]:
@@ -498,37 +528,38 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                                 ax.plot(x_time, rsp_pred_seg, label=model_names[m_ind] + "; RR = " + str(rr_pred[model_names[m_ind]]))
 
 
-                    if save_plot:
-                        if tasks in [0, 3]:
-                            ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                            ax[0].legend(loc="upper right")
-                            ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                            ax[1].legend(loc="upper right")
+                if save_plot:
+                    if tasks in [0, 3]:
+                        ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                        ax[0].legend(loc="upper right")
+                        ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                        ax[1].legend(loc="upper right")
+                    else:
+                        if tasks in [1, 3]:
+                            ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
+                            ax.legend(loc="upper right")
                         else:
-                            if tasks in [1, 3]:
-                                ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                                ax.legend(loc="upper right")
-                            else:
-                                ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                                ax.legend(loc="upper right")
+                            ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                            ax.legend(loc="upper right")
 
 
-                        # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
-                        # ax[2].legend(loc="upper right")
-                        # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
-                        # ax[3].legend(loc="upper right")
-                    
-                        plt.suptitle("Dataset: " + test_dataset + '; Trial: ' + trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
+                    # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
+                    # ax[2].legend(loc="upper right")
+                    # ax[3].plot(x_time, eda_label[start: stop], label="GT", color='black')
+                    # ax[3].legend(loc="upper right")
+                
+                    plt.suptitle("Dataset: " + test_dataset + '; Trial: ' + trial_list[trial_ind] + '; Chunk: ' + str(c_ind), fontsize=14)
 
-                        # plt.show()
-                        save_fn = plot_test_dir.joinpath(str(trial_list[trial_ind]) + "_" + str(c_ind) + ".jpg")
-                        plt.xlabel('Time (s)')
-                        plt.savefig(save_fn)
-                        plt.close()
+                    # plt.show()
+                    save_fn = plot_test_dir_detailed.joinpath(str(trial_list[trial_ind]) + "_" + str(c_ind) + ".jpg")
 
-                        # except Exception as e:
-                        #     print("Encoutered error:", e)
-                        #     exit()
+                    plt.xlabel('Time (s)')
+                    plt.savefig(save_fn)
+                    plt.close()
+
+                    # except Exception as e:
+                    #     print("Encoutered error:", e)
+                    #     exit()
 
 
         all_test_data = {}
@@ -562,7 +593,30 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 all_test_data[model_names[m_ind]]["rr_labels"] = rr_labels_clean_array
                 all_test_data[model_names[m_ind]]["rr_pred"] = rr_pred_clean_array
 
-        data_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_eval_data.npy")
+            if tasks == 3:
+                sbp_label = np.array(all_sbp_labels[model_names[m_ind]])
+                sbp_pred = np.array(all_sbp_pred[model_names[m_ind]])
+                dbp_label = np.array(all_dbp_labels[model_names[m_ind]])
+                dbp_pred = np.array(all_dbp_pred[model_names[m_ind]])
+
+                # Handle out of range predictions and labels
+                sbp_label[sbp_label < 90] = 90
+                sbp_label[sbp_label > 180] = 180
+                sbp_pred[sbp_pred < 90] = 90
+                sbp_pred[sbp_pred > 180] = 180
+
+                dbp_label[dbp_label < 60] = 60
+                dbp_label[dbp_label > 120] = 120
+                dbp_pred[dbp_pred < 60] = 60
+                dbp_pred[dbp_pred > 120] = 120
+
+                all_test_data[model_names[m_ind]]["sbp_labels"] = sbp_label
+                all_test_data[model_names[m_ind]]["sbp_pred"] = sbp_pred
+                all_test_data[model_names[m_ind]]["dbp_labels"] = dbp_label
+                all_test_data[model_names[m_ind]]["dbp_pred"] = dbp_pred
+
+
+        data_fn = plot_test_dir.joinpath(plot_test_dir.name + "_eval_data.npy")
         np.save(data_fn, all_test_data)
 
         print("-*-"*50)
@@ -582,7 +636,14 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 gt_rr = np.array(all_rr_labels[model_names[m_ind]])
                 pred_rr = np.array(all_rr_preds[model_names[m_ind]])
                 num_test_samples = len(gt_rr)
-            
+
+            if tasks == 3:
+                sbp_label = np.array(all_sbp_labels[model_names[m_ind]])
+                sbp_pred = np.array(all_sbp_pred[model_names[m_ind]])
+                dbp_label = np.array(all_dbp_labels[model_names[m_ind]])
+                dbp_pred = np.array(all_dbp_pred[model_names[m_ind]])
+                num_test_samples = len(sbp_label)
+
             print("Total Samples: ", num_test_samples)
             print("."*50)
             
@@ -603,15 +664,15 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 print("HR MAPE: {0} +/- {1}".format(MAPE_HR, standard_error))
 
                 Pearson_HR = np.corrcoef(pred_hr, gt_hr)
-                correlation_coefficient = Pearson_HR[0][1]
-                standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
-                print("HR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+                corr_HR = Pearson_HR[0][1]
+                standard_error = np.sqrt((1 - corr_HR**2) / (num_test_samples - 2))
+                print("HR Pearson: {0} +/- {1}".format(corr_HR, standard_error))
 
-                scatter_plot_hr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_HR.jpg")
+                scatter_plot_hr_fn = plot_test_dir.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_HR.jpg")
                 plt.scatter(hr_labels_clean_array, hr_pred_clean_array)
                 plt.xlabel("Ground Truth HR")
                 plt.ylabel("Estimated HR")
-                plt.title("HR | MAE: " + str(np.round(MAE_HR, 2)) + "; RMSE: " + str(np.round(RMSE_HR, 2)) + "; MAPE: " + str(np.round(MAPE_HR, 2)) + "; Corr: " + str(np.round(Pearson_HR, 2)))
+                plt.title("HR | MAE: " + str(np.round(MAE_HR, 2)) + "; RMSE: " + str(np.round(RMSE_HR, 2)) + "; MAPE: " + str(np.round(MAPE_HR, 2)) + "; Corr: " + str(np.round(corr_HR, 2)))
                 plt.savefig(scatter_plot_hr_fn)
                 plt.close()
 
@@ -633,16 +694,78 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 print("RR MAPE: {0} +/- {1}".format(MAPE_RR, standard_error))
 
                 Pearson_RR = np.corrcoef(pred_rr, gt_rr)
-                correlation_coefficient = Pearson_RR[0][1]
-                standard_error = np.sqrt((1 - correlation_coefficient**2) / (num_test_samples - 2))
-                print("RR Pearson: {0} +/- {1}".format(correlation_coefficient, standard_error))
+                corr_RR = Pearson_RR[0][1]
+                standard_error = np.sqrt((1 - corr_RR**2) / (num_test_samples - 2))
+                print("RR Pearson: {0} +/- {1}".format(corr_RR, standard_error))
 
-                scatter_plot_rr_fn = plot_test_dir.parent.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_RR.jpg")
+                scatter_plot_rr_fn = plot_test_dir.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_RR.jpg")
                 plt.scatter(rr_labels_clean_array, rr_pred_clean_array)
                 plt.xlabel("Ground Truth RR")
                 plt.ylabel("Estimated RR")
-                plt.title("RR | MAE: " + str(np.round(MAE_RR, 2)) + "; RMSE: " + str(np.round(RMSE_RR, 2)) + "; MAPE: " + str(np.round(MAPE_RR, 2)) + "; Corr: " + str(np.round(Pearson_RR, 2)))
+                plt.title("RR | MAE: " + str(np.round(MAE_RR, 2)) + "; RMSE: " + str(np.round(RMSE_RR, 2)) + "; MAPE: " + str(np.round(MAPE_RR, 2)) + "; Corr: " + str(np.round(corr_RR, 2)))
                 plt.savefig(scatter_plot_rr_fn)
+                plt.close()
+
+            if tasks == 3:
+                print("."*50)
+                print("BP Metrics")
+                print("."*50)
+
+                # Handle out of range predictions and labels
+                sbp_label[sbp_label < 90] = 90
+                sbp_label[sbp_label > 180] = 180
+                sbp_pred[sbp_pred < 90] = 90
+                sbp_pred[sbp_pred > 180] = 180
+
+                dbp_label[dbp_label < 60] = 60
+                dbp_label[dbp_label > 120] = 120
+                dbp_pred[dbp_pred < 60] = 60
+                dbp_pred[dbp_pred > 120] = 120
+
+                MAE_SBP = np.mean(np.abs(sbp_pred - sbp_label))
+                standard_error = np.std(np.abs(sbp_pred - sbp_label)) / np.sqrt(num_test_samples)
+                print("SBP MAE: {0} +/- {1}".format(MAE_SBP, standard_error))
+                MAE_DBP = np.mean(np.abs(dbp_pred - dbp_label))
+                standard_error = np.std(np.abs(dbp_pred - dbp_label)) / np.sqrt(num_test_samples)
+                print("DBP MAE: {0} +/- {1}".format(MAE_DBP, standard_error))
+                
+                RMSE_SBP = np.sqrt(np.mean(np.square(sbp_pred - sbp_label)))
+                standard_error = np.sqrt(np.std(np.square(sbp_pred - sbp_label))) / np.sqrt(num_test_samples)
+                print("SBP RMSE: {0} +/- {1}".format(RMSE_SBP, standard_error))
+                RMSE_DBP = np.sqrt(np.mean(np.square(dbp_pred - dbp_label)))
+                standard_error = np.sqrt(np.std(np.square(dbp_pred - dbp_label))) / np.sqrt(num_test_samples)
+                print("DBP RMSE: {0} +/- {1}".format(RMSE_DBP, standard_error))
+
+                MAPE_SBP = np.mean(np.abs((sbp_pred - sbp_label) / sbp_label)) * 100
+                standard_error = np.std(np.abs((sbp_pred - sbp_label) / sbp_label)) / np.sqrt(num_test_samples) * 100
+                print("SBP MAPE: {0} +/- {1}".format(MAPE_SBP, standard_error))
+                MAPE_DBP = np.mean(np.abs((dbp_pred - dbp_label) / dbp_label)) * 100
+                standard_error = np.std(np.abs((dbp_pred - dbp_label) / dbp_label)) / np.sqrt(num_test_samples) * 100
+                print("DBP MAPE: {0} +/- {1}".format(MAPE_DBP, standard_error))
+
+                Pearson_SBP = np.corrcoef(sbp_pred, sbp_label)
+                corr_SBP = Pearson_SBP[0][1]
+                standard_error = np.sqrt((1 - corr_SBP**2) / (num_test_samples - 2))
+                print("SBP Pearson: {0} +/- {1}".format(corr_SBP, standard_error))
+                Pearson_DBP = np.corrcoef(dbp_pred, dbp_label)
+                corr_DBP = Pearson_DBP[0][1]
+                standard_error = np.sqrt((1 - corr_DBP**2) / (num_test_samples - 2))
+                print("DBP Pearson: {0} +/- {1}".format(corr_DBP, standard_error))
+
+                scatter_plot_SBP_fn = plot_test_dir.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_SBP.jpg")
+                plt.scatter(sbp_label, sbp_pred)
+                plt.xlabel("Ground Truth SBP")
+                plt.ylabel("Estimated SBP")
+                plt.title("SBP | MAE: " + str(np.round(MAE_SBP, 2)) + "; RMSE: " + str(np.round(RMSE_SBP, 2)) + "; MAPE: " + str(np.round(MAPE_SBP, 2)) + "; Corr: " + str(np.round(corr_SBP, 2)))
+                plt.savefig(scatter_plot_SBP_fn)
+                plt.close()
+
+                scatter_plot_DBP_fn = plot_test_dir.joinpath(plot_test_dir.name + "_" + model_names[m_ind] + "_scatter_plot_DBP.jpg")
+                plt.scatter(dbp_label, dbp_pred)
+                plt.xlabel("Ground Truth DBP")
+                plt.ylabel("Estimated DBP")
+                plt.title("DBP | MAE: " + str(np.round(MAE_DBP, 2)) + "; RMSE: " + str(np.round(RMSE_DBP, 2)) + "; MAPE: " + str(np.round(MAPE_DBP, 2)) + "; Corr: " + str(np.round(corr_DBP, 2)))
+                plt.savefig(scatter_plot_DBP_fn)
                 plt.close()
 
 
