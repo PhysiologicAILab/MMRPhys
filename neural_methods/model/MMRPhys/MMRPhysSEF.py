@@ -107,15 +107,15 @@ class BVP_Head(nn.Module):
         self.md_type = md_config["MD_TYPE"]
         self.md_infer = md_config["MD_INFERENCE"]
         self.md_res = md_config["MD_RESIDUAL"]
-
-        # if self.use_fsam:
-        self.fsam = FeaturesFactorizationModule(nf_BVP[2], device, md_config, dim="3D", debug=debug)
-        self.fsam_norm = nn.InstanceNorm3d(nf_BVP[2])
-        self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
+        inC = nf_BVP[2]
+        if self.use_fsam:
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
+            self.fsam_norm = nn.InstanceNorm3d(inC)
+            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(nf_BVP[2], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[1], T, 5, 5
-            ConvBlock3D(nf_BVP[1], nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[0], T, 3, 3
+            ConvBlock3D(inC, nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                         #B, nf_BVP[1], T, 5, 5
+            ConvBlock3D(nf_BVP[1], nf_BVP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0]),                   #B, nf_BVP[0], T, 3, 3
             nn.Conv3d(nf_BVP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),  #B, 1, T, 1, 1
         )
 
@@ -139,7 +139,7 @@ class BVP_Head(nn.Module):
             # Multiplication with Residual connection
             x = torch.mul(bvp_embeddings - bvp_embeddings.min() + self.bias1, att_mask - att_mask.min() + self.bias1)
             factorized_embeddings = self.fsam_norm(x)
-            factorized_embeddings = bvp_embeddings + factorized_embeddings          
+            factorized_embeddings = bvp_embeddings + factorized_embeddings
 
             x = self.final_layer(factorized_embeddings)
 
@@ -166,9 +166,9 @@ class RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                                                     Input: #B, inCh, T, 9, 9
+        #                                                                                     Input: #B, inCh,      T//1, 9, 9
         self.rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//4, 9, 9
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 9, 9
             ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 9, 9
             ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 9, 9
             nn.Dropout3d(p=dropout_rate),
@@ -191,11 +191,11 @@ class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
         self.debug = debug
-        self.temporal_scale_factor = 4
+        self.temporal_scale_factor = 2
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_RSP[2], T//4, 7, 7
-            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),           #B, nf_RSP[2], T//1, 7, 7
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),  #B, nf_RSP[2], T//4, 7, 7
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),        #B, nf_RSP[2], T//2, 7, 7
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -209,15 +209,17 @@ class RSP_Head(nn.Module):
         # md_config["MD_STEPS"] = 5
         md_config["align_channels"] = nf_RSP[2] // 2
 
-        # if self.use_fsam:
-        self.fsam = FeaturesFactorizationModule(nf_RSP[2], device, md_config, dim="3D", debug=debug)
-        self.fsam_norm = nn.InstanceNorm3d(nf_RSP[2])
-        self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
+        inC = nf_RSP[2]
+        if self.use_fsam:
+            self.fsam = FeaturesFactorizationModule(inC, device, md_config, dim="3D", debug=debug)
+            self.fsam_norm = nn.InstanceNorm3d(inC)
+            self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[1], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]),     #B, nf_RSP[1], T, 5, 5
-            ConvBlock3D(nf_RSP[1], nf_RSP[0], [3, 3, 3], [1, 1, 1], [2, 0, 0], dilation=[2, 1, 1]),     #B, nf_RSP[0], T, 3, 3
-            nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),        #B, 1, T, 1, 1
+            ConvBlock3D(inC, nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),           #B, nf_RSP[2], T//2, 5, 5
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),                               #B, nf_RSP[2], T//1, 5, 5
+            ConvBlock3D(nf_RSP[2], nf_RSP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),     #B, nf_RSP[0], T//1, 3, 3
+            nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),        #B, 1, T//1, 1, 1
         )
 
     def forward(self, length, rsp_embeddings=None, label_rsp=None):
@@ -229,10 +231,11 @@ class RSP_Head(nn.Module):
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
+            label_rsp_down_sampled = F.avg_pool1d(label_rsp, kernel_size=3, stride=2, padding=1)
             if "NMF" in self.md_type:
-                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_rsp) # to make it positive (>= 0)
+                att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_rsp_down_sampled) # to make it positive (>= 0)
             else:
-                att_mask, appx_error = self.fsam(voxel_embeddings, label_rsp)
+                att_mask, appx_error = self.fsam(voxel_embeddings, label_rsp_down_sampled)
 
             if self.debug:
                 print("att_mask.shape", att_mask.shape)

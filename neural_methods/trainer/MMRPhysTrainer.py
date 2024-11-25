@@ -13,12 +13,6 @@ from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
 from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF
 from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
 from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF
-from neural_methods.model.MMRPhys.MMRPhysBig import MMRPhysBig
-from neural_methods.model.MMRPhys.MMRPhysMedium import MMRPhysMedium
-from neural_methods.model.MMRPhys.MMRPhysFuseL import MMRPhysFuseL
-from neural_methods.model.MMRPhys.MMRPhysFuseM import MMRPhysFuseM
-from neural_methods.model.MMRPhys.MMRPhysFuseS import MMRPhysFuseS
-from neural_methods.model.MMRPhys.MMRPhysSmall import MMRPhysSmall
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
 
@@ -78,32 +72,23 @@ class MMRPhysTrainer(BaseTrainer):
             print("Unknown estimation task... BVP, RSP, and BP are supported. Exiting the code...")
             exit()
 
-        if model_type == "lef":
-            self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "sef":
-            self.model = MMRPhysSEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        if model_type == "sef":
+            self.model = MMRPhysSEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
+
+        elif model_type == "mnf":
+            self.model = MMRPhysMNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
+        elif model_type == "mef":
+            self.model = MMRPhysMEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
+        elif model_type == "mlf":
+            self.model = MMRPhysMLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
+
         elif model_type == "lnf":
             self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "mef":
-            self.model = MMRPhysMEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "mnf":
-            self.model = MMRPhysMNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "llf":
             self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "mlf":
-            self.model = MMRPhysMLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "big":
-            self.model = MMRPhysBig(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 144, 144]
-        elif model_type == "medium":
-            self.model = MMRPhysMedium(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
-        elif model_type == "fusel":
-            self.model = MMRPhysFuseL(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
-        elif model_type == "fusem":
-            self.model = MMRPhysFuseM(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
-        elif model_type == "fuses":
-            self.model = MMRPhysFuseS(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
-        elif model_type == "small":
-            self.model = MMRPhysSmall(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
+        elif model_type == "lef":
+            self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+
         else:
             print("Unexpected model type specified. Should be standard or big, but specified:", model_type)
             exit()
