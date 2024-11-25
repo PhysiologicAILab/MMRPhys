@@ -6,13 +6,19 @@ import torch.optim as optim
 import neurokit2 as nk
 from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
+
+from neural_methods.model.MMRPhys.MMRPhysSNF import MMRPhysSNF
 from neural_methods.model.MMRPhys.MMRPhysSEF import MMRPhysSEF
-from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
-from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF
-from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
+from neural_methods.model.MMRPhys.MMRPhysSLF import MMRPhysSLF
+
 from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF
-from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
+from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF
 from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF
+
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
+from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
+from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF
+
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from tqdm import tqdm
 
@@ -72,8 +78,12 @@ class MMRPhysTrainer(BaseTrainer):
             print("Unknown estimation task... BVP, RSP, and BP are supported. Exiting the code...")
             exit()
 
-        if model_type == "sef":
+        if model_type == "snf":
+            self.model = MMRPhysSNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
+        elif model_type == "sef":
             self.model = MMRPhysSEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
+        elif model_type == "slf":
+            self.model = MMRPhysSLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 9, 9]
 
         elif model_type == "mnf":
             self.model = MMRPhysMNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 36, 36]
@@ -84,10 +94,10 @@ class MMRPhysTrainer(BaseTrainer):
 
         elif model_type == "lnf":
             self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
-        elif model_type == "llf":
-            self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "lef":
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "llf":
+            self.model = MMRPhysLLF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
 
         else:
             print("Unexpected model type specified. Should be standard or big, but specified:", model_type)

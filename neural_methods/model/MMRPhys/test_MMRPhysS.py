@@ -11,9 +11,9 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysSEF import MMRPhysSEF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysSEF import MMRPhysSEF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysSNF import MMRPhysSNF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysSLF import MMRPhysSLF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysSLF import MMRPhysSLF as MMRPhys
 
 model_config = {
     # "TASKS": ["BVP", "BP", "RSP"],
