@@ -67,9 +67,25 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        "BP4D_500x72_Fold1": {
-            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
-            "exp" : {
+        "BP4D_180x72_Fold1": {
+            "root": "runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs/",
+            "exp": {
+                "MMRPhysLEF_RGB_Base":
+                {
+                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_rsp_outputs.pickle",
+                },
+                "MMRPhysLEF_RGBT_Base":
+                {
+                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_bvp_outputs.pickle",
+                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_rsp_outputs.pickle",
+                },
+            },
+        },
+
+        # "BP4D_500x72_Fold1": {
+        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        #     "exp" : {
                 # "MMRPhys_FuseL_SFSAM_Label":
                 # {
                 #     "bvp": "BP4D_MMRPhys_All_RGBT_FuseLx500x72_SFSAM_Label_Fold1_bvp_outputs.pickle",
@@ -115,20 +131,20 @@ path_dict_within_dataset = {
                 #     "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_rsp_outputs.pickle"
                 # },
 
-                "MMRPhysLNF_SFSAM": {
-                    "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
-                    "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
-                    "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
-                },
-                "MMRPhysLNF_Base" : {
-                    "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
-                    "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
-                    "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
-                },
-            },
-        },
+                # "MMRPhysLNF_SFSAM": {
+                #     "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
+                #     "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
+                #     "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_SFSAM_Label_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
+                # },
+                # "MMRPhysLNF_Base" : {
+                #     "bvp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_bvp_outputs.pickle",
+                #     "rsp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_rsp_outputs.pickle",
+                #     "sbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_SBP_outputs.pickle",
+                #     "dbp": "BP4D_MMRPhysLNF_BP_RGBTx72_Base_Fold1_Epoch99_BP4D_DBP_outputs.pickle",
+                # },
+            # },
+        # },
         # "BP4D_500x72_Fold2": {
         #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
         #     "exp": {
@@ -313,7 +329,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
     plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
     plot_dir.mkdir(parents=True, exist_ok=True)
 
-    chunk_size = 500 #300  # size of chunk to visualize: -1 will plot the entire signal
+    chunk_size = 180 #180 #500 #300  # size of chunk to visualize: -1 will plot the entire signal
 
     for test_dataset in path_dict_within_dataset["test_datasets"]:
         print("*"*50)

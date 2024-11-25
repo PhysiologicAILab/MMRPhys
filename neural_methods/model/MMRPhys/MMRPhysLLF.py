@@ -204,8 +204,8 @@ class RGB_RSP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                                                     Input: #B, inCh, T//1,      72, 72
         self.rgb_rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 2, 2], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 36, 36
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
             ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 
@@ -231,8 +231,8 @@ class Thermal_RSP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                                                     Input: #B, inCh, T//1,      72, 72
         self.thermal_rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 72, 72
-            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [2, 2, 2], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//2, 36, 36
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//4, 36, 36
             ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 34, 34
             nn.Dropout3d(p=dropout_rate),
 

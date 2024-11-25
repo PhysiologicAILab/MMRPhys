@@ -56,21 +56,22 @@ def _calculate_peak_hr(ppg_signal, fs):
 def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
     """Calculate respiration rate using Fast Fourier transform (FFT)."""
     resp_signal = deepcopy(rsp_signal)
-    sig_len = len(resp_signal)
     avg_resp = np.mean(resp_signal)
     std_resp = np.std(resp_signal)
     resp_signal = (resp_signal - avg_resp) / std_resp   # Standardize to remove DC level - which was due to min-max normalization
 
-    last_zero_crossing = np.where(np.diff(np.sign(resp_signal)))[0][-1]
-    resp_signal = resp_signal[: last_zero_crossing]
-    inv_resp_signal = deepcopy(resp_signal)
-    inv_resp_signal = -1 * inv_resp_signal[::-1]
+    # sig_len = len(resp_signal)
+    # last_zero_crossing = np.where(np.diff(np.sign(resp_signal)))[0][-1]
+    # resp_signal = resp_signal[: last_zero_crossing]
+    # inv_resp_signal = deepcopy(resp_signal)
+    # inv_resp_signal = -1 * inv_resp_signal[::-1]
     
-    # Higher signal length is needed to reliably compute FFT for low frequencies
-    resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
-                                 inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
+    # # Higher signal length is needed to reliably compute FFT for low frequencies
+    # resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
+    #                              inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
     
-    resp_signal = resp_signal[:4*sig_len]
+    # resp_signal = resp_signal[:4*sig_len]
+
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
     f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
