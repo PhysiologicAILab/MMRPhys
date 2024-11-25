@@ -1,8 +1,8 @@
 BASE: ['']
 TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
 TRAIN:
-  BATCH_SIZE: 16
-  EPOCHS: 5
+  BATCH_SIZE: 4
+  EPOCHS: 10
   LR: 1e-3
   MODEL_FILE_NAME: UBFC-rPPG_MMRPhys_SFSAM_Label
   PLOT_LOSSES_AND_LR: True
@@ -93,7 +93,7 @@ TEST:
       RESIZE:
         H: 72
         W: 72
-DEVICE: cuda:3
+DEVICE: cuda:1
 NUM_OF_GPU_TRAIN: 1
 LOG:
   PATH: runs/exp
@@ -109,7 +109,7 @@ MODEL:
     MD_TYPE: "SNMF_Label"
     MD_R: 1
     MD_S: 1
-    MD_STEPS: 5
+    MD_STEPS: 3
     MD_RESIDUAL: True
     MD_INFERENCE: False
 INFERENCE:
