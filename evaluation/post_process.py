@@ -52,8 +52,8 @@ def _calculate_peak_hr(ppg_signal, fs):
 
 
 # RSP Metrics
-# def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
-def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.1, high_pass=0.54):
+# def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.1, high_pass=0.54):
+def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
     """Calculate respiration rate using Fast Fourier transform (FFT)."""
     resp_signal = deepcopy(rsp_signal)
     sig_len = len(resp_signal)

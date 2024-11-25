@@ -64,21 +64,21 @@ class BigSmall(nn.Module):
 
         self.n_segment = n_segment
 
-        # # Big Convolutional Layers
-        # self.big_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
-        # self.big_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
-        # self.big_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
-        # self.big_conv4 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
-        # self.big_conv5 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
-        # self.big_conv6 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        # Big Convolutional Layers
+        self.big_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv4 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv5 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv6 = nn.Conv2d(self.nb_filters2, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
 
-        # # Big Avg Pooling / Dropout Layers
-        # self.big_avg_pooling1 = nn.AvgPool2d(self.pool_size1)
-        # self.big_dropout1 = nn.Dropout(self.dropout_rate1)
-        # self.big_avg_pooling2 = nn.AvgPool2d(self.pool_size1)
-        # self.big_dropout2 = nn.Dropout(self.dropout_rate2)
-        # self.big_avg_pooling3 = nn.AvgPool2d(self.pool_size2)
-        # self.big_dropout3 = nn.Dropout(self.dropout_rate3)
+        # Big Avg Pooling / Dropout Layers
+        self.big_avg_pooling1 = nn.AvgPool2d(self.pool_size1)
+        self.big_dropout1 = nn.Dropout(self.dropout_rate1)
+        self.big_avg_pooling2 = nn.AvgPool2d(self.pool_size1)
+        self.big_dropout2 = nn.Dropout(self.dropout_rate2)
+        self.big_avg_pooling3 = nn.AvgPool2d(self.pool_size2)
+        self.big_dropout3 = nn.Dropout(self.dropout_rate3)
 
         # TSM layers
         self.TSM_1 = WTSM(n_segment=self.n_segment)
@@ -107,42 +107,40 @@ class BigSmall(nn.Module):
 
     def forward(self, inputs, params=None):
 
-        # big_input = inputs[0] # big res 
-        # small_input = inputs[1] # small res
+        big_input = inputs[0] # big res 
+        small_input = inputs[1] # small res
 
-        small_input = inputs # small res
-
-        # # reshape Big 
-        # nt, c, h, w = big_input.size()
-        # n_batch = nt // self.n_segment
-        # big_input = big_input.view(n_batch, self.n_segment, c, h, w)
-        # big_input = torch.moveaxis(big_input, 1, 2) # color channel to idx 1, sequence channel to idx 2
-        # big_input = big_input[:, :, 0, :, :] # use only first frame in sequences 
+        # reshape Big 
+        nt, c, h, w = big_input.size()
+        n_batch = nt // self.n_segment
+        big_input = big_input.view(n_batch, self.n_segment, c, h, w)
+        big_input = torch.moveaxis(big_input, 1, 2) # color channel to idx 1, sequence channel to idx 2
+        big_input = big_input[:, :, 0, :, :] # use only first frame in sequences 
 
 
-        # # Big Conv block 1
-        # b1 = nn.functional.relu(self.big_conv1(big_input))
-        # b2 = nn.functional.relu(self.big_conv2(b1))
-        # b3 = self.big_avg_pooling1(b2)
-        # b4 = self.big_dropout1(b3)
+        # Big Conv block 1
+        b1 = nn.functional.relu(self.big_conv1(big_input))
+        b2 = nn.functional.relu(self.big_conv2(b1))
+        # b3 = self.big_avg_pooling1(b2)    for 72x72 big resolution, this is not needed
+        b4 = self.big_dropout1(b2)
 
-        # # Big Conv block 2
-        # b5 = nn.functional.relu(self.big_conv3(b4))
-        # b6 = nn.functional.relu(self.big_conv4(b5))
-        # b7 = self.big_avg_pooling2(b6)
-        # b8 = self.big_dropout2(b7)
+        # Big Conv block 2
+        b5 = nn.functional.relu(self.big_conv3(b4))
+        b6 = nn.functional.relu(self.big_conv4(b5))
+        b7 = self.big_avg_pooling2(b6)
+        b8 = self.big_dropout2(b7)
 
-        # # Big Conv block 3
-        # b9 = nn.functional.relu(self.big_conv5(b8))
-        # b10 = nn.functional.relu(self.big_conv6(b9))
-        # b11 = self.big_avg_pooling3(b10)
-        # b12 = self.big_dropout3(b11)
+        # Big Conv block 3
+        b9 = nn.functional.relu(self.big_conv5(b8))
+        b10 = nn.functional.relu(self.big_conv6(b9))
+        b11 = self.big_avg_pooling3(b10)
+        b12 = self.big_dropout3(b11)
 
-        # # Reformat Big Shape For Concat w/ Small Branch
-        # b13 = torch.stack((b12, b12, b12), 2) #TODO: this is hardcoded for num_segs = 3: change this...
-        # b14 = torch.moveaxis(b13, 1, 2)
-        # bN, bD, bC, bH, bW = b14.size()
-        # b15 = b14.reshape(int(bN*bD), bC, bH, bW)
+        # Reformat Big Shape For Concat w/ Small Branch
+        b13 = torch.stack((b12, b12, b12), 2) #TODO: this is hardcoded for num_segs = 3: change this...
+        b14 = torch.moveaxis(b13, 1, 2)
+        bN, bD, bC, bH, bW = b14.size()
+        b15 = b14.reshape(int(bN*bD), bC, bH, bW)
 
         # Small Conv block 1
         s1 = self.TSM_1(small_input)
@@ -157,8 +155,7 @@ class BigSmall(nn.Module):
         s8 = nn.functional.relu(self.small_conv4(s7))
 
         # Shared Layers
-        # concat = b15 + s8  # sum layers
-        concat = s8  # sum layers
+        concat = b15 + s8 # sum layers
 
         # share1 = concat.view(concat.size(0), -1) # flatten entire tensors
         share1 = concat.reshape(concat.size(0), -1)

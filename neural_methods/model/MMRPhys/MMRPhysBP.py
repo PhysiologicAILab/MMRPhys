@@ -41,6 +41,9 @@ def _next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
 
+# Use spatial feature map of phase angles for dominant frequency, across spatial locations - on tue channel with max average CSIM score
+# Use RMSE loss
+
 class BP_Estimation_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(BP_Estimation_Head, self).__init__()
@@ -112,18 +115,13 @@ class BP_Estimation_Head(nn.Module):
 
         self.bvp_stft_feature_extractor_SBP = nn.Sequential(
             ConvBlock2D(1, nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),          #B, nf_BVP[0], 202, 19
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_BVP[0], 100, 17
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 98, 15
+            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 2], padding=[0, 0]),  #B, nf_BVP[0], 200, 9
+            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 198, 7
             nn.Dropout2d(p=0.2),
 
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_BVP[0], 48, 13
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 46, 11
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_BVP[0], 22, 9
-            nn.Dropout2d(p=0.2),
-
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 20, 7
-            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[2, 1], padding=[0, 0]),  #B, nf_BVP[0], 9, 5
-            nn.Conv2d(nf_BVP[0], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, 1, 7, 3
+            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 196, 5
+            ConvBlock2D(nf_BVP[0], nf_BVP[0], kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),  #B, nf_BVP[0], 194, 3
+            nn.Conv2d(nf_BVP[0], 1, kernel_size=[3, 3], stride=[1, 1], padding=[0, 0]),            #B, 1, 192, 1
         )
 
         self.bvp_stft_feature_extractor_DBP = nn.Sequential(

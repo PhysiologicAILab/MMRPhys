@@ -55,7 +55,7 @@ print(index_tensor.shape)
 
 # %%
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=5)
-rsp = rsp[0: 500]
+rsp = rsp[0: 2000]
 rsp_tensor = torch.from_numpy(rsp)
 
 last_zero_crossing = torch.where(torch.diff(torch.sign(rsp_tensor)))[0][-1].numpy()
@@ -103,8 +103,8 @@ bvp_freq_foi = bvp_fft_freq[bvp_freq_idx_min: bvp_freq_idx_max]
 plt.plot(bvp_freq_foi, ppg_fft_foi)
 
 
-bvp_win = torch.hann_window(400)
-bvp_stft = torch.stft(ppg_tensor, n_fft=bvp_nfft, win_length=400, hop_length=100, window=bvp_win, return_complex=True)
+bvp_win = torch.hann_window(250)
+bvp_stft = torch.stft(ppg_tensor, n_fft=bvp_nfft, win_length=250, hop_length=100, window=bvp_win, return_complex=True)
 
 bvp_stft_mag = bvp_stft.real[bvp_freq_idx_min:bvp_freq_idx_max, :].abs()
 
@@ -136,19 +136,18 @@ fig, ax = plt.subplots(1, 3)
 ax[0].imshow(bvp_stft_mag_norm, cmap="coolwarm")
 ax[1].imshow(bvp_stft_phase_norm, cmap="coolwarm")
 
-# %%
 rsp = nk.rsp_simulate(120, sampling_rate=fs, respiratory_rate=12)
-rsp = rsp[0: 500]
+rsp = rsp[0: 2000]
 rsp = torch.from_numpy(rsp)
 rsp = rsp.unsqueeze(0)
 rsp = rsp.repeat(2, 1)
 print(rsp.shape)
 
-rsp_win = torch.hann_window(400)
-# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(800), return_complex=True)
-rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(800), win_length=400, hop_length=100, window=rsp_win, return_complex=True)
+rsp_win = torch.hann_window(1000)
+# rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), return_complex=True)
+rsp_stft = torch.stft(rsp, n_fft=_next_power_of_2(2000), win_length=1000, hop_length=100, window=rsp_win, return_complex=True)
 
-rsp_stft_mag = rsp_stft.real[0, 4:22, :].abs()
+rsp_stft_mag = rsp_stft.real[0, rsp_freq_idx_min: rsp_freq_idx_max, :].abs()
 print("rsp_stft_mag.shape", rsp_stft_mag.shape)
 rsp_stft_mag_min = torch.min(rsp_stft_mag, dim=0, keepdim=True).values
 rsp_stft_mag_max = torch.max(rsp_stft_mag, dim=0, keepdim=True).values

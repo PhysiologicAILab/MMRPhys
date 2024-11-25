@@ -11,12 +11,13 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "BP", "RSP"],
+    "TASKS": ["RSP"],
+    # "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
     "FS": 25,
@@ -27,7 +28,7 @@ model_config = {
     "MD_STEPS": 5,
     "MD_INFERENCE": False,
     "MD_RESIDUAL": True,
-    "in_channels": 4,
+    "in_channels": 3,
     "data_channels": 4,
     "height": 72,
     "weight": 72,
@@ -117,7 +118,10 @@ class TestMMRPhys(object):
             self.time_vec = []
 
         if self.debug:
-            self.appx_error_list = []
+            if "BVP" in self.tasks:
+                self.appx_error_list_bvp = []
+            if "RSP" in self.tasks:
+                self.appx_error_list_rsp = []
 
 
     def load_data(self, num_trial):
@@ -169,6 +173,7 @@ class TestMMRPhys(object):
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
             self.factorized_embed_ppg = out[5]
             self.appx_error_ppg = out[6]
+            self.appx_error_rsp = out[8]
 
         if self.assess_latency:
             t1 = time.time()
@@ -184,7 +189,9 @@ class TestMMRPhys(object):
 
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
                 if "BVP" in self.tasks:
-                    self.appx_error_list.append(self.appx_error_ppg.item())
+                    self.appx_error_list_bvp.append(self.appx_error_ppg.item())
+                if "RSP" in self.tasks:
+                    self.appx_error_list_rsp.append(self.appx_error_rsp.item())
 
         if self.visualize:
             self.save_attention_maps(num_trial)
@@ -435,7 +442,10 @@ class TestMMRPhys(object):
 
         if self.debug:
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                print("Median error:", np.median(self.appx_error_list))
+                if "BVP" in self.tasks:
+                    print("Median error:", np.median(self.appx_error_list_bvp))
+                if "RSP" in self.tasks:
+                    print("Median error:", np.median(self.appx_error_list_rsp))
 
         pytorch_total_params = sum(p.numel() for p in self.net.parameters())
         print("Total parameters = ", pytorch_total_params)

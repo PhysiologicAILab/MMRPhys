@@ -7,8 +7,7 @@ from neural_methods.trainer.BaseTrainer import BaseTrainer
 from neural_methods import loss
 from neural_methods.model.BigSmall import BigSmall
 from evaluation.bigsmall_multitask_metrics import (calculate_bvp_metrics, 
-                                                   calculate_resp_metrics, 
-                                                   calculate_bp4d_au_metrics)
+                                                   calculate_resp_metrics)
 
 # Other Imports
 from collections import OrderedDict
@@ -125,10 +124,6 @@ class BigSmallTrainer(BaseTrainer):
         self.LR = config.TRAIN.LR
 
         # Set Loss and Optimizer
-        AU_weights = torch.as_tensor([9.64, 11.74, 16.77, 1.05, 0.53, 0.56, 
-                                      0.75, 0.69, 8.51, 6.94, 5.03, 25.00]).to(self.device)
-
-        self.criterionAU = torch.nn.BCEWithLogitsLoss(pos_weight=AU_weights).to(self.device)
         self.criterionBVP = torch.nn.MSELoss().to(self.device)
         self.criterionRESP = torch.nn.MSELoss().to(self.device)
         self.optimizer = optim.AdamW(self.model.parameters(), lr=self.LR, weight_decay=0)
@@ -152,19 +147,12 @@ class BigSmallTrainer(BaseTrainer):
                       'AU32', 'AU33', 'AU34', 'AU35', 'AU36', 'AU37', 'AU38', 'AU39',
                       'pos_bvp','pos_env_norm_bvp']
 
-        used_labels = ['bp_wave', 'AU01', 'AU02', 'AU04', 'AU06', 'AU07', 'AU10', 'AU12',
-                       'AU14', 'AU15', 'AU17', 'AU23', 'AU24', 
-                        'pos_env_norm_bvp', 'resp_wave']
+        used_labels = ['bp_wave', 'resp_wave']
 
         # Get indicies for labels from npy array
-        au_label_list = [label for label in used_labels if 'AU' in label]
         bvp_label_list_train = [label for label in used_labels if 'bvp' in label]
         bvp_label_list_test = [label for label in used_labels if 'bp_wave' in label]
         resp_label_list = [label for label in used_labels if 'resp' in label]
-
-        self.label_idx_train_au = self.get_label_idxs(label_list, au_label_list)
-        self.label_idx_valid_au = self.get_label_idxs(label_list, au_label_list)
-        self.label_idx_test_au = self.get_label_idxs(label_list, au_label_list)
 
         self.label_idx_train_bvp = self.get_label_idxs(label_list, bvp_label_list_train)
         self.label_idx_valid_bvp = self.get_label_idxs(label_list, bvp_label_list_train)
@@ -189,12 +177,10 @@ class BigSmallTrainer(BaseTrainer):
 
         # ARRAYS TO SAVE (LOSS ARRAYS)
         train_loss_dict = dict()
-        train_au_loss_dict = dict()
         train_bvp_loss_dict = dict()
         train_resp_loss_dict = dict()
 
         val_loss_dict = dict()
-        val_au_loss_dict = dict()
         val_bvp_loss_dict = dict()
         val_resp_loss_dict = dict()
 
@@ -210,7 +196,6 @@ class BigSmallTrainer(BaseTrainer):
             # INIT PARAMS FOR TRAINING
             running_loss = 0.0 # tracks avg loss over mini batches of 100
             train_loss = []
-            train_au_loss = []
             train_bvp_loss = []
             train_resp_loss = []
             self.model.train() # put model in train mode
@@ -227,11 +212,10 @@ class BigSmallTrainer(BaseTrainer):
 
                 # FOWARD AND BACK PROPOGATE THROUGH MODEL
                 self.optimizer.zero_grad()
-                au_out, bvp_out, resp_out = self.model(data)
-                au_loss = self.criterionAU(au_out, labels[:, self.label_idx_train_au, 0]) # au loss 
+                bvp_out, resp_out = self.model(data)
                 bvp_loss = self.criterionBVP(bvp_out, labels[:, self.label_idx_train_bvp, 0]) # bvp loss
                 resp_loss =  self.criterionRESP(resp_out, labels[:, self.label_idx_train_resp, 0]) # resp loss 
-                loss = au_loss  + bvp_loss + resp_loss # sum losses 
+                loss = bvp_loss + resp_loss # sum losses 
                 loss.backward()
 
                 # Append the current learning rate to the list
@@ -247,7 +231,6 @@ class BigSmallTrainer(BaseTrainer):
 
                 # UPDATE RUNNING LOSS AND PRINTED TERMINAL OUTPUT AND SAVED LOSSES
                 train_loss.append(loss.item())
-                train_au_loss.append(au_loss.item())
                 train_bvp_loss.append(bvp_loss.item())
                 train_resp_loss.append(resp_loss.item())
 
@@ -261,7 +244,6 @@ class BigSmallTrainer(BaseTrainer):
 
             # APPEND EPOCH LOSS LIST TO TRAINING LOSS DICTIONARY
             train_loss_dict[epoch] = train_loss
-            train_au_loss_dict[epoch] = train_au_loss
             train_bvp_loss_dict[epoch] = train_bvp_loss
             train_resp_loss_dict[epoch] = train_resp_loss
             
@@ -277,10 +259,9 @@ class BigSmallTrainer(BaseTrainer):
             if not self.config.TEST.USE_LAST_EPOCH:
 
                 # Get validation losses
-                valid_loss, valid_au_loss, valid_bvp_loss, valid_resp_loss = self.valid(data_loader)
+                valid_loss, valid_bvp_loss, valid_resp_loss = self.valid(data_loader)
                 mean_valid_losses.append(valid_loss)
                 val_loss_dict[epoch] = valid_loss
-                val_au_loss_dict[epoch] = valid_au_loss
                 val_bvp_loss_dict[epoch] = valid_bvp_loss
                 val_resp_loss_dict[epoch] = valid_resp_loss
                 print('validation loss: ', valid_loss)
@@ -318,7 +299,6 @@ class BigSmallTrainer(BaseTrainer):
 
         # INIT PARAMS FOR VALIDATION
         valid_loss = []
-        valid_au_loss = []
         valid_bvp_loss = []
         valid_resp_loss = []
         self.model.eval()
@@ -334,24 +314,21 @@ class BigSmallTrainer(BaseTrainer):
                 data, labels = self.format_data_shape(data, labels)
                 data, labels = self.send_data_to_device(data, labels)
 
-                au_out, bvp_out, resp_out = self.model(data)
-                au_loss = self.criterionAU(au_out, labels[:, self.label_idx_valid_au, 0]) # au loss
+                bvp_out, resp_out = self.model(data)
                 bvp_loss = self.criterionBVP(bvp_out, labels[:, self.label_idx_valid_bvp, 0]) # bvp loss
                 resp_loss =  self.criterionRESP(resp_out, labels[:, self.label_idx_valid_resp, 0]) # resp loss 
-                loss = au_loss + bvp_loss + resp_loss # sum losses
+                loss = bvp_loss + resp_loss # sum losses
 
                 # APPEND VAL LOSS
                 valid_loss.append(loss.item())
-                valid_au_loss.append(au_loss.item())
                 valid_bvp_loss.append(bvp_loss.item())
                 valid_resp_loss.append(resp_loss.item())
                 vbar.set_postfix(loss=loss.item())
 
         valid_loss = np.asarray(valid_loss)
-        valid_au_loss = np.asarray(valid_au_loss)
         valid_bvp_loss = np.asarray(valid_bvp_loss)
         valid_resp_loss = np.asarray(valid_resp_loss)
-        return np.mean(valid_loss), np.mean(valid_au_loss), np.mean(valid_bvp_loss), np.mean(valid_resp_loss)
+        return np.mean(valid_loss), np.mean(valid_bvp_loss), np.mean(valid_resp_loss)
 
 
 
@@ -369,8 +346,6 @@ class BigSmallTrainer(BaseTrainer):
         self.chunk_len = self.config.TEST.DATA.PREPROCESS.CHUNK_LENGTH
 
         # ARRAYS TO SAVE (PREDICTIONS AND METRICS ARRAYS)
-        preds_dict_au = dict()
-        labels_dict_au = dict()
         preds_dict_bvp = dict()
         labels_dict_bvp = dict()
         preds_dict_resp = dict()
@@ -417,18 +392,7 @@ class BigSmallTrainer(BaseTrainer):
                     continue
 
                 # GET MODEL PREDICTIONS
-                au_out, bvp_out, resp_out = self.model(data)
-                au_out = torch.sigmoid(au_out) 
-
-                # GATHER AND SLICE LABELS USED FOR TEST DATASET
-                TEST_AU = False
-                if len(self.label_idx_test_au) > 0: # if test dataset has AU
-                    TEST_AU = True
-                    labels_au = labels[:, self.label_idx_test_au] 
-                else: # if not set whole AU labels array to -1
-                    labels_au = np.ones((batch_size, len(self.label_idx_train_au)))
-                    labels_au = -1 * labels_au
-                    # labels_au = torch.from_numpy(labels_au)
+                bvp_out, resp_out = self.model(data)
 
                 TEST_BVP = False
                 if len(self.label_idx_test_bvp) > 0: # if test dataset has BVP
@@ -460,16 +424,12 @@ class BigSmallTrainer(BaseTrainer):
 
                     # add subject to prediction / label arrays
                     if subj_index not in preds_dict_bvp.keys():
-                        preds_dict_au[subj_index] = dict()
-                        labels_dict_au[subj_index] = dict()
                         preds_dict_bvp[subj_index] = dict()
                         labels_dict_bvp[subj_index] = dict()
                         preds_dict_resp[subj_index] = dict()
                         labels_dict_resp[subj_index] = dict()
 
                     # append predictions and labels to subject dict
-                    preds_dict_au[subj_index][sort_index] = au_out[idx * self.chunk_len:(idx + 1) * self.chunk_len] 
-                    labels_dict_au[subj_index][sort_index] = labels_au[idx * self.chunk_len:(idx + 1) * self.chunk_len] 
                     preds_dict_bvp[subj_index][sort_index] = bvp_out[idx * self.chunk_len:(idx + 1) * self.chunk_len]
                     labels_dict_bvp[subj_index][sort_index] = labels_bvp[idx * self.chunk_len:(idx + 1) * self.chunk_len]
                     preds_dict_resp[subj_index][sort_index] = resp_out[idx * self.chunk_len:(idx + 1) * self.chunk_len]
@@ -478,7 +438,6 @@ class BigSmallTrainer(BaseTrainer):
         # Calculate Eval Metrics
         bvp_metric_dict = calculate_bvp_metrics(preds_dict_bvp, labels_dict_bvp, self.config)
         resp_metric_dict = calculate_resp_metrics(preds_dict_resp, labels_dict_resp, self.config)
-        au_metric_dict = calculate_bp4d_au_metrics(preds_dict_au, labels_dict_au, self.config)
 
         
 

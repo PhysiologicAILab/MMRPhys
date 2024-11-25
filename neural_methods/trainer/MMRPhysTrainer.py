@@ -6,6 +6,7 @@ import torch.optim as optim
 import neurokit2 as nk
 from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics
 from neural_methods.loss.NegPearsonLoss import Neg_Pearson
+from neural_methods.model.MMRPhys.MMRPhysSEF import MMRPhysSEF
 from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF
 from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF
 from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF
@@ -79,6 +80,8 @@ class MMRPhysTrainer(BaseTrainer):
 
         if model_type == "lef":
             self.model = MMRPhysLEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
+        elif model_type == "sef":
+            self.model = MMRPhysSEF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "lnf":
             self.model = MMRPhysLNF(frames=frames, md_config=md_config, in_channels=in_channels, dropout=self.dropout_rate, device=self.device)  # [4, T, 72, 72]
         elif model_type == "mef":
