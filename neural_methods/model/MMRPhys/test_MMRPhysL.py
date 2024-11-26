@@ -16,7 +16,7 @@ from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["RSP"],
+    "TASKS": ["BVP"],
     # "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
@@ -63,13 +63,13 @@ class TestMMRPhys(object):
         self.assess_latency = bool(model_config["assess_latency"])
         self.visualize = model_config["visualize"]
 
+        self.plot_dir = Path.cwd().joinpath("plots").joinpath("inference")
+        self.plot_dir.mkdir(parents=True, exist_ok=True)
+
         if self.visualize:
             self.data_files = list(sorted(self.data_path.rglob("*input*.npy")))
             self.label_files = list(sorted(self.data_path.rglob("*label*.npy")))
             self.num_trials = len(self.data_files)
-
-            self.plot_dir = Path.cwd().joinpath("plots").joinpath("inference")
-            self.plot_dir.mkdir(parents=True, exist_ok=True)
 
             self.attention_map_dir = self.plot_dir.joinpath("attention_maps").joinpath(self.data_path.name).joinpath(self.ckpt_path.name)
             self.attention_map_dir.mkdir(parents=True, exist_ok=True)
