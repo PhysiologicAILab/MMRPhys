@@ -202,7 +202,7 @@ class RSP_Head(nn.Module):
         self.md_res = md_config["MD_RESIDUAL"]
 
         md_config = deepcopy(md_config)
-        # md_config["MD_R"] = 8
+        # md_config["MD_R"] = 1
         # md_config["MD_S"] = 1
         # md_config["MD_STEPS"] = 6
         md_config["align_channels"] = nf_RSP[2] // 2
@@ -268,7 +268,6 @@ class MMRPhysLEF(nn.Module):
         self.debug = debug
         self.in_channels = in_channels
 
-        self.device = device
         if self.in_channels == 4:
             self.rgb_norm = nn.InstanceNorm3d(3)
             self.thermal_norm = nn.InstanceNorm3d(1)
