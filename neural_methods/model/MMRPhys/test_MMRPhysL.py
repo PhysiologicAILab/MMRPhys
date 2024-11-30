@@ -233,83 +233,103 @@ class TestMMRPhys(object):
             n_row = 0
             ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("T: " + str(0))
 
             ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, 0:3])
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("T: " + str(enc_frames//3))
 
             ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, 0:3])
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("T: " + str(2 * enc_frames//3))
 
             ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, 0:3])
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("T: " + str(enc_frames-1))
 
             n_row = 1
             ch = 0
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 1
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 2
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 3
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-            ax[n_row, 3].axis('off')     
+            ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 2
             ch = 4
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 5
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 6
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 7
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 3
             ch = 8
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 9
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 10
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 11
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 4
             ch = 12
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 13
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 14
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 15
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
 
             # plt.show()

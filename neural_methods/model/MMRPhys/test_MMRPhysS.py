@@ -63,13 +63,13 @@ class TestMMRPhys(object):
         self.assess_latency = bool(model_config["assess_latency"])
         self.visualize = model_config["visualize"]
 
+        self.plot_dir = Path.cwd().joinpath("plots").joinpath("inference")
+        self.plot_dir.mkdir(parents=True, exist_ok=True)
+
         if self.visualize:
             self.data_files = list(sorted(self.data_path.rglob("*input*.npy")))
             self.label_files = list(sorted(self.data_path.rglob("*label*.npy")))
             self.num_trials = len(self.data_files)
-
-            self.plot_dir = Path.cwd().joinpath("plots").joinpath("inference")
-            self.plot_dir.mkdir(parents=True, exist_ok=True)
 
             self.attention_map_dir = self.plot_dir.joinpath("attention_maps").joinpath(self.data_path.name).joinpath(self.ckpt_path.name)
             self.attention_map_dir.mkdir(parents=True, exist_ok=True)
@@ -118,7 +118,10 @@ class TestMMRPhys(object):
             self.time_vec = []
 
         if self.debug:
-            self.appx_error_list = []
+            if "BVP" in self.tasks:
+                self.appx_error_list_bvp = []
+            if "RSP" in self.tasks:
+                self.appx_error_list_rsp = []
 
 
     def load_data(self, num_trial):
@@ -170,6 +173,7 @@ class TestMMRPhys(object):
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
             self.factorized_embed_ppg = out[5]
             self.appx_error_ppg = out[6]
+            self.appx_error_rsp = out[8]
 
         if self.assess_latency:
             t1 = time.time()
@@ -185,7 +189,9 @@ class TestMMRPhys(object):
 
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
                 if "BVP" in self.tasks:
-                    self.appx_error_list.append(self.appx_error_ppg.item())
+                    self.appx_error_list_bvp.append(self.appx_error_ppg.item())
+                if "RSP" in self.tasks:
+                    self.appx_error_list_rsp.append(self.appx_error_rsp.item())
 
         if self.visualize:
             self.save_attention_maps(num_trial)
@@ -227,83 +233,103 @@ class TestMMRPhys(object):
             n_row = 0
             ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("T: " + str(0))
 
             ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, 0:3])
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("T: " + str(enc_frames//3))
 
             ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, 0:3])
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("T: " + str(2 * enc_frames//3))
 
             ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, 0:3])
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("T: " + str(enc_frames-1))
 
             n_row = 1
             ch = 0
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 1
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 2
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 3
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-            ax[n_row, 3].axis('off')     
+            ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 2
             ch = 4
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 5
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 6
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 7
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 3
             ch = 8
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 9
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 10
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 11
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
             n_row = 4
             ch = 12
             ax[n_row, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 0].axis('off')
+            ax[n_row, 0].set_title("Ch: " + str(ch))
 
             ch = 13
             ax[n_row, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 1].axis('off')
+            ax[n_row, 1].set_title("Ch: " + str(ch))
 
             ch = 14
             ax[n_row, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 2].axis('off')
+            ax[n_row, 2].set_title("Ch: " + str(ch))
 
             ch = 15
             ax[n_row, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
             ax[n_row, 3].axis('off')
+            ax[n_row, 3].set_title("Ch: " + str(ch))
 
 
             # plt.show()
@@ -436,7 +462,10 @@ class TestMMRPhys(object):
 
         if self.debug:
             if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-                print("Median error:", np.median(self.appx_error_list))
+                if "BVP" in self.tasks:
+                    print("Median error:", np.median(self.appx_error_list_bvp))
+                if "RSP" in self.tasks:
+                    print("Median error:", np.median(self.appx_error_list_rsp))
 
         pytorch_total_params = sum(p.numel() for p in self.net.parameters())
         print("Total parameters = ", pytorch_total_params)
