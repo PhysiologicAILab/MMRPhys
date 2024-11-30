@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import torch
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, periodogram, welch
 from scipy.sparse import spdiags
 from copy import deepcopy
 
@@ -67,21 +67,32 @@ class CPU_Unpickler(pickle.Unpickler):
 
 path_dict_within_dataset = {
     "test_datasets": {
-        "BP4D_180x72_Fold1": {
-            "root": "runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs/",
+        # "BP4D_180x72_Fold1": {
+        #     "root": "runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs/",
+        #     "exp": {
+        #         "MMRPhysLEF_RGB_Base":
+        #         {
+        #             "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_rsp_outputs.pickle",
+        #         },
+        #         "MMRPhysLEF_RGBT_Base":
+        #         {
+        #             "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_rsp_outputs.pickle",
+        #         },
+        #     },
+        # },
+        "BP4D_500x72_All": {
+            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
             "exp": {
-                "MMRPhysLEF_RGB_Base":
+                "MMRPhysLEF_RGB_SFSAM":
                 {
-                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Fold1_rsp_outputs.pickle",
-                },
-                "MMRPhysLEF_RGBT_Base":
-                {
-                    "bvp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_bvp_outputs.pickle",
-                    "rsp": "BP4D_MMRPhysLEF_BVP_RSP_RGBTx180x72_Base_Fold1_rsp_outputs.pickle",
+                    "bvp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_bvp_outputs.pickle",
+                    "rsp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_rsp_outputs.pickle",
                 },
             },
         },
+
 
         # "BP4D_500x72_Fold1": {
         #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
@@ -256,7 +267,8 @@ def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
     """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
     ppg_signal = np.expand_dims(ppg_signal, 0)
     N = _next_power_of_2(ppg_signal.shape[1])
-    f_ppg, pxx_ppg = scipy.signal.periodogram(ppg_signal, fs=fs, nfft=N, detrend=False)
+    # f_ppg, pxx_ppg = periodogram(ppg_signal, fs=fs, nfft=N, detrend=False)
+    f_ppg, pxx_ppg = welch(ppg_signal, fs=fs, nperseg=N//4, detrend=False)
     fmask_ppg = np.argwhere((f_ppg >= low_pass) & (f_ppg <= high_pass))
     mask_ppg = np.take(f_ppg, fmask_ppg)
     mask_pxx = np.take(pxx_ppg, fmask_ppg)
@@ -275,19 +287,20 @@ def _calculate_fft_rr(rsp_signal, fs=25, low_pass=0.1, high_pass=0.54):
     std_resp = np.std(resp_signal)
     resp_signal = (resp_signal - avg_resp) / std_resp   # Standardize to remove DC level - which was due to min-max normalization
 
-    last_zero_crossing = np.where(np.diff(np.sign(resp_signal)))[0][-1]
-    resp_signal = resp_signal[: last_zero_crossing]
-    inv_resp_signal = deepcopy(resp_signal)
-    inv_resp_signal = -1 * inv_resp_signal[::-1]
+    # last_zero_crossing = np.where(np.diff(np.sign(resp_signal)))[0][-1]
+    # resp_signal = resp_signal[: last_zero_crossing]
+    # inv_resp_signal = deepcopy(resp_signal)
+    # inv_resp_signal = -1 * inv_resp_signal[::-1]
     
-    # Higher signal length is needed to reliably compute FFT for low frequencies
-    resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
-                                 inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
-    
-    resp_signal = resp_signal[:4*sig_len]
+    # # Higher signal length is needed to reliably compute FFT for low frequencies
+    # resp_signal = np.concatenate([resp_signal, inv_resp_signal[1:], resp_signal[1:],
+    #                              inv_resp_signal[1:], resp_signal[1:], inv_resp_signal[1:]], axis=0)
+    # resp_signal = resp_signal[:4*sig_len]
+
     resp_signal = np.expand_dims(resp_signal, 0)
     N = _next_power_of_2(resp_signal.shape[1])
-    f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
+    # f_resp, pxx_resp = periodogram(resp_signal, fs=fs, nfft=N, detrend=False, window="boxcar", scaling="density")
+    f_resp, pxx_resp = welch(resp_signal, fs=fs, nperseg=N//2, detrend=False)
     fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
     mask_resp = np.take(f_resp, fmask_resp)
     mask_pxx = np.take(pxx_resp, fmask_resp)
@@ -329,7 +342,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
     plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
     plot_dir.mkdir(parents=True, exist_ok=True)
 
-    chunk_size = 180 #180 #500 #300  # size of chunk to visualize: -1 will plot the entire signal
+    chunk_size = 500 #180 #500 #300  # size of chunk to visualize: -1 will plot the entire signal
 
     for test_dataset in path_dict_within_dataset["test_datasets"]:
         print("*"*50)
@@ -459,12 +472,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 if tasks in [0, 2, 3]:
                     rsp_seg = _process_rsp_signal(rsp_label[start: stop], fs, diff_flag=diff_flag)
                     
-                    try:
-                        rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
-                        rr_label = int(np.round(rr_label))
-                    except:
-                        rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
-                        rr_label = int(np.round(rr_label))
+                    # try:
+                    #     rr_label = _calculate_peak_rr(rsp_seg, fs=fs)
+                    #     rr_label = int(np.round(rr_label))
+                    # except:
+                    rr_label = _calculate_fft_rr(rsp_seg, fs=fs)
+                    rr_label = int(np.round(rr_label))
                 
                     # print("rr_label:", rr_label)
 
@@ -510,12 +523,12 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                         # print("m_ind:", m_ind, "; hr_pred: ", hr_pred[model_names[m_ind]])
 
                     if tasks in [0, 2, 3]:
-                        try:
-                            rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
-                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
-                        except:
-                            rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
-                            rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        # try:
+                        #     rr_pred[model_names[m_ind]] = _calculate_peak_rr(rsp_pred_seg, fs=fs)
+                        #     rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
+                        # except:
+                        rr_pred[model_names[m_ind]] = _calculate_fft_rr(rsp_pred_seg, fs=fs)
+                        rr_pred[model_names[m_ind]] = int(np.round(rr_pred[model_names[m_ind]]))
 
                         # print("m_ind:", m_ind, "; rr_pred: ", rr_pred[model_names[m_ind]])
 

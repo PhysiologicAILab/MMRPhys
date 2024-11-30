@@ -11,13 +11,15 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pandas as pd
+
 from neural_methods.model.FactorizePhys.FactorizePhys import FactorizePhys
 # from ptflops import get_model_complexity_info
 # from torch.utils.tensorboard import SummaryWriter
 
 model_config = {
-    "MD_FSAM": True,
-    "MD_TYPE": "NMF",
+    "MD_FSAM": False,
+    "MD_TYPE": "SNMF_LABEL",
     "MD_TRANSFORM": "T_KAB",
     "MD_R": 1,
     "MD_S": 1,
@@ -33,12 +35,15 @@ model_config = {
     "debug": True,
     "assess_latency": False,
     "num_trials": 20,
-    "visualize": False,
-    "ckpt_path": "./final_model_release/iBVP_FactorizePhys_FSAM_Res.pth",
-    "data_path": "/mnt/sda/data/prep/iBVP_Dataset/iBVP_RGB_160_72x72",
-    "label_path": "/mnt/sda/data/prep/iBVP_Dataset/iBVP_RGB_160_72x72"
+    "visualize": True,
+    "ckpt_path": "./runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_FactorizePhys_FSAM_Label_Epoch4.pth",
+    "data_path": "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72",
+    "label_path": "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72",
+    "data_list": "/home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.8_1.0.csv",
 }
 
+# ./runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_FactorizePhys_FSAM_Label_Epoch4.pth
+# ./runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_FactorizePhys_SFSAM_Label_Epoch4.pth
 
 class TestFactorizePhysBig(object):
     def __init__(self) -> None:
@@ -47,6 +52,7 @@ class TestFactorizePhysBig(object):
         self.label_path = Path(model_config["label_path"])
 
         self.use_fsam = model_config["MD_FSAM"]
+        self.use_label = True if "label" in model_config["MD_TYPE"].lower() else False
         self.md_infer = model_config["MD_INFERENCE"]
 
         self.batch_size = model_config["batch_size"]
@@ -60,8 +66,11 @@ class TestFactorizePhysBig(object):
         self.visualize = model_config["visualize"]
 
         if self.visualize:
-            self.data_files = list(sorted(self.data_path.rglob("*input*.npy")))
-            self.label_files = list(sorted(self.data_path.rglob("*label*.npy")))
+            # self.data_files = list(sorted(self.data_path.rglob("*input*.npy")))
+            # self.label_files = list(sorted(self.data_path.rglob("*label*.npy")))
+
+            self.data_files = pd.read_csv(model_config["data_list"])["input_files"].to_list()
+            self.label_files = [d.replace("input", "label") for d in self.data_files]
             self.num_trials = len(self.data_files)
 
             self.plot_dir = Path.cwd().joinpath("plots").joinpath("inference")
@@ -95,7 +104,12 @@ class TestFactorizePhysBig(object):
         if self.visualize:
             self.net = nn.DataParallel(FactorizePhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug), device_ids=[0]).to(self.device)
-            self.net.load_state_dict(torch.load(str(self.ckpt_path), map_location=self.device))
+            pretrained_model_path = str(self.ckpt_path)
+            model_weights = torch.load(pretrained_model_path, map_location=self.device, weights_only=True)
+            if self.use_fsam:
+                self.net.load_state_dict(model_weights, strict=True)
+            else:
+                self.net.load_state_dict(model_weights, strict=False)
         else:
             self.net = FactorizePhys(frames=self.frames, md_config=md_config,
                                 device=self.device, in_channels=self.in_channels, debug=self.debug).to(self.device)
@@ -112,7 +126,7 @@ class TestFactorizePhysBig(object):
 
         if self.visualize:
             self.np_data = np.load(str(self.data_files[num_trial]))
-            self.np_label = np.load(str(self.label_files[num_trial]))
+            self.np_label = np.load(str(self.label_files[num_trial]))[:, 0]
             self.np_label = np.expand_dims(self.np_label, 0)
             self.np_label = torch.tensor(self.np_label)
 
@@ -131,17 +145,17 @@ class TestFactorizePhysBig(object):
         else:
             self.test_data = torch.rand(self.batch_size, self.data_channels, self.frames + 1, self.height, self.width)
             self.test_data = self.test_data.to(torch.float32).to(self.device)
-
+            self.np_label = torch.rand(self.batch_size, self.frames).to(torch.float32).to(self.device)
 
     def run_inference(self, num_trial):
 
         if self.visualize:
-            print("Processing:", self.data_files[num_trial].name)
+            print("Processing:", self.data_files[num_trial])
         if self.assess_latency:
             t0 = time.time()
 
         if (self.md_infer or self.net.training or self.debug) and self.use_fsam:
-            self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data)
+            self.pred, self.vox_embed, self.factorized_embed, self.appx_error = self.net(self.test_data, self.np_label)
         else:
             self.pred, self.vox_embed = self.net(self.test_data)
 
@@ -165,8 +179,7 @@ class TestFactorizePhysBig(object):
 
     def save_attention_maps(self, num_trial):
         b, channels, enc_frames, enc_height, enc_width = self.vox_embed.shape
-        label_matrix = self.np_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
-            2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+        label_matrix = self.np_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
         label_matrix = label_matrix.to(device=self.device)
         corr_matrix = F.cosine_similarity(self.vox_embed, label_matrix, dim=2).abs()
 
@@ -188,72 +201,88 @@ class TestFactorizePhysBig(object):
         fig, ax = plt.subplots(4, 4, figsize=[16, 16])
         fig.tight_layout()
 
-        ax[0, 0].imshow(self.np_data[enc_frames//2, ...].astype(np.uint8))
+        ax[0, 0].imshow(self.np_data[0, ...].astype(np.uint8))
         ax[0, 0].axis('off')
+        ax[0, 0].set_title("T: " + str(0))
+
+        ax[0, 1].imshow(self.np_data[enc_frames//4, ...].astype(np.uint8))
+        ax[0, 1].axis('off')
+        ax[0, 1].set_title("T: " + str(enc_frames//4))
+
+        ax[0, 2].imshow(self.np_data[enc_frames//2, ...].astype(np.uint8))
+        ax[0, 2].axis('off')
+        ax[0, 2].set_title("T: " + str(enc_frames//2))
+
+        ax[0, 3].imshow(self.np_data[enc_frames-1, ...].astype(np.uint8))
+        ax[0, 3].axis('off')
+        ax[0, 3].set_title("T: " + str(enc_frames-1))
+
         cmap = "coolwarm"
 
         ch = 0
-        ax[0, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 1].axis('off')
-
-        ch = 1
-        ax[0, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 2].axis('off')
-
-        ch = 2
-        ax[0, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
-        ax[0, 3].axis('off')     
-
-        ch = 3
         ax[1, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[1, 0].axis('off')
+        ax[1, 0].set_title("Ch: " + str(ch))
 
-        ch = 4
+        ch += 1
         ax[1, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[1, 1].axis('off')
-
-        ch = 5
+        ax[1, 1].set_title("Ch: " + str(ch))
+ 
+        ch += 1
         ax[1, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[1, 2].axis('off')
+        ax[1, 2].set_title("Ch: " + str(ch))
 
-        ch = 6
+        ch += 1
         ax[1, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[1, 3].axis('off')
+        ax[1, 3].set_title("Ch: " + str(ch))
 
-        ch = 7
+        ch += 1
         ax[2, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[2, 0].axis('off')
+        ax[2, 0].set_title("Ch: " + str(ch))
 
-        ch = 8
+        ch += 1
         ax[2, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[2, 1].axis('off')
+        ax[2, 1].set_title("Ch: " + str(ch))
 
-        ch = 9
+        ch += 1
         ax[2, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[2, 2].axis('off')
+        ax[2, 2].set_title("Ch: " + str(ch))
 
-        ch = 10
+        ch += 1
         ax[2, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[2, 3].axis('off')
+        ax[2, 3].set_title("Ch: " + str(ch))
 
-        ch = 11
+        ch += 1
         ax[3, 0].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[3, 0].axis('off')
+        ax[3, 0].set_title("Ch: " + str(ch))
 
-        ch = 12
+        ch += 1
         ax[3, 1].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[3, 1].axis('off')
+        ax[3, 1].set_title("Ch: " + str(ch))
 
-        ch = 13
+        ch += 1
         ax[3, 2].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[3, 2].axis('off')
+        ax[3, 2].set_title("Ch: " + str(ch))
 
-        ch = 14
+        ch += 1
         ax[3, 3].imshow(corr_matrix[0, ch, :, :], cmap=cmap, vmin=0, vmax=1)
         ax[3, 3].axis('off')
+        ax[3, 3].set_title("Ch: " + str(ch))
 
         # plt.show()
-        plt.savefig(str(self.attention_map_dir.joinpath(str(self.data_files[num_trial].name.replace(".npy", "_attention_map.jpg")))))
+        save_path = str(self.attention_map_dir.joinpath(str(Path(self.data_files[num_trial]).name.replace(".npy", "_attention_map.jpg"))))
+        print("Saving:", save_path)
+        plt.savefig(save_path)
         plt.close(fig)
 
 

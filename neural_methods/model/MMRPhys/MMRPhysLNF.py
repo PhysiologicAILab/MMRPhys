@@ -76,13 +76,11 @@ class BVP_FeatureExtractor(nn.Module):
         self.debug = debug
         #                                                        Input: #B, inCh, T, 72, 72
         self.bvp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 1, 1]),      #B, nf_BVP[0], T, 36, 36
-            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 34, 34
+            ConvBlock3D(inCh, nf_BVP[0], [3, 3, 3], [1, 2, 2], [1, 0, 0]),          #B, nf_BVP[0], T, 35, 35
+            ConvBlock3D(nf_BVP[0], nf_BVP[1], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[1], T, 33, 33
             nn.Dropout3d(p=dropout_rate),
 
-            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[1], T, 32, 32
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]), #B, nf_BVP[2], T, 15, 15
-            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]), #B, nf_BVP[2], T, 13, 13
+            ConvBlock3D(nf_BVP[1], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[1], T, 31, 31
         )
 
     def forward(self, x):
@@ -99,8 +97,10 @@ class BVP_Head(nn.Module):
         self.debug = debug
 
         self.conv_layer = nn.Sequential(
-            nn.Dropout3d(p=dropout_rate),
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0]),     #B, nf_BVP[2], T, 15, 15
+            ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[2], T, 13, 13
             ConvBlock3D(nf_BVP[2], nf_BVP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0]),     #B, nf_BVP[2], T, 11, 11
+            nn.Dropout3d(p=dropout_rate),
         )
 
         self.use_fsam = md_config["MD_FSAM"]

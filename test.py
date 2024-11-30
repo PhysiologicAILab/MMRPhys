@@ -12,6 +12,22 @@ import torch
 import scipy
 
 # %%
+a = torch.rand((1,1,4,3,3))
+# print(a.shape)
+b = torch.roll(a, shifts=1, dims=2)
+print(b)
+btch, ch, t, h, w = a.shape
+idx = torch.arange(0, t, dtype=torch.int64).unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1).repeat(btch, ch, 1, h, w)
+print(idx.shape)
+# # c = torch.scatter_add(a, dim=1, index=torch.tensor([[0,1,2,3], [0,1,2,3]]), src=b) 
+c = torch.scatter_add(a, dim=2, index=idx, src=b)
+c = c[:, :, 1:, :, :]
+print(c.shape)
+print(a)
+print(c)
+
+
+# %%
 a = np.random.random((4, 500))
 a = np.delete(a, [0, 3], axis=0)
 print(a.shape)

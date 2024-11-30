@@ -3,10 +3,8 @@ The file also  includes helper funcs such as detrend, power2db etc.
 """
 
 import numpy as np
-import scipy
 import scipy.io
-from scipy.signal import butter
-import scipy.signal
+from scipy.signal import butter, periodogram, welch, find_peaks, filtfilt
 from scipy.sparse import spdiags
 from copy import deepcopy
 
@@ -36,8 +34,12 @@ def power2db(mag):
 def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
     """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
     ppg_signal = np.expand_dims(ppg_signal, 0)
-    N = _next_power_of_2(ppg_signal.shape[1])
-    f_ppg, pxx_ppg = scipy.signal.periodogram(ppg_signal, fs=fs, nfft=N, detrend=False)
+    N = ppg_signal.shape[1]
+    if N < 256:
+        nfft = _next_power_of_2(N)
+        f_ppg, pxx_ppg = periodogram(ppg_signal, fs=fs, nfft=nfft, detrend=False)
+    else:
+        f_ppg, pxx_ppg = welch(ppg_signal, fs=fs, nperseg=N//2, detrend=False)
     fmask_ppg = np.argwhere((f_ppg >= low_pass) & (f_ppg <= high_pass))
     mask_ppg = np.take(f_ppg, fmask_ppg)
     mask_pxx = np.take(pxx_ppg, fmask_ppg)
@@ -46,7 +48,7 @@ def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
 
 def _calculate_peak_hr(ppg_signal, fs):
     """Calculate heart rate based on PPG using peak detection."""
-    ppg_peaks, _ = scipy.signal.find_peaks(ppg_signal)
+    ppg_peaks, _ = find_peaks(ppg_signal)
     hr_peak = 60 / (np.mean(np.diff(ppg_peaks)) / fs)
     return hr_peak
 
@@ -73,8 +75,13 @@ def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
     # resp_signal = resp_signal[:4*sig_len]
 
     resp_signal = np.expand_dims(resp_signal, 0)
-    N = _next_power_of_2(resp_signal.shape[1])
-    f_resp, pxx_resp = scipy.signal.periodogram(resp_signal, fs=fs, nfft=N, detrend=False)
+    N = resp_signal.shape[1]
+    if N < 256:
+        nfft = _next_power_of_2(N)
+        f_resp, pxx_resp = periodogram(resp_signal, fs=fs, nfft=nfft, detrend=False)
+    else:
+        f_resp, pxx_resp = welch(resp_signal, fs=fs, nperseg=N//2, detrend=False)
+
     fmask_resp = np.argwhere((f_resp >= low_pass) & (f_resp <= high_pass))
     mask_resp = np.take(f_resp, fmask_resp)
     mask_pxx = np.take(pxx_resp, fmask_resp)
@@ -84,7 +91,7 @@ def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
 
 def _calculate_peak_rr(resp_signal, fs):
     """Calculate respiration rate based on PPG using peak detection."""
-    resp_peaks, _ = scipy.signal.find_peaks(resp_signal)
+    resp_peaks, _ = find_peaks(resp_signal)
     rr_peak = 60 / (np.mean(np.diff(resp_peaks)) / fs)
     return rr_peak
 
@@ -114,7 +121,7 @@ def _compute_macc(pred_signal, gt_signal):
     return macc
 
 
-def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3):
+def _calculate_SNR(pred_signal, metrics_label, fs=30, low_pass=0.6, high_pass=3.3):
     """Calculate SNR as the ratio of the area under the curve of the frequency spectrum around the first and second harmonics 
         of the ground truth HR frequency to the area under the curve of the remainder of the frequency spectrum, from 0.6 Hz
         to 3.3 Hz. 
@@ -124,34 +131,42 @@ def _calculate_SNR(pred_ppg_signal, hr_label, fs=30, low_pass=0.6, high_pass=3.3
         doi: 10.1109/EMBC44109.2020.9175396.
 
         Args:
-            pred_ppg_signal(np.array): predicted PPG signal 
-            label_ppg_signal(np.array): ground truth, label PPG signal
+            pred_signal(np.array): predicted signal 
             fs(int or float): sampling rate of the video
         Returns:
             SNR(float): Signal-to-Noise Ratio
     """
+    pred_sig = deepcopy(pred_signal)
+    avg_sig = np.mean(pred_sig)
+    std_sig = np.std(pred_sig)
+    pred_sig = (pred_sig - avg_sig) / std_sig   # Standardize to remove DC level - which was due to min-max normalization
+
     # Get the first and second harmonics of the ground truth HR in Hz
-    first_harmonic_freq = hr_label / 60
+    first_harmonic_freq = metrics_label / 60
     second_harmonic_freq = 2 * first_harmonic_freq
     deviation = 6 / 60  # 6 beats/min converted to Hz (1 Hz = 60 beats/min)
 
     # Calculate FFT
-    pred_ppg_signal = np.expand_dims(pred_ppg_signal, 0)
-    N = _next_power_of_2(pred_ppg_signal.shape[1])
-    f_ppg, pxx_ppg = scipy.signal.periodogram(pred_ppg_signal, fs=fs, nfft=N, detrend=False)
+    pred_sig = np.expand_dims(pred_sig, 0)
+    N = pred_sig.shape[1]
+    if N < 256:
+        nfft = _next_power_of_2(N)
+        f_sig, pxx_sig = periodogram(pred_sig, fs=fs, nfft=nfft, detrend=False)
+    else:
+        f_sig, pxx_sig = welch(pred_sig, fs=fs, nperseg=N//2, detrend=False)
 
     # Calculate the indices corresponding to the frequency ranges
-    idx_harmonic1 = np.argwhere((f_ppg >= (first_harmonic_freq - deviation)) & (f_ppg <= (first_harmonic_freq + deviation)))
-    idx_harmonic2 = np.argwhere((f_ppg >= (second_harmonic_freq - deviation)) & (f_ppg <= (second_harmonic_freq + deviation)))
-    idx_remainder = np.argwhere((f_ppg >= low_pass) & (f_ppg <= high_pass) \
-     & ~((f_ppg >= (first_harmonic_freq - deviation)) & (f_ppg <= (first_harmonic_freq + deviation))) \
-     & ~((f_ppg >= (second_harmonic_freq - deviation)) & (f_ppg <= (second_harmonic_freq + deviation))))
+    idx_harmonic1 = np.argwhere((f_sig >= (first_harmonic_freq - deviation)) & (f_sig <= (first_harmonic_freq + deviation)))
+    idx_harmonic2 = np.argwhere((f_sig >= (second_harmonic_freq - deviation)) & (f_sig <= (second_harmonic_freq + deviation)))
+    idx_remainder = np.argwhere((f_sig >= low_pass) & (f_sig <= high_pass) \
+     & ~((f_sig >= (first_harmonic_freq - deviation)) & (f_sig <= (first_harmonic_freq + deviation))) \
+     & ~((f_sig >= (second_harmonic_freq - deviation)) & (f_sig <= (second_harmonic_freq + deviation))))
 
     # Select the corresponding values from the periodogram
-    pxx_ppg = np.squeeze(pxx_ppg)
-    pxx_harmonic1 = pxx_ppg[idx_harmonic1]
-    pxx_harmonic2 = pxx_ppg[idx_harmonic2]
-    pxx_remainder = pxx_ppg[idx_remainder]
+    pxx_sig = np.squeeze(pxx_sig)
+    pxx_harmonic1 = pxx_sig[idx_harmonic1]
+    pxx_harmonic2 = pxx_sig[idx_harmonic2]
+    pxx_remainder = pxx_sig[idx_remainder]
 
     # Calculate the signal power
     signal_power_hm1 = np.sum(pxx_harmonic1**2)
@@ -182,8 +197,8 @@ def calculate_metric_per_video(predictions, labels, fs=30, diff_flag=False, use_
         # bandpass filter between [0.75, 2.5] Hz, equals [45, 150] beats per min
         # bandpass filter between [0.6, 3.3] Hz, equals [36, 198] beats per min
         [b, a] = butter(2, [0.6 / fs * 2, 3.3 / fs * 2], btype='bandpass')
-        predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
-        labels = scipy.signal.filtfilt(b, a, np.double(labels))
+        predictions = filtfilt(b, a, np.double(predictions))
+        labels = filtfilt(b, a, np.double(labels))
     
     macc = _compute_macc(predictions, labels)
 
@@ -215,8 +230,8 @@ def calculate_rsp_metrics_per_video(predictions, labels, fs=30, diff_flag=False,
         # equals [3, 42] breaths per min
         # [b, a] = butter(2, [0.05 / fs * 2, 0.7 / fs * 2], btype='bandpass')
         [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
-        predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
-        labels = scipy.signal.filtfilt(b, a, np.double(labels))
+        predictions = filtfilt(b, a, np.double(predictions))
+        labels = filtfilt(b, a, np.double(labels))
     
     macc = _compute_macc(predictions, labels)
     
