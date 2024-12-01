@@ -204,7 +204,7 @@ class RSP_Head(nn.Module):
         md_config = deepcopy(md_config)
         # md_config["MD_R"] = 1
         # md_config["MD_S"] = 1
-        # md_config["MD_STEPS"] = 6
+        # md_config["MD_STEPS"] = 5
         md_config["align_channels"] = nf_RSP[2] // 2
 
         inC = nf_RSP[2]
