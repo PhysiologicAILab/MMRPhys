@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
 from neural_methods.model.MMRPhys.MMRPhysBP import BP_Estimation_Head
+# from neural_methods.model.TNM import TNM
 from copy import deepcopy
 
 nf_BVP = [8, 12, 16]
@@ -279,6 +280,19 @@ class MMRPhysLEF(nn.Module):
             print("Unsupported input channels")
             exit()
 
+        # No significant gains were observed when using TNM instead of InstanceNorm3D for rPPG estimation, excent high SNR.
+        # rRSP estimation was impacted - as trend-removal may remove actual signal - which is slow-varying signal
+        # if self.in_channels == 4:
+        #     self.rgb_norm = TNM()
+        #     self.thermal_norm = TNM()
+        # elif self.in_channels == 3:
+        #     self.rgb_norm = TNM()
+        # elif self.in_channels == 1:
+        #     self.thermal_norm = TNM()
+        # else:
+        #     print("Unsupported input channels")
+        #     exit()
+
         for key in model_config:
             if key not in md_config:
                 md_config[key] = model_config[key]
@@ -317,12 +331,7 @@ class MMRPhysLEF(nn.Module):
         if self.debug:
             print("Input.shape", x.shape)
 
-        # x_time_shifted = torch.roll(x, shifts=1, dims=2)
-        # x_sum = torch.add(x, x_time_shifted)
-        # x_sum = x_sum[:, :, 1:, :, :]
-
         x = torch.diff(x, dim=2)
-        # x = torch.divide(x, x_sum)
 
         if self.in_channels == 4:
             rgb_x = self.rgb_norm(x[:, :3, :, :, :])
