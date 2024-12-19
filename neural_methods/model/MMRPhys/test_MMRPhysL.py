@@ -16,12 +16,12 @@ from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP"],
+    "TASKS": ["BVP", "RSP"],
     # "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
     "FS": 25,
-    "MD_FSAM": True,
+    "MD_FSAM": False,
     "MD_TYPE": "SNMF_Label",
     "MD_R": 1,
     "MD_S": 1,

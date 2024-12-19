@@ -11,12 +11,13 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF as MMRPhys
-from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysMEF import MMRPhysMEF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysMNF import MMRPhysMNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysMLF import MMRPhysMLF as MMRPhys
 
 model_config = {
-    "TASKS": ["BVP", "BP", "RSP"],
+    "TASKS": ["BVP", "RSP"],
+    # "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
     "FS": 25,

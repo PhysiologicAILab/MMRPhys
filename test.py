@@ -10,6 +10,28 @@ import glob
 import os
 import torch
 import scipy
+import cv2
+# %%
+# filename: ('P001863.mat', 'P000261.mat', 'P001287.mat', 'P001270.mat')
+# Chunk ID:  ('2', '0', '0', '0')
+
+data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
+label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
+data = np.load(data_pth)
+label = np.load(label_pth)
+print(data.shape)
+print(label.shape)
+# plt.imshow(data[])
+
+#%%
+# plt.plot(label[:, 0])
+# plt.plot(label[:, 1])
+rand_frame = np.random.randint(0, 160)
+plt.imshow(cv2.cvtColor(data[rand_frame, ...].astype(np.uint8), cv2.COLOR_RGB2BGR))
+
+# %%
+Path(data_pth).name
+
 
 # %%
 a = torch.rand((1,1,4,3,3))

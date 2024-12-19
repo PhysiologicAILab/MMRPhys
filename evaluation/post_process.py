@@ -35,7 +35,7 @@ def _calculate_fft_hr(ppg_signal, fs=60, low_pass=0.6, high_pass=3.3):
     """Calculate heart rate based on PPG using Fast Fourier transform (FFT)."""
     ppg_signal = np.expand_dims(ppg_signal, 0)
     N = ppg_signal.shape[1]
-    if N < 256:
+    if N <= 30*fs:
         nfft = _next_power_of_2(N)
         f_ppg, pxx_ppg = periodogram(ppg_signal, fs=fs, nfft=nfft, detrend=False)
     else:
@@ -76,7 +76,7 @@ def _calculate_fft_rr(rsp_signal, fs=30, low_pass=0.13, high_pass=0.5):
 
     resp_signal = np.expand_dims(resp_signal, 0)
     N = resp_signal.shape[1]
-    if N < 256:
+    if N <= 30*fs:
         nfft = _next_power_of_2(N)
         f_resp, pxx_resp = periodogram(resp_signal, fs=fs, nfft=nfft, detrend=False)
     else:

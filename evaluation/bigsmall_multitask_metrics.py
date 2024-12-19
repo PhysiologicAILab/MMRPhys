@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 import scipy.io
+from copy import deepcopy
 from scipy.signal import butter
 from sklearn.metrics import f1_score, precision_recall_fscore_support
 from evaluation.metrics import calculate_metrics, _reform_data_from_dict
@@ -40,6 +41,31 @@ def _calculate_peak_rr(resp_signal, fs):
     return rr_peak
 
 
+def _compute_macc(pred_signal, gt_signal):
+    """Calculate maximum amplitude of cross correlation (MACC) by computing correlation at all time lags.
+        Args:
+            pred_signal(np.array): predicted signal 
+            label_signal(np.array): ground truth, label signal
+        Returns:
+            MACC(float): Maximum Amplitude of Cross-Correlation
+    """
+    pred = deepcopy(pred_signal)
+    gt = deepcopy(gt_signal)
+    pred = np.squeeze(pred)
+    gt = np.squeeze(gt)
+    min_len = np.min((len(pred), len(gt)))
+    pred = pred[:min_len]
+    gt = gt[:min_len]
+    lags = np.arange(0, len(pred)-1, 1)
+    tlcc_list = []
+    for lag in lags:
+        cross_corr = np.abs(np.corrcoef(
+            pred, np.roll(gt, lag))[0][1])
+        tlcc_list.append(cross_corr)
+    macc = max(tlcc_list)
+    return macc
+
+
 def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True, use_bandpass=True, rr_method='FFT'):
     """Calculate video-level RR"""
     if diff_flag:  # if the predictions and labels are 1st derivative of RSP signal.
@@ -58,6 +84,9 @@ def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True,
         [b, a] = butter(2, [0.13 / fs * 2, 0.5 / fs * 2], btype='bandpass')
         predictions = scipy.signal.filtfilt(b, a, np.double(predictions))
         labels = scipy.signal.filtfilt(b, a, np.double(labels))
+
+    macc = _compute_macc(predictions, labels)
+
     if rr_method == 'FFT':
         rr_pred = _calculate_fft_rr(predictions, fs=fs)
         rr_label = _calculate_fft_rr(labels, fs=fs)
@@ -68,7 +97,7 @@ def calculate_resp_metrics_per_video(predictions, labels, fs=30, diff_flag=True,
         raise ValueError('Please use FFT or Peak to calculate your RR.')
     # SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.05, high_pass=0.7)
     SNR = _calculate_SNR(predictions, rr_label, fs=fs, low_pass=0.13, high_pass=0.5)
-    return rr_label, rr_pred, SNR
+    return rr_label, rr_pred, SNR, macc
 
 
 def calculate_resp_metrics(predictions, labels, config):
@@ -83,6 +112,8 @@ def calculate_resp_metrics(predictions, labels, config):
     predict_rr_peak_all = list()
     gt_rr_peak_all = list()
     SNR_all = list()
+    MACC_all = list()
+
     for index in tqdm(predictions.keys(), ncols=80):
         prediction = _reform_data_from_dict(predictions[index])
         label = _reform_data_from_dict(labels[index])
@@ -112,17 +143,19 @@ def calculate_resp_metrics(predictions, labels, config):
                 raise ValueError("Unsupported label type in testing!")
             
             if config.INFERENCE.EVALUATION_METHOD == "peak detection":
-                gt_rr_peak, pred_rr_peak, SNR = calculate_resp_metrics_per_video(
+                gt_rr_peak, pred_rr_peak, SNR, macc = calculate_resp_metrics_per_video(
                     prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='Peak')
                 gt_rr_peak_all.append(gt_rr_peak)
                 predict_rr_peak_all.append(pred_rr_peak)
                 SNR_all.append(SNR)
+                MACC_all.append(macc)
             elif config.INFERENCE.EVALUATION_METHOD == "FFT":
-                gt_rr_fft, pred_rr_fft, SNR = calculate_resp_metrics_per_video(
+                gt_rr_fft, pred_rr_fft, SNR, macc = calculate_resp_metrics_per_video(
                     prediction, label, diff_flag=diff_flag_test, fs=config.TEST.DATA.FS, rr_method='FFT')
                 gt_rr_fft_all.append(gt_rr_fft)
                 predict_rr_fft_all.append(pred_rr_fft)
                 SNR_all.append(SNR)
+                MACC_all.append(macc)
             else:
                 raise ValueError("Inference evaluation method name wrong!")
 
@@ -130,6 +163,7 @@ def calculate_resp_metrics(predictions, labels, config):
         gt_rr_fft_all = np.array(gt_rr_fft_all)
         predict_rr_fft_all = np.array(predict_rr_fft_all)
         SNR_all = np.array(SNR_all)
+        MACC_all = np.array(MACC_all)
         num_test_samples = len(predict_rr_fft_all)
         for metric in config.TEST.METRICS:
             if metric == "MAE":
@@ -153,6 +187,10 @@ def calculate_resp_metrics(predictions, labels, config):
                 SNR_FFT = np.mean(SNR_all)
                 standard_error = np.std(SNR_all) / np.sqrt(num_test_samples)
                 print("FFT SNR (FFT Label): {0} +/- {1}".format(SNR_FFT, standard_error))
+            elif metric == "MACC":
+                MACC_avg = np.mean(MACC_all)
+                standard_error = np.std(MACC_all) / np.sqrt(num_test_samples)
+                print("MACC: {0} +/- {1}".format(MACC_avg, standard_error))
             elif "AU" in metric:
                 pass
             elif "BA" in metric:
@@ -170,6 +208,7 @@ def calculate_resp_metrics(predictions, labels, config):
                     show_legend=True, figure_size=(5, 5), file_name=f'FFT_BlandAltman_DifferencePlot.pdf')
             else:
                 raise ValueError("Wrong Test Metric Type")
+
     elif config.INFERENCE.EVALUATION_METHOD == "peak detection":
         gt_rr_peak_all = np.array(gt_rr_peak_all)
         predict_rr_peak_all = np.array(predict_rr_peak_all)
@@ -197,6 +236,10 @@ def calculate_resp_metrics(predictions, labels, config):
                 SNR_PEAK = np.mean(SNR_all)
                 standard_error = np.std(SNR_all) / np.sqrt(num_test_samples)
                 print("FFT SNR (FFT Label): {0} +/- {1}".format(SNR_PEAK, standard_error))
+            elif metric == "MACC":
+                MACC_avg = np.mean(MACC_all)
+                standard_error = np.std(MACC_all) / np.sqrt(num_test_samples)
+                print("MACC: {0} +/- {1}".format(MACC_avg, standard_error))
             elif "AU" in metric:
                 pass
             elif "BA" in metric:

@@ -113,9 +113,13 @@ class MMRPhysTrainer(BaseTrainer):
             self.num_train_batches = len(data_loader["train"])
 
             if "BVP" in self.tasks:
-                self.criterion_bvp = Neg_Pearson() #BVP
+                # self.criterion_bvp = Neg_Pearson() #BVP
+                # self.criterion_bvp = torch.nn.MSELoss()  # BVP
+                self.criterion_bvp = torch.nn.SmoothL1Loss()  # BVP
             if "RSP" in self.tasks:
-                self.criterion_rsp = Neg_Pearson() #RSP
+                # self.criterion_rsp = Neg_Pearson() #RSP
+                # self.criterion_rsp = torch.nn.MSELoss()  # RSP
+                self.criterion_rsp = torch.nn.SmoothL1Loss()  # RSP
 
             if "BP" in self.tasks:
                 # self.criterion_sbp = torch.nn.MSELoss()  # SBP
@@ -177,7 +181,7 @@ class MMRPhysTrainer(BaseTrainer):
             appx_error_list_rsp = []
             self.model.train()
 
-            tbar = tqdm(data_loader["train"], ncols=150)
+            tbar = tqdm(data_loader["train"], ncols=120)
 
             for idx, batch in enumerate(tbar):
                 tbar.set_description("Train epoch %s" % epoch)
@@ -261,6 +265,16 @@ class MMRPhysTrainer(BaseTrainer):
                     loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
                     loss = loss + loss_bp
 
+                if torch.isnan(loss).any():
+                    print("Nan found - idx:", idx)
+                    print("loss:", loss)
+                    print("filename:", batch[2])
+                    print("Chunk ID: ", batch[3])
+                    print("Data min max:", data.min(), data.max())
+                    print("label_bvp min max:", label_bvp.min(), label_bvp.max())
+                    print("label_rsp min max:", label_rsp.min(), label_rsp.max())
+                    exit()
+
                 loss.backward()
 
                 if "BVP" in self.tasks:
@@ -310,7 +324,7 @@ class MMRPhysTrainer(BaseTrainer):
                 if "BP" in self.tasks:
                     bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
-                tbar.set_postfix(bar_dict, loss=loss.item())
+                tbar.set_postfix(bar_dict, loss=round(loss.item(), 2))
 
             # Append the mean training loss for the epoch
             if "BVP" in self.tasks:
@@ -388,7 +402,7 @@ class MMRPhysTrainer(BaseTrainer):
         self.model.eval()
         valid_step = 0
         with torch.no_grad():
-            vbar = tqdm(data_loader["valid"], ncols=150)
+            vbar = tqdm(data_loader["valid"], ncols=120)
             for valid_idx, valid_batch in enumerate(vbar):
                 vbar.set_description("Validation")
 
@@ -531,7 +545,7 @@ class MMRPhysTrainer(BaseTrainer):
         self.model.eval()
         print("Running model evaluation on the testing dataset!")
         with torch.no_grad():
-            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=150)):
+            for _, test_batch in enumerate(tqdm(data_loader["test"], ncols=120)):
                 batch_size = test_batch[0].shape[0]
                 data, labels_test = test_batch[0].to(self.device), test_batch[1].to(self.device)
 

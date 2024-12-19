@@ -64,6 +64,12 @@ class BigSmall(nn.Module):
 
         self.n_segment = n_segment
 
+        self.small_norm = nn.BatchNorm2d(3)
+        if self.in_channels == 3:
+            self.big_norm = nn.BatchNorm2d(3)
+        else:
+            self.big_norm = nn.BatchNorm2d(1)
+
         # Big Convolutional Layers
         self.big_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
         self.big_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
@@ -109,6 +115,9 @@ class BigSmall(nn.Module):
 
         big_input = inputs[0] # big res 
         small_input = inputs[1] # small res
+
+        big_input = self.big_norm(big_input)
+        small_input = self.small_norm(small_input)
 
         # reshape Big 
         nt, c, h, w = big_input.size()

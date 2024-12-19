@@ -4,7 +4,7 @@ TRAIN:
   BATCH_SIZE: 4
   EPOCHS: 5
   LR: 1e-3
-  MODEL_FILE_NAME: BP4D_BP4D_bigsmall_fold1
+  MODEL_FILE_NAME: BP4D_BP4D_bigsmall_fold2
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 25
@@ -15,8 +15,8 @@ TRAIN:
     CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180"
     FOLD:
-      FOLD_NAME: 'Fold1_Train'
-      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv'
+      FOLD_NAME: 'Fold2_Train'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split2_Train_Subjects.csv'
     PREPROCESS:
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -48,8 +48,8 @@ VALID:
     CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180"
     FOLD:
-      FOLD_NAME: 'Fold1_Test'
-      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
+      FOLD_NAME: 'Fold2_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split2_Test_Subjects.csv'
     PREPROCESS:
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -83,8 +83,8 @@ TEST:
     CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180"
     FOLD:
-      FOLD_NAME: 'Fold1_Test'
-      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
+      FOLD_NAME: 'Fold2_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split2_Test_Subjects.csv'
     PREPROCESS:
       LABEL_TYPE: Standardized
       DO_CHUNK: True
@@ -123,4 +123,4 @@ INFERENCE:
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 30        # In seconds
-  MODEL_PATH: "./runs/exp/BP4D_RGBT_180/PreTrainedModels/BP4D_BP4D_bigsmall_fold1_Epoch4.pth"
+  MODEL_PATH: "./runs/exp/BP4D_RGBT_180/PreTrainedModels/BP4D_BP4D_bigsmall_fold2_Epoch4.pth"

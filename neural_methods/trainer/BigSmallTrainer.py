@@ -15,16 +15,20 @@ import numpy as np
 import os
 from tqdm import tqdm
 
+# os.environ
+# torch.cuda.memory._set_allocator_settings()
+# PYTORCH_CUDA_ALLOC_CONF = expandable_segments:
+
 class BigSmallTrainer(BaseTrainer):
 
     def define_model(self, config):
 
-        # BigSmall Model
-        model = BigSmall(n_segment=3)
-
         if self.using_TSM:
             self.frame_depth = config.MODEL.BIGSMALL.FRAME_DEPTH
             self.base_len = self.num_of_gpu * self.frame_depth 
+
+        # BigSmall Model
+        model = BigSmall(n_segment=self.frame_depth)
 
         return model
 
@@ -37,6 +41,13 @@ class BigSmallTrainer(BaseTrainer):
         # reshape small data
         data_small = data[1]
         N, D, C, H, W = data_small.shape
+
+        # Diff
+        last_frame = torch.unsqueeze(data_small[:, -1, :, :, :], 1).repeat(1, max(self.num_of_gpu, 1), 1, 1, 1)
+        data_small = torch.cat((data_small, last_frame), 1)
+        data_small = torch.diff(data_small, dim=1)
+        # ---
+
         data_small = data_small.view(N * D, C, H, W)
 
         # reshape labels 
@@ -51,8 +62,8 @@ class BigSmallTrainer(BaseTrainer):
             data_small = data_small[:(N * D) // self.base_len * self.base_len]
             labels = labels[:(N * D) // self.base_len * self.base_len]
 
-        data[0] = data_big
-        data[1] = data_small
+        data[0] = data_big[:, :3, :, :]    # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
+        data[1] = data_small[:, :3, :, :]  # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
         labels = torch.unsqueeze(labels, dim=-1)
 
         return data, labels
@@ -118,15 +129,23 @@ class BigSmallTrainer(BaseTrainer):
         else:
             self.model = torch.nn.DataParallel(self.model).to(self.device)
 
-        # Training parameters
-        self.batch_size = config.TRAIN.BATCH_SIZE
-        self.max_epoch_num = config.TRAIN.EPOCHS
-        self.LR = config.TRAIN.LR
+        if self.config.TOOLBOX_MODE == "train_and_test" or self.config.TOOLBOX_MODE == "only_train":
+            # Training parameters
+            self.batch_size = config.TRAIN.BATCH_SIZE
+            self.max_epoch_num = config.TRAIN.EPOCHS
+            self.LR = config.TRAIN.LR
 
-        # Set Loss and Optimizer
-        self.criterionBVP = torch.nn.MSELoss().to(self.device)
-        self.criterionRESP = torch.nn.MSELoss().to(self.device)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.LR, weight_decay=0)
+            # Set Loss and Optimizer
+            # self.criterionBVP = torch.nn.MSELoss().to(self.device)
+            self.criterionBVP = torch.nn.SmoothL1Loss().to(self.device)
+            # self.criterionRESP = torch.nn.MSELoss().to(self.device)
+            self.criterionRESP = torch.nn.SmoothL1Loss().to(self.device)
+            # self.optimizer = optim.AdamW(self.model.parameters(), lr=self.LR, weight_decay=0)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=self.LR)
+
+            self.num_train_batches = len(data_loader["train"])
+            # See more details on the OneCycleLR scheduler here: https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
+            self.scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config.TRAIN.LR, epochs=self.config.TRAIN.EPOCHS, steps_per_epoch=self.num_train_batches)
 
         # self.scaler = torch.cuda.amp.GradScaler() # Loss scalar
         
@@ -139,24 +158,16 @@ class BigSmallTrainer(BaseTrainer):
         self.used_epoch = 0
 
         # Indicies corresponding to used labels
-        label_list = ['bp_wave', 'HR_bpm', 'systolic_bp', 'diastolic_bp', 'mean_bp', 
-                      'resp_wave', 'resp_bpm', 'eda', 
-                      'AU01', 'AU02', 'AU04', 'AU05', 'AU06', 'AU06int', 'AU07', 'AU09', 'AU10', 'AU10int', 
-                      'AU11', 'AU12', 'AU12int', 'AU13', 'AU14', 'AU14int', 'AU15', 'AU16', 'AU17', 'AU17int', 
-                      'AU18', 'AU19', 'AU20', 'AU22', 'AU23', 'AU24', 'AU27', 'AU28', 'AU29', 'AU30', 'AU31', 
-                      'AU32', 'AU33', 'AU34', 'AU35', 'AU36', 'AU37', 'AU38', 'AU39',
-                      'pos_bvp','pos_env_norm_bvp']
-
-        used_labels = ['bp_wave', 'resp_wave']
+        label_list = ["bvp", "rsp", "eda", "ecg", "hr", "rr", "sysBP", "avgBP", "diaBP", "rawBP"]
+        used_labels = ['bvp', 'rsp']
 
         # Get indicies for labels from npy array
-        bvp_label_list_train = [label for label in used_labels if 'bvp' in label]
-        bvp_label_list_test = [label for label in used_labels if 'bp_wave' in label]
-        resp_label_list = [label for label in used_labels if 'resp' in label]
+        bvp_label_list = [label for label in used_labels if 'bvp' in label]
+        resp_label_list = [label for label in used_labels if 'rsp' in label]
 
-        self.label_idx_train_bvp = self.get_label_idxs(label_list, bvp_label_list_train)
-        self.label_idx_valid_bvp = self.get_label_idxs(label_list, bvp_label_list_train)
-        self.label_idx_test_bvp = self.get_label_idxs(label_list, bvp_label_list_test)
+        self.label_idx_train_bvp = self.get_label_idxs(label_list, bvp_label_list)
+        self.label_idx_valid_bvp = self.get_label_idxs(label_list, bvp_label_list)
+        self.label_idx_test_bvp = self.get_label_idxs(label_list, bvp_label_list)
 
         self.label_idx_train_resp = self.get_label_idxs(label_list, resp_label_list)
         self.label_idx_valid_resp = self.get_label_idxs(label_list, resp_label_list)
@@ -222,12 +233,11 @@ class BigSmallTrainer(BaseTrainer):
                 lrs.append(self.scheduler.get_last_lr())
 
                 self.optimizer.step()
+                self.scheduler.step()
                 # self.scaler.scale(loss).backward() # Loss scaling
                 # self.scaler.step(self.optimizer)
                 # self.scaler.update()
 
-
-                
 
                 # UPDATE RUNNING LOSS AND PRINTED TERMINAL OUTPUT AND SAVED LOSSES
                 train_loss.append(loss.item())
