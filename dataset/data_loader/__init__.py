@@ -9,4 +9,5 @@ import dataset.data_loader.BP4DPlusLoader
 import dataset.data_loader.BP4DPlusBigSmallLoader
 import dataset.data_loader.BP4DLoader
 import dataset.data_loader.BP4DLoaderBigSmall
+import dataset.data_loader.SCAMPSLoaderBigSmall
 import dataset.data_loader.UBFCPHYSLoader

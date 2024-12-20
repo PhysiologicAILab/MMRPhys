@@ -11,7 +11,7 @@ from neural_methods.model.MMRPhys.MMRPhysBP import BP_Estimation_Head
 from copy import deepcopy
 
 nf_BVP = [8, 12, 16]
-nf_RSP = [8, 16, 16]
+nf_RSP = [16, 16, 16]
 
 model_config = {
     "TASKS": ["RSP"],
@@ -167,12 +167,12 @@ class RSP_FeatureExtractor(nn.Module):
         # inCh, out_channel, kernel_size, stride, padding
 
         self.debug = debug
-        #                                                                                     Input: #B, inCh, T//2,      36, 36
+        #                                                                                     Input: #B, inCh,      T//1, 36, 36
         self.rsp_feature_extractor = nn.Sequential(
-            ConvBlock3D(inCh, nf_RSP[2], [3, 3, 3], [2, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[2], T//2, 36, 36
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [2, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 34, 34
+            ConvBlock3D(inCh, nf_RSP[0], [3, 3, 3], [1, 1, 1], [1, 1, 1], dilation=[1, 1, 1]),       #B, nf_RSP[0], T//1, 36, 36
+            ConvBlock3D(nf_RSP[0], nf_RSP[1], [3, 3, 3], [2, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[1], T//2, 34, 34
+            ConvBlock3D(nf_RSP[1], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//2, 32, 32
             nn.Dropout3d(p=dropout_rate),
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 32, 32
         )
 
     def forward(self, x):
@@ -187,14 +187,14 @@ class RSP_Head(nn.Module):
     def __init__(self, md_config, device, dropout_rate=0.1, debug=False):
         super(RSP_Head, self).__init__()
         self.debug = debug
-        self.temporal_scale_factor = 2
+        self.temporal_scale_factor = 4
 
         self.conv_block = nn.Sequential(
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 15, 15
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 13, 13
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//2, 30, 30
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [2, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 14, 14
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 12, 12
             nn.Dropout3d(p=dropout_rate),
-            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 11, 11
-            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),                            #B, nf_RSP[2], T//2, 11, 11
+            ConvBlock3D(nf_RSP[2], nf_RSP[2], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),  #B, nf_RSP[2], T//4, 10, 10
         )
 
         self.use_fsam = md_config["MD_FSAM"]
@@ -203,9 +203,9 @@ class RSP_Head(nn.Module):
         self.md_res = md_config["MD_RESIDUAL"]
 
         md_config = deepcopy(md_config)
-        # md_config["MD_R"] = 1
+        md_config["MD_R"] = 4
         # md_config["MD_S"] = 1
-        # md_config["MD_STEPS"] = 5
+        # md_config["MD_STEPS"] = 3
         md_config["align_channels"] = nf_RSP[2] // 2
 
         inC = nf_RSP[2]
@@ -215,10 +215,9 @@ class RSP_Head(nn.Module):
             self.bias1 = nn.Parameter(torch.tensor(1.0), requires_grad=True).to(device)
 
         self.final_layer = nn.Sequential(
-            ConvBlock3D(inC, nf_RSP[2], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),           #B, nf_RSP[2], T//2, 5, 5
-            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),                               #B, nf_RSP[2], T//1, 5, 5
-            ConvBlock3D(nf_RSP[2], nf_RSP[0], [3, 3, 3], [1, 1, 1], [1, 0, 0], dilation=[1, 1, 1]),     #B, nf_RSP[0], T//1, 3, 3
-            nn.Conv3d(nf_RSP[0], 1, (3, 3, 3), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),        #B, 1, T//1, 1, 1
+            ConvBlock3D(inC, nf_RSP[1], [3, 3, 3], [1, 2, 2], [1, 0, 0], dilation=[1, 1, 1]),       #B, nf_RSP[1], T//4, 4, 4
+            nn.Upsample(scale_factor=(self.temporal_scale_factor, 1, 1)),                           #B, nf_RSP[2], T//1, 4, 4
+            nn.Conv3d(nf_RSP[0], 1, (3, 4, 4), stride=(1, 1, 1), padding=(1, 0, 0), bias=False),    #B, 1, T//1, 1, 1
         )
 
     def forward(self, length, rsp_embeddings=None, label_rsp=None):
@@ -230,7 +229,7 @@ class RSP_Head(nn.Module):
             print("     voxel_embeddings.shape", voxel_embeddings.shape)
 
         if (self.md_infer or self.training or self.debug) and self.use_fsam:
-            label_rsp_down_sampled = F.avg_pool1d(label_rsp, kernel_size=3, stride=2, padding=1)
+            label_rsp_down_sampled = F.avg_pool1d(label_rsp, kernel_size=5, stride=4, padding=2)
             if "NMF" in self.md_type:
                 att_mask, appx_error = self.fsam(voxel_embeddings - voxel_embeddings.min(), label_rsp_down_sampled) # to make it positive (>= 0)
             else:

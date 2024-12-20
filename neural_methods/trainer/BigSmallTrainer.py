@@ -26,9 +26,10 @@ class BigSmallTrainer(BaseTrainer):
         if self.using_TSM:
             self.frame_depth = config.MODEL.BIGSMALL.FRAME_DEPTH
             self.base_len = self.num_of_gpu * self.frame_depth 
+        self.in_channels = config.MODEL.BIGSMALL.CHANNELS
 
         # BigSmall Model
-        model = BigSmall(n_segment=self.frame_depth)
+        model = BigSmall(in_channels=self.in_channels, n_segment=self.frame_depth)
 
         return model
 
@@ -62,8 +63,16 @@ class BigSmallTrainer(BaseTrainer):
             data_small = data_small[:(N * D) // self.base_len * self.base_len]
             labels = labels[:(N * D) // self.base_len * self.base_len]
 
-        data[0] = data_big[:, :3, :, :]    # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
-        data[1] = data_small[:, :3, :, :]  # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
+        if self.in_channels in [1, 4]:
+            if self.in_channels == 1:
+                data[0] = data_big[:, -1, :, :].unsqueeze(1)
+                data[1] = data_small[:, -1, :, :].unsqueeze(1)
+            else:
+                data[0] = data_big[:, -1, :, :].unsqueeze(1)
+                data[1] = data_small[:, :-1, :, :]
+        else:
+            data[0] = data_big[:, :3, :, :]    # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
+            data[1] = data_small[:, :3, :, :]  # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
         labels = torch.unsqueeze(labels, dim=-1)
 
         return data, labels

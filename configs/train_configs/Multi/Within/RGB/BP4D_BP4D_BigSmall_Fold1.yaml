@@ -116,7 +116,7 @@ MODEL:
   NAME: BigSmall
   BIGSMALL:
     FRAME_DEPTH: 3
-
+    CHANNELS: 3
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"

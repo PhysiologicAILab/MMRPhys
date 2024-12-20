@@ -64,14 +64,25 @@ class BigSmall(nn.Module):
 
         self.n_segment = n_segment
 
-        self.small_norm = nn.BatchNorm2d(3)
+        # To handle RGB-T input
         if self.in_channels == 3:
-            self.big_norm = nn.BatchNorm2d(3)
+            self.in_channels_big = 3
+            self.in_channels_small = 3
         else:
-            self.big_norm = nn.BatchNorm2d(1)
+            assert self.in_channels in [1, 4]
+            if self.in_channels == 1:
+                self.in_channels_big = 1
+                self.in_channels_small = 1
+            else:
+                self.in_channels_big = 1
+                self.in_channels_small = 3
+
+        # To handle RGB-T input
+        self.big_norm = nn.BatchNorm2d(self.in_channels_big)
+        self.small_norm = nn.BatchNorm2d(self.in_channels_small)
 
         # Big Convolutional Layers
-        self.big_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
+        self.big_conv1 = nn.Conv2d(self.in_channels_big, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
         self.big_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
         self.big_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
         self.big_conv4 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding=(1, 1), bias=True)
@@ -93,7 +104,7 @@ class BigSmall(nn.Module):
         self.TSM_4 = WTSM(n_segment=self.n_segment)
         
         # Small Convolutional Layers
-        self.small_conv1 = nn.Conv2d(self.in_channels, self.nb_filters1, kernel_size=self.kernel_size, padding=(1,1), bias=True)
+        self.small_conv1 = nn.Conv2d(self.in_channels_small, self.nb_filters1, kernel_size=self.kernel_size, padding=(1,1), bias=True)
         self.small_conv2 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1,1), bias=True)
         self.small_conv3 = nn.Conv2d(self.nb_filters1, self.nb_filters1, kernel_size=self.kernel_size, padding=(1,1), bias=True)
         self.small_conv4 = nn.Conv2d(self.nb_filters1, self.nb_filters2, kernel_size=self.kernel_size, padding=(1,1), bias=True)

@@ -13,10 +13,13 @@ import scipy
 import cv2
 # %%
 # filename: ('P001863.mat', 'P000261.mat', 'P001287.mat', 'P001270.mat')
+# 'P001244.mat', 'P001130.mat', 'P000668.mat', 'P000278.mat'
 # Chunk ID:  ('2', '0', '0', '0')
 
-data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
-label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
+# data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
+# label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
+data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_input0.npy"
+label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_label0.npy"
 data = np.load(data_pth)
 label = np.load(label_pth)
 print(data.shape)

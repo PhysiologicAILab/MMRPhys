@@ -77,7 +77,7 @@ TEST:
   DATA:
     FS: 25
     DATASET: BP4D
-    DO_PREPROCESS: True            # if first time, should be true
+    DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
     CACHED_PATH: "/home/jitesh/data/BP4D"    # Processed dataset save path, need to be updated
@@ -122,7 +122,7 @@ MODEL:
     MD_TYPE: "SNMF_Label"
     MD_R: 1
     MD_S: 1
-    MD_STEPS: 3
+    MD_STEPS: 4
     MD_RESIDUAL: True
     MD_INFERENCE: False
 INFERENCE:
@@ -130,5 +130,5 @@ INFERENCE:
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
-    WINDOW_SIZE: 20        # In seconds
-  MODEL_PATH: "./runs/exp/BP4D_RGBT_180_36x36/PreTrainedModels/BP4D_MMRPhysMEF_BVP_BP_RSP_RGBTx36_SFSAM_Label_Fold1_Epoch9.pth"
+    WINDOW_SIZE: 30        # In seconds
+  MODEL_PATH: "./runs/exp/BP4D_RGBT_180_36x36/PreTrainedModels/BP4D_MMRPhysMEF_BVP_RSP_RGBx180x36_SFSAM_Label_Fold1_Epoch4.pth"
