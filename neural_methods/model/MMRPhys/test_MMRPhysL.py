@@ -11,8 +11,8 @@ from scipy.signal import resample
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
-# from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
+# from neural_methods.model.MMRPhys.MMRPhysLEF import MMRPhysLEF as MMRPhys
+from neural_methods.model.MMRPhys.MMRPhysLNF import MMRPhysLNF as MMRPhys
 # from neural_methods.model.MMRPhys.MMRPhysLLF import MMRPhysLLF as MMRPhys
 
 model_config = {
@@ -20,26 +20,29 @@ model_config = {
     # "TASKS": ["BVP", "BP", "RSP"],
     # "TASKS": ["BP"],
     "BP_USE_RSP": True,
-    "FS": 25,
+    "FS": 30,
     "MD_FSAM": False,
-    "MD_TYPE": "SNMF_Label",
+    # "MD_TYPE": "SNMF_Label",
+    "MD_TYPE": "NMF",
     "MD_R": 1,
     "MD_S": 1,
     "MD_STEPS": 5,
     "MD_INFERENCE": False,
     "MD_RESIDUAL": True,
-    "in_channels": 3,
+    "in_channels": 4,
     "data_channels": 4,
     "height": 72,
     "weight": 72,
     "batch_size": 2,
-    "frames": 500,
-    "debug": True,
+    "frames": 160,
+    "debug": False,
     "assess_latency": False,
     "num_trials": 20,
-    "visualize": False,
-    "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch4.pth",
-    "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
+    "visualize": True,
+    "ckpt_path": "./runs/exp/BP4D_RGBT_180_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_FSAM_Epoch2.pth",
+    "data_path": "/home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72",
+    # "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch4.pth",
+    # "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
 }
 
 
@@ -201,11 +204,15 @@ class TestMMRPhys(object):
         if "BVP" in self.tasks:
             b, channels, enc_frames, enc_height, enc_width = self.vox_embed_bvp.shape
             
-            label_matrix = self.bvp_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+            # label_matrix = self.bvp_label.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+            #     2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+            
+            label_matrix = self.pred_bvp.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
                 2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
 
             print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
-            print("self.bvp_label.shape", self.bvp_label.shape)
+            # print("self.bvp_label.shape", self.bvp_label.shape)
+            print("self.pred_bvp.shape", self.pred_bvp.shape)
             print("label_matrix.shape", label_matrix.shape)
 
             label_matrix = label_matrix.to(device=self.device)
@@ -231,19 +238,19 @@ class TestMMRPhys(object):
             cmap = "coolwarm"
 
             n_row = 0
-            ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
+            ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3].astype(np.uint8))
             ax[n_row, 0].axis('off')
             ax[n_row, 0].set_title("T: " + str(0))
 
-            ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, 0:3])
+            ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, 0:3].astype(np.uint8))
             ax[n_row, 1].axis('off')
             ax[n_row, 1].set_title("T: " + str(enc_frames//3))
 
-            ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, 0:3].astype(np.uint8))
             ax[n_row, 2].axis('off')
             ax[n_row, 2].set_title("T: " + str(2 * enc_frames//3))
 
-            ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, 0:3])
+            ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, 0:3].astype(np.uint8))
             ax[n_row, 3].axis('off')
             ax[n_row, 3].set_title("T: " + str(enc_frames-1))
 
@@ -339,14 +346,19 @@ class TestMMRPhys(object):
         if "RSP" in self.tasks:
             b, channels, enc_frames, enc_height, enc_width = self.vox_embed_rsp.shape
 
-            label_matrix = self.rsp_label.to(device=self.device)
-            label_matrix = F.avg_pool1d(label_matrix, kernel_size=5, stride=4, padding=2)   #downsampling 4 times, aligning with the temporal dimensions of the embeddings
+            # label_matrix = self.rsp_label.to(device=self.device)
+            # label_matrix = F.avg_pool1d(label_matrix, kernel_size=3, stride=2, padding=1)   #downsampling 2 times, aligning with the temporal dimensions of the embeddings
 
+            # label_matrix = label_matrix.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
+            #     2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
+
+            label_matrix = F.avg_pool1d(self.pred_rsp, kernel_size=3, stride=2, padding=1)   #downsampling 2 times, aligning with the temporal dimensions of the embeddings
             label_matrix = label_matrix.unsqueeze(0).repeat(1, channels, 1).unsqueeze(
                 2).unsqueeze(2).permute(0, 1, 4, 3, 2).repeat(1, 1, 1, enc_height, enc_width)
 
             print("b, channels, enc_frames, enc_height, enc_width: ", [b, channels, enc_frames, enc_height, enc_width])
-            print("self.rsp_label.shape", self.rsp_label.shape)
+            # print("self.rsp_label.shape", self.rsp_label.shape)
+            print("self.pred_rsp.shape", self.pred_rsp.shape)
             print("label_matrix.shape", label_matrix.shape)
 
             corr_matrix = F.cosine_similarity(self.vox_embed_rsp, label_matrix, dim=2).abs()
@@ -369,16 +381,16 @@ class TestMMRPhys(object):
             cmap = "coolwarm"
 
             n_row = 0
-            ax[n_row, 0].imshow(self.np_data[0, :, :, 0:3])
+            ax[n_row, 0].imshow(self.np_data[0, :, :, -1], cmap="gray")
             ax[n_row, 0].axis('off')
 
-            ax[n_row, 1].imshow(self.np_data[4 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 1].imshow(self.np_data[enc_frames//3, :, :, -1], cmap="gray")
             ax[n_row, 1].axis('off')
 
-            ax[n_row, 2].imshow(self.np_data[4 * 2 * enc_frames//3, :, :, 0:3])
+            ax[n_row, 2].imshow(self.np_data[2 * enc_frames//3, :, :, -1], cmap="gray")
             ax[n_row, 2].axis('off')
 
-            ax[n_row, 3].imshow(self.np_data[4 * enc_frames-1, :, :, 0:3])
+            ax[n_row, 3].imshow(self.np_data[enc_frames-1, :, :, -1], cmap="gray")
             ax[n_row, 3].axis('off')
 
             n_row = 1

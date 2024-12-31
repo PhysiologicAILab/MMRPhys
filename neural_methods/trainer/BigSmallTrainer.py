@@ -70,6 +70,8 @@ class BigSmallTrainer(BaseTrainer):
             else:
                 data[0] = data_big[:, -1, :, :].unsqueeze(1)
                 data[1] = data_small[:, :-1, :, :]
+                # data[0] = data_big[:, :-1, :, :]    #to keep RGB for Big Branch, while passing RGB-Thermal as input
+                # data[1] = data_small[:, :, :, :]    # using all 4 channels in Small Branch to benefit from RGB and Thermal for BVP and RSP estimation. -> experiment did not show improved performance.
         else:
             data[0] = data_big[:, :3, :, :]    # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel
             data[1] = data_small[:, :3, :, :]  # ensuring 3 channel input, as the preprocessed BP4D data has thermal as 4th channel

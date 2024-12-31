@@ -1,0 +1,126 @@
+BASE: ['']
+TOOLBOX_MODE: "train_and_test"  # "train_and_test" or "only_train" or "only_test"
+TRAIN:
+  BATCH_SIZE: 4
+  EPOCHS: 5
+  LR: 1e-3
+  MODEL_FILE_NAME: BP4D_BP4D_bigsmall_RGBT_Combined_fold1
+  PLOT_LOSSES_AND_LR: True
+  DATA:
+    FS: 25
+    DATASET: BP4DBigSmall
+    DO_PREPROCESS: False              # if first time, should be true
+    DATA_FORMAT: NDCHW
+    DATA_PATH:  "/home/jitesh/data/BP4D" 
+    CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: "BP4D_RGBT_180"
+    FOLD:
+      FOLD_NAME: 'Fold1_Train'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv'
+    PREPROCESS:
+      LABEL_TYPE: Standardized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        DO_CROP_FACE: False
+        USE_LARGE_FACE_BOX: False
+        LARGE_BOX_COEF: 1.5
+        DETECTION:
+          DO_DYNAMIC_DETECTION: False
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BIGSMALL:
+        BIG_DATA_TYPE: ['Raw']    # Standardized within the model
+        SMALL_DATA_TYPE: ['Raw']  # Diff in trainer and Normalized within the model
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+
+VALID:
+  DATA:
+    FS: 25
+    DATASET: BP4DBigSmall
+    DO_PREPROCESS: False              # if first time, should be true
+    DATA_FORMAT: NDCHW
+    DATA_PATH:  "/home/jitesh/data/BP4D"
+    CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: "BP4D_RGBT_180"
+    FOLD:
+      FOLD_NAME: 'Fold1_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
+    PREPROCESS:
+      LABEL_TYPE: Standardized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        DO_CROP_FACE: False
+        USE_LARGE_FACE_BOX: False
+        LARGE_BOX_COEF: 1.5
+        DETECTION:
+          DO_DYNAMIC_DETECTION: False
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BIGSMALL:
+        BIG_DATA_TYPE: ['Raw']    # Standardized within the model
+        SMALL_DATA_TYPE: ['Raw']  # Diff in trainer and Normalized within the model
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+
+TEST:
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  USE_LAST_EPOCH: True                      # to use provided validation dataset to find the best epoch, should be false
+  DATA:
+    FS: 25
+    DATASET: BP4DBigSmall
+    DO_PREPROCESS: False              # if first time, should be true
+    DATA_FORMAT: NDCHW
+    DATA_PATH:  "/home/jitesh/data/BP4D" 
+    CACHED_PATH: "/home/jitesh/data/BP4D"  # Processed dataset save path, need to be updated
+    EXP_DATA_NAME: "BP4D_RGBT_180"
+    FOLD:
+      FOLD_NAME: 'Fold1_Test'
+      FOLD_PATH: './dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv'
+    PREPROCESS:
+      LABEL_TYPE: Standardized
+      DO_CHUNK: True
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        DO_CROP_FACE: False
+        USE_LARGE_FACE_BOX: False
+        LARGE_BOX_COEF: 1.5
+        DETECTION:
+          DO_DYNAMIC_DETECTION: False
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
+      BIGSMALL:
+        BIG_DATA_TYPE: ['Raw']    # Standardized within the model
+        SMALL_DATA_TYPE: ['Raw']  # Diff in trainer and Normalized within the model
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+
+DEVICE: cuda:0
+NUM_OF_GPU_TRAIN: 1
+
+LOG:
+  PATH: runs/exp
+
+MODEL:
+  NAME: BigSmall
+  BIGSMALL:
+    FRAME_DEPTH: 3
+    CHANNELS: 4
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
+    WINDOW_SIZE: 30        # In seconds
+  MODEL_PATH: "./runs/exp/BP4D_RGBT_180/PreTrainedModels/BP4D_BP4D_bigsmall_RGBT_Combined_fold1_Epoch4.pth"

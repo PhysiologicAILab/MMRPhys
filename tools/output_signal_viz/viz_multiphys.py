@@ -82,17 +82,49 @@ path_dict_within_dataset = {
         #         },
         #     },
         # },
-        "BP4D_500x72_All": {
-            "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        # "BP4D_500x72_All": {
+        #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
+        #     "exp": {
+        #         "MMRPhysLEF_RGB_SFSAM":
+        #         {
+        #             "bvp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_bvp_outputs.pickle",
+        #             "rsp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_rsp_outputs.pickle",
+        #         },
+        #     },
+        # },
+
+        # "iBVP_RGBT_All": {
+        #     "root": "runs/exp/iBVP_RGBT_160_72x72/saved_test_outputs/",
+        #     "exp": {
+        #         "TSFM":
+        #         {
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_SFSAM_Label_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_SFSAM_Label_rsp_outputs.pickle"
+        #         },
+        #         "FSAM":
+        #         {
+        #             "bvp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_FSAM_bvp_outputs.pickle",
+        #             "rsp": "BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_FSAM_rsp_outputs.pickle"
+        #         },
+        #     },
+        # },
+
+
+        "iBVP_RGB_All": {
+            "root": "runs/exp/iBVP_RGBT_160_72x72/saved_test_outputs/",
             "exp": {
-                "MMRPhysLEF_RGB_SFSAM":
+                "TSFM":
                 {
-                    "bvp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_bvp_outputs.pickle",
-                    "rsp": "SCAMPS_MMRPhysLEF_BVP_RSP_RGBx72_SFSAM_Label_rsp_outputs.pickle",
+                    "bvp": "SCAMPS_MMRPhysLEF_BVP_RSP_SFSAM_Label_bvp_outputs.pickle",
+                    "rsp": "SCAMPS_MMRPhysLEF_BVP_RSP_SFSAM_Label_rsp_outputs.pickle"
+                },
+                "FSAM":
+                {
+                    "bvp": "SCAMPS_MMRPhysLEF_BVP_RSP_FSAM_bvp_outputs.pickle",
+                    "rsp": "SCAMPS_MMRPhysLEF_BVP_RSP_FSAM_rsp_outputs.pickle"
                 },
             },
         },
-
 
         # "BP4D_500x72_Fold1": {
         #     "root": "runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs/",
@@ -342,7 +374,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
     plot_dir = Path.cwd().joinpath("plots").joinpath("BP4D_MultiPhys")
     plot_dir.mkdir(parents=True, exist_ok=True)
 
-    chunk_size = 500 #180 #500 #300  # size of chunk to visualize: -1 will plot the entire signal
+    chunk_size = 300 #180 #500 #300  # size of chunk to visualize: -1 will plot the entire signal
 
     for test_dataset in path_dict_within_dataset["test_datasets"]:
         print("*"*50)
@@ -453,9 +485,9 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 # try:
                 if save_plot:
                     if tasks in [0, 3]:
-                        fig, ax = plt.subplots(2, 1, figsize=(16, 12))
+                        fig, ax = plt.subplots(2, 1, figsize=(20, 12))
                     else:
-                        fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+                        fig, ax = plt.subplots(1, 1, figsize=(20, 8))
                 # fig.tight_layout()
 
                 start = (c_ind)*chunk_size
@@ -560,17 +592,19 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                 if save_plot:
                     if tasks in [0, 3]:
                         ax[0].plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                        ax[0].legend(loc="upper right")
-                        ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                        ax[1].legend(loc="upper right")
+                        ax[0].legend(loc="upper right", fontsize=16)
+                        ax[0].set_xlabel('Time (s)')
+                        # ax[1].plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                        ax[1].legend(loc="upper right", fontsize=16)
+                        ax[1].set_xlabel('Time (s)')
                     else:
                         if tasks in [1, 3]:
                             ax.plot(x_time, bvp_label[start: stop], label="GT ; HR = " + str(hr_label), color='black')
-                            ax.legend(loc="upper right")
+                            ax.legend(loc="upper right", fontsize=16)
                         else:
-                            ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
-                            ax.legend(loc="upper right")
-
+                        #     ax.plot(x_time, rsp_label[start: stop], label="GT ; RR = " + str(rr_label), color='black')
+                            ax.legend(loc="upper right", fontsize=16)
+                        ax.set_xlabel('Time (s)')
 
                     # ax[2].plot(x_time, bp_label[start: stop], label="GT", color='black')
                     # ax[2].legend(loc="upper right")
@@ -582,7 +616,7 @@ def compare_estimated_phys_within_dataset(tasks=0, save_plot=1):
                     # plt.show()
                     save_fn = plot_test_dir_detailed.joinpath(str(trial_list[trial_ind]) + "_" + str(c_ind) + ".jpg")
 
-                    plt.xlabel('Time (s)')
+                    # plt.xlabel('Time (s)')
                     plt.savefig(save_fn)
                     plt.close()
 

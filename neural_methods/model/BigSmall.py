@@ -76,6 +76,8 @@ class BigSmall(nn.Module):
             else:
                 self.in_channels_big = 1
                 self.in_channels_small = 3
+                # self.in_channels_big = 3
+                # self.in_channels_small = 4  # can be made to 4 to handle both channels, though will require further changes, e.g. batchnorm can't be applied jointly in 4 channels for appropriate signal extraction
 
         # To handle RGB-T input
         self.big_norm = nn.BatchNorm2d(self.in_channels_big)
