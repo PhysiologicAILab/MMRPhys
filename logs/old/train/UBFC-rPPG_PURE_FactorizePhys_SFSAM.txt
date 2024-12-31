@@ -1,0 +1,395 @@
+=> Merging a config file from configs/train_configs/UBFC-rPPG_PURE_FactorizePhys_SFSAM.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:0
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: 
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: True
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: SNMF
+    TYPE: Standard
+  MMRPhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: False
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TYPE: NMF
+    TASKS: ['BVP', 'RSP']
+    TYPE: Standard
+  MODEL_DIR: runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels
+  NAME: FactorizePhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/PURE_Dataset/PURE_Raw_160_72x72
+    DATASET: PURE
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/PURE
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: PURE_Raw_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/PURE_Raw_160_72x72/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
+    DATASET: UBFC-rPPG
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/UBFC-rPPG/DATASET_2
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: UBFC-rPPG_Raw_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 10
+  LR: 0.001
+  MODEL_FILE_NAME: UBFC-rPPG_FactorizePhys_SFSAM
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.8
+    CACHED_PATH: /home/jitesh/data/UBFC-rPPG/
+    DATASET: UBFC-rPPG
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/UBFC-rPPG/DATASET_2
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: UBFC-rPPG_Raw_160_72x72
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
+
+File List Path /home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
+ train Preprocessed Dataset Length: 375
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/PURE_Dataset/PURE_Raw_160_72x72
+
+File List Path /home/jitesh/data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_0.0_1.0.csv
+ test Preprocessed Dataset Length: 750
+
+
+====Training Epoch: 0====
+Mean train loss: 0.4928452421693092, Mean appx error: 2184.297265884724
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch0.pth
+
+====Training Epoch: 1====
+Mean train loss: 0.2942054067995954, Mean appx error: 2349.734543820645
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch1.pth
+
+====Training Epoch: 2====
+Mean train loss: 0.27146829244621257, Mean appx error: 2155.6510451296544
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch2.pth
+
+====Training Epoch: 3====
+Mean train loss: 0.26129667984044297, Mean appx error: 2154.118134194232
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch3.pth
+
+====Training Epoch: 4====
+Mean train loss: 0.23573024467901982, Mean appx error: 2103.268900120512
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch4.pth
+
+====Training Epoch: 5====
+Mean train loss: 0.20223693446593083, Mean appx error: 2059.636248649435
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch5.pth
+
+====Training Epoch: 6====
+Mean train loss: 0.19516929413409942, Mean appx error: 2124.6734567195813
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch6.pth
+
+====Training Epoch: 7====
+Mean train loss: 0.17233001044455995, Mean appx error: 2186.8082950673206
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch7.pth
+
+====Training Epoch: 8====
+Mean train loss: 0.18120670358234264, Mean appx error: 2198.0238231902426
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch8.pth
+
+====Training Epoch: 9====
+Mean train loss: 0.16524312542156971, Mean appx error: 2262.897299908577
+Saved Model Path:  runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch9.pth
+Saving training log to: runs/exp/UBFC-rPPG_Raw_160_72x72/plots/UBFC-rPPG_FactorizePhys_SFSAM__log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/UBFC-rPPG_Raw_160_72x72/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/UBFC-rPPG_Raw_160_72x72/PreTrainedModels/UBFC-rPPG_FactorizePhys_SFSAM_Epoch9.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 0.2979343220338983 +/- 0.12076482005469369
+FFT RMSE (FFT Label): 0.9742839546320718 +/- 0.2914987628851109
+FFT MAPE (FFT Label): 0.4083114847237242 +/- 0.17565273765289402
+FFT Pearson (FFT Label): 0.9991617248527223 +/- 0.005422253673573158
+FFT SNR (FFT Label): 15.238703704641306 +/- 0.8718596112628348 (dB)
+Saved UBFC-rPPG_FactorizePhys_SFSAM_BVP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/PURE_Raw_160_72x72/bland_altman_plots.
+Saved UBFC-rPPG_FactorizePhys_SFSAM_BVP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/PURE_Raw_160_72x72/bland_altman_plots.
+MACC: 0.7758477538163054 +/- 0.01751522840906048
+Saving outputs to: runs/exp/PURE_Raw_160_72x72/saved_test_outputs/UBFC-rPPG_FactorizePhys_SFSAM_outputs.pickle

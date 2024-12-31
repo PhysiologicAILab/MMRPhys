@@ -1,0 +1,569 @@
+=> Merging a config file from configs/train_configs/Multi/Within/T/BP4D_BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:3
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: ./runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch4.pth
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    CHANNELS: 3
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    BP_USE_RSP: True
+    CHANNELS: 1
+    FRAME_NUM: 180
+    MD_FSAM: True
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TYPE: SNMF_Label
+    PRETRAINED: 
+    TASKS: ['BVP', 'RSP']
+    TYPE: SEF
+  MODEL_DIR: runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_180_9x9
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_9x9
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_180_9x9
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_9x9_0.0_1.0_Fold1_Test.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 9
+        W: 9
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/BP4D_RGBT_180_9x9/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_180_9x9
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_9x9
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_180_9x9
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_9x9_0.0_1.0_Fold1_Train.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Train
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 9
+        W: 9
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 5
+  LR: 0.001
+  MODEL_FILE_NAME: BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_9x9
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_180_9x9
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 9
+        W: 9
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_180_9x9
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_9x9_0.0_1.0_Fold1_Train.csv
+ train Preprocessed Dataset Length: 4483
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_180_9x9
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_9x9_0.0_1.0_Fold1_Test.csv
+ test Preprocessed Dataset Length: 2187
+
+Tasks: ['BVP', 'RSP']
+
+====Training Epoch: 0====
+[0,   100]
+loss_bvp: 0.702
+loss_rsp: 0.605
+[0,   200]
+loss_bvp: 0.674
+loss_rsp: 0.506
+[0,   300]
+loss_bvp: 0.664
+loss_rsp: 0.482
+[0,   400]
+loss_bvp: 0.662
+loss_rsp: 0.472
+[0,   500]
+loss_bvp: 0.650
+loss_rsp: 0.464
+[0,   600]
+loss_bvp: 0.641
+loss_rsp: 0.464
+[0,   700]
+loss_bvp: 0.647
+loss_rsp: 0.447
+[0,   800]
+loss_bvp: 0.647
+loss_rsp: 0.450
+[0,   900]
+loss_bvp: 0.647
+loss_rsp: 0.450
+[0,  1000]
+loss_bvp: 0.635
+loss_rsp: 0.457
+[0,  1100]
+loss_bvp: 0.634
+loss_rsp: 0.462
+Avg train loss: 1.13
+Avg appx error BVP: 2002.51
+Avg appx error RSP: 418.56
+Saved Model Path:  runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch0.pth
+
+====Training Epoch: 1====
+[1,   100]
+loss_bvp: 0.643
+loss_rsp: 0.439
+[1,   200]
+loss_bvp: 0.635
+loss_rsp: 0.449
+[1,   300]
+loss_bvp: 0.635
+loss_rsp: 0.420
+[1,   400]
+loss_bvp: 0.638
+loss_rsp: 0.425
+[1,   500]
+loss_bvp: 0.635
+loss_rsp: 0.395
+[1,   600]
+loss_bvp: 0.623
+loss_rsp: 0.381
+[1,   700]
+loss_bvp: 0.638
+loss_rsp: 0.406
+[1,   800]
+loss_bvp: 0.635
+loss_rsp: 0.387
+[1,   900]
+loss_bvp: 0.624
+loss_rsp: 0.371
+[1,  1000]
+loss_bvp: 0.621
+loss_rsp: 0.370
+[1,  1100]
+loss_bvp: 0.627
+loss_rsp: 0.378
+Avg train loss: 1.03
+Avg appx error BVP: 1753.0
+Avg appx error RSP: 1583.35
+Saved Model Path:  runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch1.pth
+
+====Training Epoch: 2====
+[2,   100]
+loss_bvp: 0.623
+loss_rsp: 0.345
+[2,   200]
+loss_bvp: 0.613
+loss_rsp: 0.360
+[2,   300]
+loss_bvp: 0.616
+loss_rsp: 0.371
+[2,   400]
+loss_bvp: 0.614
+loss_rsp: 0.370
+[2,   500]
+loss_bvp: 0.617
+loss_rsp: 0.345
+[2,   600]
+loss_bvp: 0.620
+loss_rsp: 0.354
+[2,   700]
+loss_bvp: 0.617
+loss_rsp: 0.352
+[2,   800]
+loss_bvp: 0.591
+loss_rsp: 0.341
+[2,   900]
+loss_bvp: 0.612
+loss_rsp: 0.354
+[2,  1000]
+loss_bvp: 0.623
+loss_rsp: 0.358
+[2,  1100]
+loss_bvp: 0.617
+loss_rsp: 0.358
+Avg train loss: 0.97
+Avg appx error BVP: 1708.5
+Avg appx error RSP: 2533.63
+Saved Model Path:  runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch2.pth
+
+====Training Epoch: 3====
+[3,   100]
+loss_bvp: 0.604
+loss_rsp: 0.342
+[3,   200]
+loss_bvp: 0.609
+loss_rsp: 0.323
+[3,   300]
+loss_bvp: 0.595
+loss_rsp: 0.326
+[3,   400]
+loss_bvp: 0.605
+loss_rsp: 0.341
+[3,   500]
+loss_bvp: 0.603
+loss_rsp: 0.347
+[3,   600]
+loss_bvp: 0.594
+loss_rsp: 0.343
+[3,   700]
+loss_bvp: 0.602
+loss_rsp: 0.322
+[3,   800]
+loss_bvp: 0.602
+loss_rsp: 0.335
+[3,   900]
+loss_bvp: 0.587
+loss_rsp: 0.343
+[3,  1000]
+loss_bvp: 0.605
+loss_rsp: 0.340
+[3,  1100]
+loss_bvp: 0.598
+loss_rsp: 0.320
+Avg train loss: 0.93
+Avg appx error BVP: 1859.16
+Avg appx error RSP: 2955.53
+Saved Model Path:  runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch3.pth
+
+====Training Epoch: 4====
+[4,   100]
+loss_bvp: 0.589
+loss_rsp: 0.333
+[4,   200]
+loss_bvp: 0.600
+loss_rsp: 0.321
+[4,   300]
+loss_bvp: 0.593
+loss_rsp: 0.304
+[4,   400]
+loss_bvp: 0.584
+loss_rsp: 0.311
+[4,   500]
+loss_bvp: 0.580
+loss_rsp: 0.321
+[4,   600]
+loss_bvp: 0.585
+loss_rsp: 0.325
+[4,   700]
+loss_bvp: 0.571
+loss_rsp: 0.302
+[4,   800]
+loss_bvp: 0.591
+loss_rsp: 0.315
+[4,   900]
+loss_bvp: 0.582
+loss_rsp: 0.320
+[4,  1000]
+loss_bvp: 0.569
+loss_rsp: 0.305
+[4,  1100]
+loss_bvp: 0.587
+loss_rsp: 0.309
+Avg train loss: 0.9
+Avg appx error BVP: 1945.72
+Avg appx error RSP: 3154.36
+Saved Model Path:  runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch4.pth
+Saving training log to: runs/exp/BP4D_RGBT_180_9x9/plots/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_BVP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/BP4D_RGBT_180_9x9/plots
+Saving training log to: runs/exp/BP4D_RGBT_180_9x9/plots/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_RSP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/BP4D_RGBT_180_9x9/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/BP4D_RGBT_180_9x9/PreTrainedModels/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_Epoch4.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 15.998718753884097 +/- 0.9389525571311572
+FFT RMSE (FFT Label): 24.865834281863798 +/- 1.7508898992232629
+FFT MAPE (FFT Label): 19.75423102716632 +/- 1.2260761155668063
+FFT Pearson (FFT Label): 0.027559161582094156 +/- 0.049428036464991984
+FFT SNR (FFT Label): -4.473744667202729 +/- 0.2616773053706667 (dB)
+Saved BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_BVP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_180_9x9/bland_altman_plots.
+Saved BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_BVP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_180_9x9/bland_altman_plots.
+MACC: 0.354067526081279 +/- 0.005535083356612504
+=====================
+==== RSP Metrics ===
+=====================
+FFT MAE (FFT Label): 3.121586749790862 +/- 0.1861544757225329
+FFT RMSE (FFT Label): 4.89764103893182 +/- 0.32572703662815977
+FFT MAPE (FFT Label): 22.805644587129752 +/- 1.64389827881274
+FFT Pearson (FFT Label): 0.41655812088731087 +/- 0.04495255123896764
+FFT SNR (FFT Label): 8.774754296688368 +/- 0.4317408948569629
+Saved BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_RSP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_180_9x9/bland_altman_plots.
+Saved BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_RSP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_180_9x9/bland_altman_plots.
+MACC: 0.6807727593630821 +/- 0.007982745010599805
+Saving outputs to: runs/exp/BP4D_RGBT_180_9x9/saved_test_outputs/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_bvp_outputs.pickle
+Saving outputs to: runs/exp/BP4D_RGBT_180_9x9/saved_test_outputs/BP4D_MMRPhysSEF_BVP_RSP_Tx180x9_SFSAM_Label_Fold1_rsp_outputs.pickle

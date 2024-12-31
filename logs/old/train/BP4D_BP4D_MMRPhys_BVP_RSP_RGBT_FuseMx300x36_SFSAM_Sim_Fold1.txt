@@ -1,0 +1,439 @@
+=> Merging a config file from configs/train_configs/BP4D_BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:1
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: 
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    CHANNELS: 4
+    FRAME_NUM: 300
+    MD_FSAM: True
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TYPE: SNMF_Sim
+    TASKS: ['BVP', 'RSP']
+    TYPE: FuseM
+  MODEL_DIR: runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_300_36x36
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /home/jitesh/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_300_36x36
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_300_36x36_0.0_1.0_Fold1_Test.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 300
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/BP4D_RGBT_300_36x36/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_300_36x36
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /home/jitesh/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_300_36x36
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_300_36x36_0.0_1.0_Fold1_Train.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Train
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 300
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 5
+  LR: 0.001
+  MODEL_FILE_NAME: BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /home/jitesh/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_300_36x36
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 300
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_300_36x36
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_300_36x36_0.0_1.0_Fold1_Train.csv
+ train Preprocessed Dataset Length: 4583
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_300_36x36
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_300_36x36_0.0_1.0_Fold1_Test.csv
+ test Preprocessed Dataset Length: 4583
+
+
+====Training Epoch: 0====
+[0,   100] loss_bvp: 0.648 loss_rsp: 0.895
+[0,   200] loss_bvp: 0.479 loss_rsp: 0.721
+[0,   300] loss_bvp: 0.431 loss_rsp: 0.676
+[0,   400] loss_bvp: 0.416 loss_rsp: 0.662
+[0,   500] loss_bvp: 0.394 loss_rsp: 0.637
+[0,   600] loss_bvp: 0.405 loss_rsp: 0.634
+[0,   700] loss_bvp: 0.405 loss_rsp: 0.611
+[0,   800] loss_bvp: 0.423 loss_rsp: 0.657
+[0,   900] loss_bvp: 0.405 loss_rsp: 0.664
+[0,  1000] loss_bvp: 0.390 loss_rsp: 0.623
+[0,  1100] loss_bvp: 0.404 loss_rsp: 0.623
+Mean train loss: 1.103, Mean appx error: 2927.355
+Saved Model Path:  runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch0.pth
+
+====Training Epoch: 1====
+[1,   100] loss_bvp: 0.421 loss_rsp: 0.583
+[1,   200] loss_bvp: 0.386 loss_rsp: 0.594
+[1,   300] loss_bvp: 0.361 loss_rsp: 0.571
+[1,   400] loss_bvp: 0.391 loss_rsp: 0.604
+[1,   500] loss_bvp: 0.389 loss_rsp: 0.568
+[1,   600] loss_bvp: 0.392 loss_rsp: 0.588
+[1,   700] loss_bvp: 0.402 loss_rsp: 0.592
+[1,   800] loss_bvp: 0.372 loss_rsp: 0.579
+[1,   900] loss_bvp: 0.385 loss_rsp: 0.554
+[1,  1000] loss_bvp: 0.388 loss_rsp: 0.570
+[1,  1100] loss_bvp: 0.382 loss_rsp: 0.604
+Mean train loss: 0.972, Mean appx error: 2257.259
+Saved Model Path:  runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch1.pth
+
+====Training Epoch: 2====
+[2,   100] loss_bvp: 0.388 loss_rsp: 0.579
+[2,   200] loss_bvp: 0.369 loss_rsp: 0.562
+[2,   300] loss_bvp: 0.368 loss_rsp: 0.534
+[2,   400] loss_bvp: 0.380 loss_rsp: 0.534
+[2,   500] loss_bvp: 0.362 loss_rsp: 0.544
+[2,   600] loss_bvp: 0.378 loss_rsp: 0.568
+[2,   700] loss_bvp: 0.364 loss_rsp: 0.543
+[2,   800] loss_bvp: 0.366 loss_rsp: 0.555
+[2,   900] loss_bvp: 0.373 loss_rsp: 0.549
+[2,  1000] loss_bvp: 0.349 loss_rsp: 0.537
+[2,  1100] loss_bvp: 0.371 loss_rsp: 0.519
+Mean train loss: 0.918, Mean appx error: 1927.774
+Saved Model Path:  runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch2.pth
+
+====Training Epoch: 3====
+[3,   100] loss_bvp: 0.395 loss_rsp: 0.571
+[3,   200] loss_bvp: 0.354 loss_rsp: 0.543
+[3,   300] loss_bvp: 0.372 loss_rsp: 0.529
+[3,   400] loss_bvp: 0.361 loss_rsp: 0.530
+[3,   500] loss_bvp: 0.367 loss_rsp: 0.525
+[3,   600] loss_bvp: 0.348 loss_rsp: 0.512
+[3,   700] loss_bvp: 0.359 loss_rsp: 0.500
+[3,   800] loss_bvp: 0.355 loss_rsp: 0.498
+[3,   900] loss_bvp: 0.348 loss_rsp: 0.538
+[3,  1000] loss_bvp: 0.354 loss_rsp: 0.525
+[3,  1100] loss_bvp: 0.341 loss_rsp: 0.520
+Mean train loss: 0.885, Mean appx error: 1847.069
+Saved Model Path:  runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch3.pth
+
+====Training Epoch: 4====
+[4,   100] loss_bvp: 0.371 loss_rsp: 0.521
+[4,   200] loss_bvp: 0.363 loss_rsp: 0.518
+[4,   300] loss_bvp: 0.373 loss_rsp: 0.502
+[4,   400] loss_bvp: 0.322 loss_rsp: 0.475
+[4,   500] loss_bvp: 0.337 loss_rsp: 0.520
+[4,   600] loss_bvp: 0.338 loss_rsp: 0.498
+[4,   700] loss_bvp: 0.328 loss_rsp: 0.495
+[4,   800] loss_bvp: 0.345 loss_rsp: 0.499
+[4,   900] loss_bvp: 0.363 loss_rsp: 0.495
+[4,  1000] loss_bvp: 0.337 loss_rsp: 0.469
+[4,  1100] loss_bvp: 0.372 loss_rsp: 0.466
+Mean train loss: 0.848, Mean appx error: 1876.972
+Saved Model Path:  runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch4.pth
+Saving training log to: runs/exp/BP4D_RGBT_300_36x36/plots/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/BP4D_RGBT_300_36x36/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/BP4D_RGBT_300_36x36/PreTrainedModels/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_Epoch4.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 1.748032545396185 +/- 0.11306115127316513
+FFT RMSE (FFT Label): 4.525329467846104 +/- 0.293191706474742
+FFT MAPE (FFT Label): 2.13898941999137 +/- 0.15298415773992788
+FFT Pearson (FFT Label): 0.9471187055515334 +/- 0.008697975711628492
+FFT SNR (FFT Label): 11.625134376597313 +/- 0.24356887657086554 (dB)
+Saved BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_300_36x36/bland_altman_plots.
+Saved BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_300_36x36/bland_altman_plots.
+MACC: 0.8170055493843054 +/- 0.0027993200650015346
+=====================
+==== RSP Metrics ===
+=====================
+FFT MAE (FFT Label): 5.662969867709098 +/- 0.1794715409543001
+FFT RMSE (FFT Label): 8.71616338084789 +/- 0.30753253567785954
+FFT MAPE (FFT Label): 76.37942627487041 +/- 3.050694223103111
+FFT Pearson (FFT Label): 0.23590134531472315 +/- 0.026341321403517273
+FFT SNR (FFT Label): 9.45308864642852 +/- 0.2546070228599871
+Saved FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_300_36x36/bland_altman_plots.
+Saved FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_300_36x36/bland_altman_plots.
+MACC: 0.644233707050379 +/- 0.004266901800015416
+Saving outputs to: runs/exp/BP4D_RGBT_300_36x36/saved_test_outputs/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_bvp_outputs.pickle
+Saving outputs to: runs/exp/BP4D_RGBT_300_36x36/saved_test_outputs/BP4D_MMRPhys_BVP_RSP_RGBT_FuseMx300x36_SFSAM_Sim_Fold1_rsp_outputs.pickle

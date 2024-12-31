@@ -1,0 +1,893 @@
+=> Merging a config file from configs/train_configs/Multi/Within/RGB/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx160x72_Base.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:0
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: 
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    BP_USE_RSP: True
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 5
+    MD_TYPE: SNMF_Label
+    PRETRAINED: 
+    TASKS: ['BVP', 'RSP']
+    TYPE: LEF
+  MODEL_DIR: runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.8
+    CACHED_PATH: /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72
+    DATASET: SCAMPS
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: SCAMPS_Raw_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.8_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/SCAMPS_Raw_160_72x72/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72
+    DATASET: SCAMPS
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DO_PREPROCESS: False
+    END: 0.8
+    EXP_DATA_NAME: SCAMPS_Raw_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.0_0.8.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 10
+  LR: 0.0001
+  MODEL_FILE_NAME: SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.8
+    CACHED_PATH: /home/jitesh/data/SCAMPS
+    DATASET: SCAMPS
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: SCAMPS_Raw_160_72x72
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72
+
+File List Path /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.0_0.8.csv
+ train Preprocessed Dataset Length: 6717
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72
+
+File List Path /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.8_1.0.csv
+ test Preprocessed Dataset Length: 1680
+
+Tasks: ['BVP', 'RSP']
+
+====Training Epoch: 0====
+[0,   100]
+loss_bvp: 1.006
+loss_rsp: 1.004
+[0,   200]
+loss_bvp: 0.992
+loss_rsp: 0.995
+[0,   300]
+loss_bvp: 0.993
+loss_rsp: 0.994
+[0,   400]
+loss_bvp: 0.971
+loss_rsp: 0.987
+[0,   500]
+loss_bvp: 0.966
+loss_rsp: 1.005
+[0,   600]
+loss_bvp: 0.923
+loss_rsp: 0.992
+[0,   700]
+loss_bvp: 0.901
+loss_rsp: 0.985
+[0,   800]
+loss_bvp: 0.855
+loss_rsp: 0.997
+[0,   900]
+loss_bvp: 0.802
+loss_rsp: 1.002
+[0,  1000]
+loss_bvp: 0.759
+loss_rsp: 0.996
+[0,  1100]
+loss_bvp: 0.737
+loss_rsp: 0.987
+[0,  1200]
+loss_bvp: 0.700
+loss_rsp: 1.009
+[0,  1300]
+loss_bvp: 0.685
+loss_rsp: 0.987
+[0,  1400]
+loss_bvp: 0.633
+loss_rsp: 0.981
+[0,  1500]
+loss_bvp: 0.605
+loss_rsp: 0.984
+[0,  1600]
+loss_bvp: 0.577
+loss_rsp: 0.966
+Avg train loss: 1.8
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch0.pth
+
+====Training Epoch: 1====
+[1,   100]
+loss_bvp: 0.564
+loss_rsp: 0.949
+[1,   200]
+loss_bvp: 0.537
+loss_rsp: 0.947
+[1,   300]
+loss_bvp: 0.501
+loss_rsp: 0.924
+[1,   400]
+loss_bvp: 0.532
+loss_rsp: 0.947
+[1,   500]
+loss_bvp: 0.545
+loss_rsp: 0.913
+[1,   600]
+loss_bvp: 0.510
+loss_rsp: 0.900
+[1,   700]
+loss_bvp: 0.516
+loss_rsp: 0.915
+[1,   800]
+loss_bvp: 0.506
+loss_rsp: 0.879
+[1,   900]
+loss_bvp: 0.478
+loss_rsp: 0.892
+[1,  1000]
+loss_bvp: 0.471
+loss_rsp: 0.893
+[1,  1100]
+loss_bvp: 0.476
+loss_rsp: 0.906
+[1,  1200]
+loss_bvp: 0.444
+loss_rsp: 0.864
+[1,  1300]
+loss_bvp: 0.435
+loss_rsp: 0.876
+[1,  1400]
+loss_bvp: 0.438
+loss_rsp: 0.888
+[1,  1500]
+loss_bvp: 0.418
+loss_rsp: 0.871
+[1,  1600]
+loss_bvp: 0.427
+loss_rsp: 0.870
+Avg train loss: 1.38
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch1.pth
+
+====Training Epoch: 2====
+[2,   100]
+loss_bvp: 0.415
+loss_rsp: 0.832
+[2,   200]
+loss_bvp: 0.443
+loss_rsp: 0.843
+[2,   300]
+loss_bvp: 0.406
+loss_rsp: 0.837
+[2,   400]
+loss_bvp: 0.414
+loss_rsp: 0.831
+[2,   500]
+loss_bvp: 0.406
+loss_rsp: 0.802
+[2,   600]
+loss_bvp: 0.403
+loss_rsp: 0.835
+[2,   700]
+loss_bvp: 0.395
+loss_rsp: 0.774
+[2,   800]
+loss_bvp: 0.394
+loss_rsp: 0.777
+[2,   900]
+loss_bvp: 0.404
+loss_rsp: 0.784
+[2,  1000]
+loss_bvp: 0.391
+loss_rsp: 0.797
+[2,  1100]
+loss_bvp: 0.396
+loss_rsp: 0.769
+[2,  1200]
+loss_bvp: 0.414
+loss_rsp: 0.793
+[2,  1300]
+loss_bvp: 0.360
+loss_rsp: 0.780
+[2,  1400]
+loss_bvp: 0.373
+loss_rsp: 0.750
+[2,  1500]
+loss_bvp: 0.357
+loss_rsp: 0.798
+[2,  1600]
+loss_bvp: 0.378
+loss_rsp: 0.762
+Avg train loss: 1.19
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch2.pth
+
+====Training Epoch: 3====
+[3,   100]
+loss_bvp: 0.349
+loss_rsp: 0.743
+[3,   200]
+loss_bvp: 0.393
+loss_rsp: 0.726
+[3,   300]
+loss_bvp: 0.363
+loss_rsp: 0.742
+[3,   400]
+loss_bvp: 0.389
+loss_rsp: 0.709
+[3,   500]
+loss_bvp: 0.386
+loss_rsp: 0.736
+[3,   600]
+loss_bvp: 0.350
+loss_rsp: 0.733
+[3,   700]
+loss_bvp: 0.360
+loss_rsp: 0.736
+[3,   800]
+loss_bvp: 0.364
+loss_rsp: 0.742
+[3,   900]
+loss_bvp: 0.364
+loss_rsp: 0.730
+[3,  1000]
+loss_bvp: 0.347
+loss_rsp: 0.752
+[3,  1100]
+loss_bvp: 0.352
+loss_rsp: 0.773
+[3,  1200]
+loss_bvp: 0.350
+loss_rsp: 0.732
+[3,  1300]
+loss_bvp: 0.358
+loss_rsp: 0.727
+[3,  1400]
+loss_bvp: 0.351
+loss_rsp: 0.729
+[3,  1500]
+loss_bvp: 0.374
+loss_rsp: 0.739
+[3,  1600]
+loss_bvp: 0.354
+loss_rsp: 0.735
+Avg train loss: 1.1
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch3.pth
+
+====Training Epoch: 4====
+[4,   100]
+loss_bvp: 0.335
+loss_rsp: 0.728
+[4,   200]
+loss_bvp: 0.318
+loss_rsp: 0.699
+[4,   300]
+loss_bvp: 0.334
+loss_rsp: 0.714
+[4,   400]
+loss_bvp: 0.331
+loss_rsp: 0.688
+[4,   500]
+loss_bvp: 0.322
+loss_rsp: 0.711
+[4,   600]
+loss_bvp: 0.311
+loss_rsp: 0.704
+[4,   700]
+loss_bvp: 0.304
+loss_rsp: 0.723
+[4,   800]
+loss_bvp: 0.329
+loss_rsp: 0.704
+[4,   900]
+loss_bvp: 0.323
+loss_rsp: 0.727
+[4,  1000]
+loss_bvp: 0.302
+loss_rsp: 0.691
+[4,  1100]
+loss_bvp: 0.321
+loss_rsp: 0.702
+[4,  1200]
+loss_bvp: 0.321
+loss_rsp: 0.690
+[4,  1300]
+loss_bvp: 0.315
+loss_rsp: 0.673
+[4,  1400]
+loss_bvp: 0.297
+loss_rsp: 0.666
+[4,  1500]
+loss_bvp: 0.315
+loss_rsp: 0.659
+[4,  1600]
+loss_bvp: 0.304
+loss_rsp: 0.690
+Avg train loss: 1.02
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch4.pth
+
+====Training Epoch: 5====
+[5,   100]
+loss_bvp: 0.293
+loss_rsp: 0.676
+[5,   200]
+loss_bvp: 0.290
+loss_rsp: 0.701
+[5,   300]
+loss_bvp: 0.303
+loss_rsp: 0.682
+[5,   400]
+loss_bvp: 0.282
+loss_rsp: 0.620
+[5,   500]
+loss_bvp: 0.275
+loss_rsp: 0.660
+[5,   600]
+loss_bvp: 0.281
+loss_rsp: 0.658
+[5,   700]
+loss_bvp: 0.288
+loss_rsp: 0.642
+[5,   800]
+loss_bvp: 0.284
+loss_rsp: 0.682
+[5,   900]
+loss_bvp: 0.294
+loss_rsp: 0.676
+[5,  1000]
+loss_bvp: 0.286
+loss_rsp: 0.702
+[5,  1100]
+loss_bvp: 0.279
+loss_rsp: 0.688
+[5,  1200]
+loss_bvp: 0.271
+loss_rsp: 0.688
+[5,  1300]
+loss_bvp: 0.281
+loss_rsp: 0.700
+[5,  1400]
+loss_bvp: 0.267
+loss_rsp: 0.682
+[5,  1500]
+loss_bvp: 0.281
+loss_rsp: 0.642
+[5,  1600]
+loss_bvp: 0.269
+loss_rsp: 0.684
+Avg train loss: 0.95
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch5.pth
+
+====Training Epoch: 6====
+[6,   100]
+loss_bvp: 0.275
+loss_rsp: 0.643
+[6,   200]
+loss_bvp: 0.272
+loss_rsp: 0.655
+[6,   300]
+loss_bvp: 0.252
+loss_rsp: 0.633
+[6,   400]
+loss_bvp: 0.258
+loss_rsp: 0.616
+[6,   500]
+loss_bvp: 0.275
+loss_rsp: 0.621
+[6,   600]
+loss_bvp: 0.280
+loss_rsp: 0.654
+[6,   700]
+loss_bvp: 0.260
+loss_rsp: 0.653
+[6,   800]
+loss_bvp: 0.275
+loss_rsp: 0.639
+[6,   900]
+loss_bvp: 0.255
+loss_rsp: 0.665
+[6,  1000]
+loss_bvp: 0.269
+loss_rsp: 0.639
+[6,  1100]
+loss_bvp: 0.259
+loss_rsp: 0.633
+[6,  1200]
+loss_bvp: 0.268
+loss_rsp: 0.691
+[6,  1300]
+loss_bvp: 0.270
+loss_rsp: 0.644
+[6,  1400]
+loss_bvp: 0.264
+loss_rsp: 0.675
+[6,  1500]
+loss_bvp: 0.281
+loss_rsp: 0.642
+[6,  1600]
+loss_bvp: 0.261
+loss_rsp: 0.653
+Avg train loss: 0.92
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch6.pth
+
+====Training Epoch: 7====
+[7,   100]
+loss_bvp: 0.273
+loss_rsp: 0.616
+[7,   200]
+loss_bvp: 0.247
+loss_rsp: 0.624
+[7,   300]
+loss_bvp: 0.256
+loss_rsp: 0.661
+[7,   400]
+loss_bvp: 0.259
+loss_rsp: 0.678
+[7,   500]
+loss_bvp: 0.259
+loss_rsp: 0.648
+[7,   600]
+loss_bvp: 0.262
+loss_rsp: 0.608
+[7,   700]
+loss_bvp: 0.265
+loss_rsp: 0.637
+[7,   800]
+loss_bvp: 0.255
+loss_rsp: 0.629
+[7,   900]
+loss_bvp: 0.249
+loss_rsp: 0.650
+[7,  1000]
+loss_bvp: 0.245
+loss_rsp: 0.635
+[7,  1100]
+loss_bvp: 0.256
+loss_rsp: 0.649
+[7,  1200]
+loss_bvp: 0.260
+loss_rsp: 0.612
+[7,  1300]
+loss_bvp: 0.256
+loss_rsp: 0.644
+[7,  1400]
+loss_bvp: 0.248
+loss_rsp: 0.669
+[7,  1500]
+loss_bvp: 0.273
+loss_rsp: 0.665
+[7,  1600]
+loss_bvp: 0.261
+loss_rsp: 0.612
+Avg train loss: 0.9
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch7.pth
+
+====Training Epoch: 8====
+[8,   100]
+loss_bvp: 0.263
+loss_rsp: 0.675
+[8,   200]
+loss_bvp: 0.255
+loss_rsp: 0.596
+[8,   300]
+loss_bvp: 0.256
+loss_rsp: 0.608
+[8,   400]
+loss_bvp: 0.259
+loss_rsp: 0.599
+[8,   500]
+loss_bvp: 0.249
+loss_rsp: 0.630
+[8,   600]
+loss_bvp: 0.253
+loss_rsp: 0.634
+[8,   700]
+loss_bvp: 0.234
+loss_rsp: 0.630
+[8,   800]
+loss_bvp: 0.244
+loss_rsp: 0.602
+[8,   900]
+loss_bvp: 0.262
+loss_rsp: 0.630
+[8,  1000]
+loss_bvp: 0.254
+loss_rsp: 0.626
+[8,  1100]
+loss_bvp: 0.261
+loss_rsp: 0.643
+[8,  1200]
+loss_bvp: 0.241
+loss_rsp: 0.642
+[8,  1300]
+loss_bvp: 0.253
+loss_rsp: 0.607
+[8,  1400]
+loss_bvp: 0.255
+loss_rsp: 0.616
+[8,  1500]
+loss_bvp: 0.252
+loss_rsp: 0.612
+[8,  1600]
+loss_bvp: 0.240
+loss_rsp: 0.629
+Avg train loss: 0.88
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch8.pth
+
+====Training Epoch: 9====
+[9,   100]
+loss_bvp: 0.250
+loss_rsp: 0.604
+[9,   200]
+loss_bvp: 0.231
+loss_rsp: 0.637
+[9,   300]
+loss_bvp: 0.251
+loss_rsp: 0.626
+[9,   400]
+loss_bvp: 0.234
+loss_rsp: 0.650
+[9,   500]
+loss_bvp: 0.249
+loss_rsp: 0.617
+[9,   600]
+loss_bvp: 0.230
+loss_rsp: 0.596
+[9,   700]
+loss_bvp: 0.242
+loss_rsp: 0.608
+[9,   800]
+loss_bvp: 0.258
+loss_rsp: 0.665
+[9,   900]
+loss_bvp: 0.246
+loss_rsp: 0.612
+[9,  1000]
+loss_bvp: 0.260
+loss_rsp: 0.633
+[9,  1100]
+loss_bvp: 0.255
+loss_rsp: 0.628
+[9,  1200]
+loss_bvp: 0.260
+loss_rsp: 0.584
+[9,  1300]
+loss_bvp: 0.247
+loss_rsp: 0.617
+[9,  1400]
+loss_bvp: 0.252
+loss_rsp: 0.606
+[9,  1500]
+loss_bvp: 0.238
+loss_rsp: 0.566
+[9,  1600]
+loss_bvp: 0.256
+loss_rsp: 0.661
+Avg train loss: 0.87
+Saved Model Path:  runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch9.pth
+Saving training log to: runs/exp/SCAMPS_Raw_160_72x72/plots/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_BVP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/SCAMPS_Raw_160_72x72/plots
+Saving training log to: runs/exp/SCAMPS_Raw_160_72x72/plots/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_RSP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/SCAMPS_Raw_160_72x72/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_Epoch9.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 4.520089285714286 +/- 0.6260388918031832
+FFT RMSE (FFT Label): 15.488997250271478 +/- 1.262601782989404
+FFT MAPE (FFT Label): 8.533760583631196 +/- 1.230143741755395
+FFT Pearson (FFT Label): 0.879580383126887 +/- 0.0201401162476828
+FFT SNR (FFT Label): 7.5573245656415065 +/- 0.2599595957967958 (dB)
+Saved SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_BVP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/SCAMPS_Raw_160_72x72/bland_altman_plots.
+Saved SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_BVP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/SCAMPS_Raw_160_72x72/bland_altman_plots.
+MACC: 0.8755606093435584 +/- 0.005310946880718941
+=====================
+==== RSP Metrics ===
+=====================
+FFT MAE (FFT Label): 3.1326729910714284 +/- 0.1755967798784414
+FFT RMSE (FFT Label): 5.203922402097094 +/- 0.308807554055962
+FFT MAPE (FFT Label): 23.662414965986393 +/- 1.4966232931635943
+FFT Pearson (FFT Label): 0.36606526691201596 +/- 0.03939498131256854
+FFT SNR (FFT Label): 10.404825899375505 +/- 0.35775509347670686
+Saved SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_RSP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/SCAMPS_Raw_160_72x72/bland_altman_plots.
+Saved SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_RSP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/SCAMPS_Raw_160_72x72/bland_altman_plots.
+MACC: 0.692181700348231 +/- 0.008497047119982441
+Saving outputs to: runs/exp/SCAMPS_Raw_160_72x72/saved_test_outputs/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_bvp_outputs.pickle
+Saving outputs to: runs/exp/SCAMPS_Raw_160_72x72/saved_test_outputs/SCAMPS_SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_Base_rsp_outputs.pickle

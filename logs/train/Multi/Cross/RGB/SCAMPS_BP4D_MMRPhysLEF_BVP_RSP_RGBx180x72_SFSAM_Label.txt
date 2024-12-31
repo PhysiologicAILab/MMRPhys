@@ -1,0 +1,440 @@
+=> Merging a config file from configs/train_configs/Multi/Cross/RGB/SCAMPS_BP4D_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:3
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: ./runs/exp/BP4D_RGBT_180_72x72/PreTrainedModels/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_Epoch4.pth
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    CHANNELS: 3
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    BP_USE_RSP: True
+    CHANNELS: 3
+    FRAME_NUM: 180
+    MD_FSAM: True
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TYPE: SNMF_Label
+    PRETRAINED: 
+    TASKS: ['BVP', 'RSP']
+    TYPE: LEF
+  MODEL_DIR: runs/exp/SCAMPS_Raw_180_72x72/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_72x72
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_180_72x72
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/SCAMPS/SCAMPS_Raw_180_72x72
+    DATASET: SCAMPS
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: SCAMPS_Raw_180_72x72
+    FILE_LIST_PATH: /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 1
+  LR: 0.001
+  MODEL_FILE_NAME: SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.7
+    CACHED_PATH: /home/jitesh/data/SCAMPS
+    DATASET: SCAMPS
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: SCAMPS_Raw_180_72x72
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 72
+          BIG_W: 72
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 180
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/SCAMPS/SCAMPS_Raw_180_72x72
+
+File List Path /home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_1.0.csv
+ train Preprocessed Dataset Length: 8394
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_1.0.csv
+ test Preprocessed Dataset Length: 6670
+
+Tasks: ['BVP', 'RSP']
+
+====Training Epoch: 0====
+[0,   100]
+loss_bvp: 0.609
+loss_rsp: 0.722
+[0,   200]
+loss_bvp: 0.399
+loss_rsp: 0.660
+[0,   300]
+loss_bvp: 0.345
+loss_rsp: 0.564
+[0,   400]
+loss_bvp: 0.295
+loss_rsp: 0.501
+[0,   500]
+loss_bvp: 0.261
+loss_rsp: 0.488
+[0,   600]
+loss_bvp: 0.228
+loss_rsp: 0.477
+[0,   700]
+loss_bvp: 0.199
+loss_rsp: 0.446
+[0,   800]
+loss_bvp: 0.202
+loss_rsp: 0.433
+[0,   900]
+loss_bvp: 0.180
+loss_rsp: 0.428
+[0,  1000]
+loss_bvp: 0.187
+loss_rsp: 0.424
+[0,  1100]
+loss_bvp: 0.172
+loss_rsp: 0.435
+[0,  1200]
+loss_bvp: 0.164
+loss_rsp: 0.420
+[0,  1300]
+loss_bvp: 0.169
+loss_rsp: 0.395
+[0,  1400]
+loss_bvp: 0.162
+loss_rsp: 0.373
+[0,  1500]
+loss_bvp: 0.144
+loss_rsp: 0.383
+[0,  1600]
+loss_bvp: 0.141
+loss_rsp: 0.357
+[0,  1700]
+loss_bvp: 0.139
+loss_rsp: 0.357
+[0,  1800]
+loss_bvp: 0.144
+loss_rsp: 0.336
+[0,  1900]
+loss_bvp: 0.141
+loss_rsp: 0.328
+[0,  2000]
+loss_bvp: 0.146
+loss_rsp: 0.312
+Avg train loss: 0.65
+Avg appx error BVP: 479.21
+Avg appx error RSP: 2091.53
+Saved Model Path:  runs/exp/SCAMPS_Raw_180_72x72/PreTrainedModels/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_Epoch0.pth
+Saving training log to: runs/exp/SCAMPS_Raw_180_72x72/plots/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_BVP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/SCAMPS_Raw_180_72x72/plots
+Saving training log to: runs/exp/SCAMPS_Raw_180_72x72/plots/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_RSP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/SCAMPS_Raw_180_72x72/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/SCAMPS_Raw_180_72x72/PreTrainedModels/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_Epoch0.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 2.323500114074446 +/- 0.15780699823959596
+FFT RMSE (FFT Label): 6.049972958032453 +/- 0.38950787425473765
+FFT MAPE (FFT Label): 2.8375503500118024 +/- 0.20818951257439589
+FFT Pearson (FFT Label): 0.9062128905452929 +/- 0.011954423073608271
+FFT SNR (FFT Label): 7.104117071050425 +/- 0.21988788274174606 (dB)
+Saved SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_BVP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_180_72x72/bland_altman_plots.
+Saved SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_BVP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_180_72x72/bland_altman_plots.
+MACC: 0.6888426621811662 +/- 0.0036553072555182485
+=====================
+==== RSP Metrics ===
+=====================
+FFT MAE (FFT Label): 4.795621550304171 +/- 0.11333530518283791
+FFT RMSE (FFT Label): 6.2524103335476315 +/- 0.2105000322924383
+FFT MAPE (FFT Label): 32.11250867673996 +/- 0.9580621206694969
+FFT Pearson (FFT Label): 0.0672885555315443 +/- 0.028208885253936687
+FFT SNR (FFT Label): 4.785664780005729 +/- 0.1799234257137103
+Saved SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_RSP_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_180_72x72/bland_altman_plots.
+Saved SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_RSP_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_180_72x72/bland_altman_plots.
+MACC: 0.5244151195304319 +/- 0.0041272329967285805
+Saving outputs to: runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_bvp_outputs.pickle
+Saving outputs to: runs/exp/BP4D_RGBT_180_72x72/saved_test_outputs/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_rsp_outputs.pickle

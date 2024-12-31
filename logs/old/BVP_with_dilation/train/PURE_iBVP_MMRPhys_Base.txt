@@ -1,0 +1,402 @@
+=> Merging a config file from configs/train_configs/PURE_iBVP_MMRPhys_Base.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:0
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: 
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TYPE: NMF
+    TASKS: ['BVP']
+    TYPE: Standard
+  MODEL_DIR: runs/exp/PURE_Raw_160_72x72/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+    DATASET: iBVP
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/iBVP_Dataset
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: iBVP_RGBT_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGBT
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/iBVP_RGBT_160_72x72/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 4
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/PURE_Dataset/PURE_Raw_160_72x72
+    DATASET: PURE
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/PURE_Dataset/raw
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: PURE_Raw_160_72x72
+    FILE_LIST_PATH: /home/jitesh/data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 10
+  LR: 0.001
+  MODEL_FILE_NAME: PURE_MMRPhys_Base
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.7
+    CACHED_PATH: /home/jitesh/data/PURE_Dataset
+    DATASET: PURE
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/PURE_Dataset/raw
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: PURE_Raw_160_72x72
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 30
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGB
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/PURE_Dataset/PURE_Raw_160_72x72
+
+File List Path /home/jitesh/data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_0.0_1.0.csv
+ train Preprocessed Dataset Length: 750
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+
+File List Path /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_1.0.csv
+ test Preprocessed Dataset Length: 3416
+
+
+====Training Epoch: 0====
+[0,   100] loss_bvp: 0.827
+Mean train loss: 0.62
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch0.pth
+
+====Training Epoch: 1====
+[1,   100] loss_bvp: 0.318
+Mean train loss: 0.316
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch1.pth
+
+====Training Epoch: 2====
+[2,   100] loss_bvp: 0.307
+Mean train loss: 0.302
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch2.pth
+
+====Training Epoch: 3====
+[3,   100] loss_bvp: 0.275
+Mean train loss: 0.293
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch3.pth
+
+====Training Epoch: 4====
+[4,   100] loss_bvp: 0.284
+Mean train loss: 0.285
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch4.pth
+
+====Training Epoch: 5====
+[5,   100] loss_bvp: 0.250
+Mean train loss: 0.258
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch5.pth
+
+====Training Epoch: 6====
+[6,   100] loss_bvp: 0.262
+Mean train loss: 0.264
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch6.pth
+
+====Training Epoch: 7====
+[7,   100] loss_bvp: 0.251
+Mean train loss: 0.245
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch7.pth
+
+====Training Epoch: 8====
+[8,   100] loss_bvp: 0.239
+Mean train loss: 0.235
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch8.pth
+
+====Training Epoch: 9====
+[9,   100] loss_bvp: 0.237
+Mean train loss: 0.233
+Saved Model Path:  runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch9.pth
+Saving training log to: runs/exp/PURE_Raw_160_72x72/plots/PURE_MMRPhys_Base_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/PURE_Raw_160_72x72/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/PURE_Raw_160_72x72/PreTrainedModels/PURE_MMRPhys_Base_Epoch9.pth
+Running model evaluation on the testing dataset!
+
+Calculating metrics!
+FFT MAE (FFT Label): 1.6276041666666667 +/- 0.29138258651066434
+FFT RMSE (FFT Label): 3.4378346366991432 +/- 0.5799176287078078
+FFT MAPE (FFT Label): 2.1832126991993346 +/- 0.40741380743029715
+FFT Pearson (FFT Label): 0.9310416257058237 +/- 0.03544348294182876
+FFT SNR (FFT Label): 6.449452019651013 +/- 0.5817116890002805 (dB)
+Saved PURE_MMRPhys_Base_FFT_BlandAltman_ScatterPlot.pdf to runs/exp/iBVP_RGBT_160_72x72/bland_altman_plots.
+Saved PURE_MMRPhys_Base_FFT_BlandAltman_DifferencePlot.pdf to runs/exp/iBVP_RGBT_160_72x72/bland_altman_plots.
+MACC: 0.5753175606792351 +/- 0.012112148878230197
+Saving outputs to: runs/exp/iBVP_RGBT_160_72x72/saved_test_outputs/PURE_MMRPhys_Base_bvp_outputs.pickle

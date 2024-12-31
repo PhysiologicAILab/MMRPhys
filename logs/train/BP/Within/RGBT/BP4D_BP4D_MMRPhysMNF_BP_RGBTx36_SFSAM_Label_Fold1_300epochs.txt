@@ -1,0 +1,1564 @@
+=> Merging a config file from configs/train_configs/BP/Within/RGBT/BP4D_BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1.yaml
+Configuration:
+BASE: ['']
+DEVICE: cuda:1
+INFERENCE:
+  BATCH_SIZE: 4
+  EVALUATION_METHOD: FFT
+  EVALUATION_WINDOW:
+    USE_SMALLER_WINDOW: False
+    WINDOW_SIZE: 30
+  MODEL_PATH: 
+LOG:
+  PATH: runs/exp
+MODEL:
+  BIGSMALL:
+    FRAME_DEPTH: 3
+  DROP_RATE: 0.1
+  EFFICIENTPHYS:
+    CHANNELS: 3
+    FRAME_DEPTH: 20
+  FactorizePhys:
+    CHANNELS: 3
+    FRAME_NUM: 160
+    MD_FSAM: False
+    MD_INFERENCE: True
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 4
+    MD_TRANSFORM: T_KAB
+    MD_TYPE: NMF
+    TYPE: Standard
+  MMRPhys:
+    CHANNELS: 4
+    FRAME_NUM: 500
+    MD_FSAM: False
+    MD_INFERENCE: False
+    MD_R: 1
+    MD_RESIDUAL: True
+    MD_S: 1
+    MD_STEPS: 5
+    MD_TYPE: SNMF_Label
+    PRETRAINED: ./runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_V2_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth
+    TASKS: ['BP']
+    TYPE: MNF
+  MODEL_DIR: runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels
+  NAME: MMRPhys
+  PHYSFORMER:
+    CHANNELS: 3
+    DIM: 96
+    FF_DIM: 144
+    FRAME_NUM: 160
+    NUM_HEADS: 4
+    NUM_LAYERS: 12
+    PATCH_SIZE: 4
+    THETA: 0.7
+  PHYSNET:
+    CHANNELS: 3
+    FRAME_NUM: 160
+  RESUME: 
+  TSCAN:
+    FRAME_DEPTH: 10
+NUM_OF_GPU_TRAIN: 1
+TEST:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_500_36x36
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_500_36x36_0.0_1.0_Fold1_Test.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 500
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  OUTPUT_SAVE_DIR: runs/exp/BP4D_RGBT_500_36x36/saved_test_outputs
+  USE_LAST_EPOCH: True
+TOOLBOX_MODE: train_and_test
+TRAIN:
+  BATCH_SIZE: 32
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_500_36x36
+    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_500_36x36_0.0_1.0_Fold1_Train.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Train
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Train_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 500
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+  EPOCHS: 300
+  LR: 0.005
+  MODEL_FILE_NAME: BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1
+  OPTIMIZER:
+    BETAS: (0.9, 0.999)
+    EPS: 0.0001
+    MOMENTUM: 0.9
+  PLOT_LOSSES_AND_LR: True
+UNSUPERVISED:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: PreprocessedData/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    DATASET: 
+    DATA_FORMAT: NCDHW
+    DATA_PATH: 
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: _SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised
+    FILE_LIST_PATH: PreprocessedData/DataFileLists/_SizeW72_SizeH72_ClipLength160_DataTypeRaw_DataAugNone_LabelTypeStandardized_Crop_faceTrue_BackendY5F_Large_boxTrue_Large_size1.5_Dyamic_DetTrue_det_len30_Median_face_boxFalse_unsupervised_0.0_1.0.csv
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: 
+      FOLD_PATH: 
+    FS: 0
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      CHUNK_LENGTH: 160
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 30
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: True
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 72
+        W: 72
+      SCAMPS:
+        LABELS: BVP
+      USE_PSUEDO_PPG_LABEL: False
+  METHOD: []
+  METRICS: []
+  OUTPUT_SAVE_DIR: 
+VALID:
+  DATA:
+    BEGIN: 0.0
+    CACHED_PATH: /home/jitesh/data/BP4D
+    DATASET: BP4D
+    DATA_FORMAT: NCDHW
+    DATA_PATH: /mnt/sda/data/raw/BP4D_36x36
+    DO_PREPROCESS: False
+    END: 1.0
+    EXP_DATA_NAME: BP4D_RGBT_500_36x36
+    FILE_LIST_PATH: PreprocessedData/DataFileLists
+    FILTERING:
+      EXCLUSION_LIST: ['']
+      SELECT_TASKS: False
+      TASK_LIST: ['']
+      USE_EXCLUSION_LIST: False
+    FOLD:
+      FOLD_NAME: Fold1_Test
+      FOLD_PATH: ./dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv
+    FS: 25
+    INFO:
+      EXERCISE: [True]
+      GENDER: ['']
+      GLASSER: [True]
+      HAIR_COVER: [True]
+      LIGHT: ['']
+      MAKEUP: [True]
+      MOTION: ['']
+      SKIN_COLOR: [1]
+    PREPROCESS:
+      BIGSMALL:
+        BIG_DATA_TYPE: ['']
+        RESIZE:
+          BIG_H: 144
+          BIG_W: 144
+          SMALL_H: 9
+          SMALL_W: 9
+        SMALL_DATA_TYPE: ['']
+      BP4D:
+        DATA_MODE: RGBT
+      CHUNK_LENGTH: 500
+      CROP_FACE:
+        BACKEND: Y5F
+        DETECTION:
+          DO_DYNAMIC_DETECTION: True
+          DYNAMIC_DETECTION_FREQUENCY: 25
+          USE_MEDIAN_FACE_BOX: False
+        DO_CROP_FACE: False
+        LARGE_BOX_COEF: 1.5
+        USE_LARGE_FACE_BOX: True
+      DATA_AUG: ['None']
+      DATA_TYPE: ['Raw']
+      DO_CHUNK: True
+      IBVP:
+        DATA_MODE: RGB
+        SQ: True
+      LABEL_TYPE: Standardized
+      PREPROCESS_FRAMES: True
+      RESIZE:
+        H: 36
+        W: 36
+      SCAMPS:
+        LABELS: BVP_RSP
+      USE_PSUEDO_PPG_LABEL: False
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_500_36x36_0.0_1.0_Fold1_Train.csv
+ train Preprocessed Dataset Length: 1318
+
+Testing uses last epoch, validation dataset is not required.
+
+Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_500_36x36
+
+File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_500_36x36_0.0_1.0_Fold1_Test.csv
+ test Preprocessed Dataset Length: 658
+
+Tasks: ['BP']
+
+====Training Epoch: 0====
+Avg train loss: 191.89
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch0.pth
+
+====Training Epoch: 1====
+Avg train loss: 190.52
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch1.pth
+
+====Training Epoch: 2====
+Avg train loss: 187.23
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch2.pth
+
+====Training Epoch: 3====
+Avg train loss: 178.98
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch3.pth
+
+====Training Epoch: 4====
+Avg train loss: 158.37
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch4.pth
+
+====Training Epoch: 5====
+Avg train loss: 115.77
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch5.pth
+
+====Training Epoch: 6====
+Avg train loss: 60.48
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch6.pth
+
+====Training Epoch: 7====
+Avg train loss: 35.89
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch7.pth
+
+====Training Epoch: 8====
+Avg train loss: 34.13
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch8.pth
+
+====Training Epoch: 9====
+Avg train loss: 32.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch9.pth
+
+====Training Epoch: 10====
+Avg train loss: 30.37
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch10.pth
+
+====Training Epoch: 11====
+Avg train loss: 29.6
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch11.pth
+
+====Training Epoch: 12====
+Avg train loss: 28.8
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch12.pth
+
+====Training Epoch: 13====
+Avg train loss: 27.46
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch13.pth
+
+====Training Epoch: 14====
+Avg train loss: 27.14
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch14.pth
+
+====Training Epoch: 15====
+Avg train loss: 27.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch15.pth
+
+====Training Epoch: 16====
+Avg train loss: 25.9
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch16.pth
+
+====Training Epoch: 17====
+Avg train loss: 25.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch17.pth
+
+====Training Epoch: 18====
+Avg train loss: 24.39
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch18.pth
+
+====Training Epoch: 19====
+Avg train loss: 24.14
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch19.pth
+
+====Training Epoch: 20====
+Avg train loss: 24.42
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch20.pth
+
+====Training Epoch: 21====
+Avg train loss: 22.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch21.pth
+
+====Training Epoch: 22====
+Avg train loss: 22.64
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch22.pth
+
+====Training Epoch: 23====
+Avg train loss: 22.18
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch23.pth
+
+====Training Epoch: 24====
+Avg train loss: 22.01
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch24.pth
+
+====Training Epoch: 25====
+Avg train loss: 21.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch25.pth
+
+====Training Epoch: 26====
+Avg train loss: 21.65
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch26.pth
+
+====Training Epoch: 27====
+Avg train loss: 20.89
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch27.pth
+
+====Training Epoch: 28====
+Avg train loss: 20.49
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch28.pth
+
+====Training Epoch: 29====
+Avg train loss: 20.34
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch29.pth
+
+====Training Epoch: 30====
+Avg train loss: 20.02
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch30.pth
+
+====Training Epoch: 31====
+Avg train loss: 19.73
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch31.pth
+
+====Training Epoch: 32====
+Avg train loss: 19.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch32.pth
+
+====Training Epoch: 33====
+Avg train loss: 19.06
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch33.pth
+
+====Training Epoch: 34====
+Avg train loss: 19.71
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch34.pth
+
+====Training Epoch: 35====
+Avg train loss: 19.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch35.pth
+
+====Training Epoch: 36====
+Avg train loss: 19.05
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch36.pth
+
+====Training Epoch: 37====
+Avg train loss: 18.59
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch37.pth
+
+====Training Epoch: 38====
+Avg train loss: 18.96
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch38.pth
+
+====Training Epoch: 39====
+Avg train loss: 18.83
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch39.pth
+
+====Training Epoch: 40====
+Avg train loss: 18.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch40.pth
+
+====Training Epoch: 41====
+Avg train loss: 18.95
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch41.pth
+
+====Training Epoch: 42====
+Avg train loss: 18.7
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch42.pth
+
+====Training Epoch: 43====
+Avg train loss: 18.11
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch43.pth
+
+====Training Epoch: 44====
+Avg train loss: 18.33
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch44.pth
+
+====Training Epoch: 45====
+Avg train loss: 18.45
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch45.pth
+
+====Training Epoch: 46====
+Avg train loss: 18.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch46.pth
+
+====Training Epoch: 47====
+Avg train loss: 17.83
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch47.pth
+
+====Training Epoch: 48====
+Avg train loss: 18.64
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch48.pth
+
+====Training Epoch: 49====
+Avg train loss: 19.09
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch49.pth
+
+====Training Epoch: 50====
+Avg train loss: 18.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch50.pth
+
+====Training Epoch: 51====
+Avg train loss: 17.82
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch51.pth
+
+====Training Epoch: 52====
+Avg train loss: 17.61
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch52.pth
+
+====Training Epoch: 53====
+Avg train loss: 17.39
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch53.pth
+
+====Training Epoch: 54====
+Avg train loss: 17.55
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch54.pth
+
+====Training Epoch: 55====
+Avg train loss: 18.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch55.pth
+
+====Training Epoch: 56====
+Avg train loss: 17.41
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch56.pth
+
+====Training Epoch: 57====
+Avg train loss: 16.84
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch57.pth
+
+====Training Epoch: 58====
+Avg train loss: 17.63
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch58.pth
+
+====Training Epoch: 59====
+Avg train loss: 17.52
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch59.pth
+
+====Training Epoch: 60====
+Avg train loss: 17.09
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch60.pth
+
+====Training Epoch: 61====
+Avg train loss: 17.21
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch61.pth
+
+====Training Epoch: 62====
+Avg train loss: 17.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch62.pth
+
+====Training Epoch: 63====
+Avg train loss: 17.16
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch63.pth
+
+====Training Epoch: 64====
+Avg train loss: 16.41
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch64.pth
+
+====Training Epoch: 65====
+Avg train loss: 16.58
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch65.pth
+
+====Training Epoch: 66====
+Avg train loss: 16.56
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch66.pth
+
+====Training Epoch: 67====
+Avg train loss: 16.6
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch67.pth
+
+====Training Epoch: 68====
+Avg train loss: 17.35
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch68.pth
+
+====Training Epoch: 69====
+Avg train loss: 17.14
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch69.pth
+
+====Training Epoch: 70====
+Avg train loss: 16.66
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch70.pth
+
+====Training Epoch: 71====
+Avg train loss: 16.95
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch71.pth
+
+====Training Epoch: 72====
+Avg train loss: 16.78
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch72.pth
+
+====Training Epoch: 73====
+Avg train loss: 16.53
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch73.pth
+
+====Training Epoch: 74====
+Avg train loss: 16.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch74.pth
+
+====Training Epoch: 75====
+Avg train loss: 16.18
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch75.pth
+
+====Training Epoch: 76====
+Avg train loss: 16.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch76.pth
+
+====Training Epoch: 77====
+Avg train loss: 16.68
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch77.pth
+
+====Training Epoch: 78====
+Avg train loss: 17.14
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch78.pth
+
+====Training Epoch: 79====
+Avg train loss: 16.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch79.pth
+
+====Training Epoch: 80====
+Avg train loss: 16.54
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch80.pth
+
+====Training Epoch: 81====
+Avg train loss: 16.72
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch81.pth
+
+====Training Epoch: 82====
+Avg train loss: 16.23
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch82.pth
+
+====Training Epoch: 83====
+Avg train loss: 16.11
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch83.pth
+
+====Training Epoch: 84====
+Avg train loss: 16.41
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch84.pth
+
+====Training Epoch: 85====
+Avg train loss: 16.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch85.pth
+
+====Training Epoch: 86====
+Avg train loss: 14.89
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch86.pth
+
+====Training Epoch: 87====
+Avg train loss: 15.64
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch87.pth
+
+====Training Epoch: 88====
+Avg train loss: 15.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch88.pth
+
+====Training Epoch: 89====
+Avg train loss: 15.26
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch89.pth
+
+====Training Epoch: 90====
+Avg train loss: 15.67
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch90.pth
+
+====Training Epoch: 91====
+Avg train loss: 15.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch91.pth
+
+====Training Epoch: 92====
+Avg train loss: 15.62
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch92.pth
+
+====Training Epoch: 93====
+Avg train loss: 15.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch93.pth
+
+====Training Epoch: 94====
+Avg train loss: 15.28
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch94.pth
+
+====Training Epoch: 95====
+Avg train loss: 14.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch95.pth
+
+====Training Epoch: 96====
+Avg train loss: 15.9
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch96.pth
+
+====Training Epoch: 97====
+Avg train loss: 15.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch97.pth
+
+====Training Epoch: 98====
+Avg train loss: 14.73
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch98.pth
+
+====Training Epoch: 99====
+Avg train loss: 14.6
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch99.pth
+
+====Training Epoch: 100====
+Avg train loss: 14.98
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch100.pth
+
+====Training Epoch: 101====
+Avg train loss: 14.16
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch101.pth
+
+====Training Epoch: 102====
+Avg train loss: 14.4
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch102.pth
+
+====Training Epoch: 103====
+Avg train loss: 14.58
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch103.pth
+
+====Training Epoch: 104====
+Avg train loss: 13.8
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch104.pth
+
+====Training Epoch: 105====
+Avg train loss: 14.06
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch105.pth
+
+====Training Epoch: 106====
+Avg train loss: 13.74
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch106.pth
+
+====Training Epoch: 107====
+Avg train loss: 14.2
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch107.pth
+
+====Training Epoch: 108====
+Avg train loss: 14.18
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch108.pth
+
+====Training Epoch: 109====
+Avg train loss: 13.51
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch109.pth
+
+====Training Epoch: 110====
+Avg train loss: 14.05
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch110.pth
+
+====Training Epoch: 111====
+Avg train loss: 13.88
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch111.pth
+
+====Training Epoch: 112====
+Avg train loss: 13.78
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch112.pth
+
+====Training Epoch: 113====
+Avg train loss: 14.31
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch113.pth
+
+====Training Epoch: 114====
+Avg train loss: 13.16
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch114.pth
+
+====Training Epoch: 115====
+Avg train loss: 12.9
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch115.pth
+
+====Training Epoch: 116====
+Avg train loss: 13.15
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch116.pth
+
+====Training Epoch: 117====
+Avg train loss: 13.51
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch117.pth
+
+====Training Epoch: 118====
+Avg train loss: 13.46
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch118.pth
+
+====Training Epoch: 119====
+Avg train loss: 13.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch119.pth
+
+====Training Epoch: 120====
+Avg train loss: 13.09
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch120.pth
+
+====Training Epoch: 121====
+Avg train loss: 13.22
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch121.pth
+
+====Training Epoch: 122====
+Avg train loss: 13.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch122.pth
+
+====Training Epoch: 123====
+Avg train loss: 12.73
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch123.pth
+
+====Training Epoch: 124====
+Avg train loss: 12.84
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch124.pth
+
+====Training Epoch: 125====
+Avg train loss: 12.86
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch125.pth
+
+====Training Epoch: 126====
+Avg train loss: 13.65
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch126.pth
+
+====Training Epoch: 127====
+Avg train loss: 12.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch127.pth
+
+====Training Epoch: 128====
+Avg train loss: 13.55
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch128.pth
+
+====Training Epoch: 129====
+Avg train loss: 12.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch129.pth
+
+====Training Epoch: 130====
+Avg train loss: 12.54
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch130.pth
+
+====Training Epoch: 131====
+Avg train loss: 12.06
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch131.pth
+
+====Training Epoch: 132====
+Avg train loss: 12.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch132.pth
+
+====Training Epoch: 133====
+Avg train loss: 12.19
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch133.pth
+
+====Training Epoch: 134====
+Avg train loss: 12.59
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch134.pth
+
+====Training Epoch: 135====
+Avg train loss: 11.92
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch135.pth
+
+====Training Epoch: 136====
+Avg train loss: 12.4
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch136.pth
+
+====Training Epoch: 137====
+Avg train loss: 12.91
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch137.pth
+
+====Training Epoch: 138====
+Avg train loss: 11.9
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch138.pth
+
+====Training Epoch: 139====
+Avg train loss: 11.99
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch139.pth
+
+====Training Epoch: 140====
+Avg train loss: 12.44
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch140.pth
+
+====Training Epoch: 141====
+Avg train loss: 11.8
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch141.pth
+
+====Training Epoch: 142====
+Avg train loss: 12.0
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch142.pth
+
+====Training Epoch: 143====
+Avg train loss: 12.11
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch143.pth
+
+====Training Epoch: 144====
+Avg train loss: 11.7
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch144.pth
+
+====Training Epoch: 145====
+Avg train loss: 12.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch145.pth
+
+====Training Epoch: 146====
+Avg train loss: 11.4
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch146.pth
+
+====Training Epoch: 147====
+Avg train loss: 11.51
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch147.pth
+
+====Training Epoch: 148====
+Avg train loss: 11.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch148.pth
+
+====Training Epoch: 149====
+Avg train loss: 11.98
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch149.pth
+
+====Training Epoch: 150====
+Avg train loss: 11.51
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch150.pth
+
+====Training Epoch: 151====
+Avg train loss: 11.25
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch151.pth
+
+====Training Epoch: 152====
+Avg train loss: 11.44
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch152.pth
+
+====Training Epoch: 153====
+Avg train loss: 11.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch153.pth
+
+====Training Epoch: 154====
+Avg train loss: 11.9
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch154.pth
+
+====Training Epoch: 155====
+Avg train loss: 11.11
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch155.pth
+
+====Training Epoch: 156====
+Avg train loss: 11.38
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch156.pth
+
+====Training Epoch: 157====
+Avg train loss: 11.3
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch157.pth
+
+====Training Epoch: 158====
+Avg train loss: 10.92
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch158.pth
+
+====Training Epoch: 159====
+Avg train loss: 11.23
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch159.pth
+
+====Training Epoch: 160====
+Avg train loss: 10.81
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch160.pth
+
+====Training Epoch: 161====
+Avg train loss: 10.89
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch161.pth
+
+====Training Epoch: 162====
+Avg train loss: 10.91
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch162.pth
+
+====Training Epoch: 163====
+Avg train loss: 10.61
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch163.pth
+
+====Training Epoch: 164====
+Avg train loss: 10.86
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch164.pth
+
+====Training Epoch: 165====
+Avg train loss: 10.95
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch165.pth
+
+====Training Epoch: 166====
+Avg train loss: 10.63
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch166.pth
+
+====Training Epoch: 167====
+Avg train loss: 10.72
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch167.pth
+
+====Training Epoch: 168====
+Avg train loss: 10.56
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch168.pth
+
+====Training Epoch: 169====
+Avg train loss: 10.62
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch169.pth
+
+====Training Epoch: 170====
+Avg train loss: 10.65
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch170.pth
+
+====Training Epoch: 171====
+Avg train loss: 10.62
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch171.pth
+
+====Training Epoch: 172====
+Avg train loss: 10.47
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch172.pth
+
+====Training Epoch: 173====
+Avg train loss: 10.65
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch173.pth
+
+====Training Epoch: 174====
+Avg train loss: 10.83
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch174.pth
+
+====Training Epoch: 175====
+Avg train loss: 10.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch175.pth
+
+====Training Epoch: 176====
+Avg train loss: 10.25
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch176.pth
+
+====Training Epoch: 177====
+Avg train loss: 10.38
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch177.pth
+
+====Training Epoch: 178====
+Avg train loss: 9.96
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch178.pth
+
+====Training Epoch: 179====
+Avg train loss: 10.43
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch179.pth
+
+====Training Epoch: 180====
+Avg train loss: 9.75
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch180.pth
+
+====Training Epoch: 181====
+Avg train loss: 9.8
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch181.pth
+
+====Training Epoch: 182====
+Avg train loss: 10.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch182.pth
+
+====Training Epoch: 183====
+Avg train loss: 10.67
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch183.pth
+
+====Training Epoch: 184====
+Avg train loss: 9.8
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch184.pth
+
+====Training Epoch: 185====
+Avg train loss: 10.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch185.pth
+
+====Training Epoch: 186====
+Avg train loss: 9.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch186.pth
+
+====Training Epoch: 187====
+Avg train loss: 9.78
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch187.pth
+
+====Training Epoch: 188====
+Avg train loss: 9.56
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch188.pth
+
+====Training Epoch: 189====
+Avg train loss: 9.84
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch189.pth
+
+====Training Epoch: 190====
+Avg train loss: 9.86
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch190.pth
+
+====Training Epoch: 191====
+Avg train loss: 10.25
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch191.pth
+
+====Training Epoch: 192====
+Avg train loss: 9.61
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch192.pth
+
+====Training Epoch: 193====
+Avg train loss: 9.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch193.pth
+
+====Training Epoch: 194====
+Avg train loss: 9.25
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch194.pth
+
+====Training Epoch: 195====
+Avg train loss: 9.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch195.pth
+
+====Training Epoch: 196====
+Avg train loss: 9.12
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch196.pth
+
+====Training Epoch: 197====
+Avg train loss: 9.6
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch197.pth
+
+====Training Epoch: 198====
+Avg train loss: 9.3
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch198.pth
+
+====Training Epoch: 199====
+Avg train loss: 9.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch199.pth
+
+====Training Epoch: 200====
+Avg train loss: 9.36
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch200.pth
+
+====Training Epoch: 201====
+Avg train loss: 9.28
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch201.pth
+
+====Training Epoch: 202====
+Avg train loss: 9.35
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch202.pth
+
+====Training Epoch: 203====
+Avg train loss: 8.77
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch203.pth
+
+====Training Epoch: 204====
+Avg train loss: 8.84
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch204.pth
+
+====Training Epoch: 205====
+Avg train loss: 9.02
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch205.pth
+
+====Training Epoch: 206====
+Avg train loss: 9.21
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch206.pth
+
+====Training Epoch: 207====
+Avg train loss: 9.1
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch207.pth
+
+====Training Epoch: 208====
+Avg train loss: 8.85
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch208.pth
+
+====Training Epoch: 209====
+Avg train loss: 9.09
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch209.pth
+
+====Training Epoch: 210====
+Avg train loss: 9.56
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch210.pth
+
+====Training Epoch: 211====
+Avg train loss: 8.92
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch211.pth
+
+====Training Epoch: 212====
+Avg train loss: 9.07
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch212.pth
+
+====Training Epoch: 213====
+Avg train loss: 8.81
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch213.pth
+
+====Training Epoch: 214====
+Avg train loss: 8.97
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch214.pth
+
+====Training Epoch: 215====
+Avg train loss: 8.55
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch215.pth
+
+====Training Epoch: 216====
+Avg train loss: 8.84
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch216.pth
+
+====Training Epoch: 217====
+Avg train loss: 8.4
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch217.pth
+
+====Training Epoch: 218====
+Avg train loss: 8.63
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch218.pth
+
+====Training Epoch: 219====
+Avg train loss: 8.5
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch219.pth
+
+====Training Epoch: 220====
+Avg train loss: 8.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch220.pth
+
+====Training Epoch: 221====
+Avg train loss: 8.56
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch221.pth
+
+====Training Epoch: 222====
+Avg train loss: 8.46
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch222.pth
+
+====Training Epoch: 223====
+Avg train loss: 8.42
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch223.pth
+
+====Training Epoch: 224====
+Avg train loss: 8.37
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch224.pth
+
+====Training Epoch: 225====
+Avg train loss: 8.35
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch225.pth
+
+====Training Epoch: 226====
+Avg train loss: 8.54
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch226.pth
+
+====Training Epoch: 227====
+Avg train loss: 8.26
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch227.pth
+
+====Training Epoch: 228====
+Avg train loss: 8.18
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch228.pth
+
+====Training Epoch: 229====
+Avg train loss: 8.52
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch229.pth
+
+====Training Epoch: 230====
+Avg train loss: 8.05
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch230.pth
+
+====Training Epoch: 231====
+Avg train loss: 7.99
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch231.pth
+
+====Training Epoch: 232====
+Avg train loss: 8.45
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch232.pth
+
+====Training Epoch: 233====
+Avg train loss: 8.28
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch233.pth
+
+====Training Epoch: 234====
+Avg train loss: 8.24
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch234.pth
+
+====Training Epoch: 235====
+Avg train loss: 8.37
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch235.pth
+
+====Training Epoch: 236====
+Avg train loss: 8.2
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch236.pth
+
+====Training Epoch: 237====
+Avg train loss: 7.63
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch237.pth
+
+====Training Epoch: 238====
+Avg train loss: 7.98
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch238.pth
+
+====Training Epoch: 239====
+Avg train loss: 7.99
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch239.pth
+
+====Training Epoch: 240====
+Avg train loss: 7.86
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch240.pth
+
+====Training Epoch: 241====
+Avg train loss: 7.6
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch241.pth
+
+====Training Epoch: 242====
+Avg train loss: 7.79
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch242.pth
+
+====Training Epoch: 243====
+Avg train loss: 7.88
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch243.pth
+
+====Training Epoch: 244====
+Avg train loss: 7.85
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch244.pth
+
+====Training Epoch: 245====
+Avg train loss: 7.87
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch245.pth
+
+====Training Epoch: 246====
+Avg train loss: 7.69
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch246.pth
+
+====Training Epoch: 247====
+Avg train loss: 7.64
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch247.pth
+
+====Training Epoch: 248====
+Avg train loss: 7.61
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch248.pth
+
+====Training Epoch: 249====
+Avg train loss: 7.49
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch249.pth
+
+====Training Epoch: 250====
+Avg train loss: 7.43
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch250.pth
+
+====Training Epoch: 251====
+Avg train loss: 7.53
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch251.pth
+
+====Training Epoch: 252====
+Avg train loss: 7.54
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch252.pth
+
+====Training Epoch: 253====
+Avg train loss: 7.68
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch253.pth
+
+====Training Epoch: 254====
+Avg train loss: 7.13
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch254.pth
+
+====Training Epoch: 255====
+Avg train loss: 7.61
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch255.pth
+
+====Training Epoch: 256====
+Avg train loss: 7.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch256.pth
+
+====Training Epoch: 257====
+Avg train loss: 7.49
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch257.pth
+
+====Training Epoch: 258====
+Avg train loss: 7.86
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch258.pth
+
+====Training Epoch: 259====
+Avg train loss: 7.62
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch259.pth
+
+====Training Epoch: 260====
+Avg train loss: 7.76
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch260.pth
+
+====Training Epoch: 261====
+Avg train loss: 7.58
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch261.pth
+
+====Training Epoch: 262====
+Avg train loss: 7.46
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch262.pth
+
+====Training Epoch: 263====
+Avg train loss: 7.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch263.pth
+
+====Training Epoch: 264====
+Avg train loss: 7.21
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch264.pth
+
+====Training Epoch: 265====
+Avg train loss: 7.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch265.pth
+
+====Training Epoch: 266====
+Avg train loss: 7.35
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch266.pth
+
+====Training Epoch: 267====
+Avg train loss: 7.3
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch267.pth
+
+====Training Epoch: 268====
+Avg train loss: 7.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch268.pth
+
+====Training Epoch: 269====
+Avg train loss: 7.44
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch269.pth
+
+====Training Epoch: 270====
+Avg train loss: 7.16
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch270.pth
+
+====Training Epoch: 271====
+Avg train loss: 7.47
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch271.pth
+
+====Training Epoch: 272====
+Avg train loss: 7.41
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch272.pth
+
+====Training Epoch: 273====
+Avg train loss: 7.24
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch273.pth
+
+====Training Epoch: 274====
+Avg train loss: 7.51
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch274.pth
+
+====Training Epoch: 275====
+Avg train loss: 7.5
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch275.pth
+
+====Training Epoch: 276====
+Avg train loss: 7.04
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch276.pth
+
+====Training Epoch: 277====
+Avg train loss: 7.5
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch277.pth
+
+====Training Epoch: 278====
+Avg train loss: 7.12
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch278.pth
+
+====Training Epoch: 279====
+Avg train loss: 7.24
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch279.pth
+
+====Training Epoch: 280====
+Avg train loss: 7.27
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch280.pth
+
+====Training Epoch: 281====
+Avg train loss: 7.35
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch281.pth
+
+====Training Epoch: 282====
+Avg train loss: 7.26
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch282.pth
+
+====Training Epoch: 283====
+Avg train loss: 7.72
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch283.pth
+
+====Training Epoch: 284====
+Avg train loss: 7.0
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch284.pth
+
+====Training Epoch: 285====
+Avg train loss: 7.32
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch285.pth
+
+====Training Epoch: 286====
+Avg train loss: 7.47
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch286.pth
+
+====Training Epoch: 287====
+Avg train loss: 7.49
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch287.pth
+
+====Training Epoch: 288====
+Avg train loss: 7.19
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch288.pth
+
+====Training Epoch: 289====
+Avg train loss: 7.17
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch289.pth
+
+====Training Epoch: 290====
+Avg train loss: 7.29
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch290.pth
+
+====Training Epoch: 291====
+Avg train loss: 7.14
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch291.pth
+
+====Training Epoch: 292====
+Avg train loss: 7.31
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch292.pth
+
+====Training Epoch: 293====
+Avg train loss: 7.06
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch293.pth
+
+====Training Epoch: 294====
+Avg train loss: 7.54
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch294.pth
+
+====Training Epoch: 295====
+Avg train loss: 7.15
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch295.pth
+
+====Training Epoch: 296====
+Avg train loss: 6.96
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch296.pth
+
+====Training Epoch: 297====
+Avg train loss: 7.28
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch297.pth
+
+====Training Epoch: 298====
+Avg train loss: 7.2
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch298.pth
+
+====Training Epoch: 299====
+Avg train loss: 7.2
+Saved Model Path:  runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch299.pth
+Saving training log to: runs/exp/BP4D_RGBT_500_36x36/plots/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_BP_log.pickle
+The list of validation losses is empty. The validation loss will not be plotted!
+Saving plots of losses and learning rates to: runs/exp/BP4D_RGBT_500_36x36/plots
+
+===Testing===
+Testing uses last epoch as non-pretrained model!
+runs/exp/BP4D_RGBT_500_36x36/PreTrainedModels/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_Epoch299.pth
+Running model evaluation on the testing dataset!
+
+=====================
+==== BP Metrics ===
+=====================
+SBP MAE: 14.91704891766874 +/- 0.6183981171872218
+DBP MAE: 11.672270676185345 +/- 0.4992705561656362
+SBP RMSE: 18.560957039167075 +/- 1.2036089479158962
+DBP RMSE: 14.688750113305908 +/- 0.9833277523145685
+SBP MAPE: 13.150323240798548 +/- 0.5636218107164738
+DBP MAPE: 16.67257971792169 +/- 0.7840369054943666
+SBP Pearson: 0.07143442068822395 +/- 0.05602210929992777
+DBP Pearson: 0.09683313782787038 +/- 0.05590165269641465
+Saved BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_SBP_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_500_36x36/bland_altman_plots.
+Saved BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_SBP_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_500_36x36/bland_altman_plots.
+Saved BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_DBP_BlandAltman_ScatterPlot.pdf to runs/exp/BP4D_RGBT_500_36x36/bland_altman_plots.
+Saved BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_DBP_BlandAltman_DifferencePlot.pdf to runs/exp/BP4D_RGBT_500_36x36/bland_altman_plots.
+Saving outputs to: runs/exp/BP4D_RGBT_500_36x36/saved_test_outputs/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_SBP_outputs.pickle
+Saving outputs to: runs/exp/BP4D_RGBT_500_36x36/saved_test_outputs/BP4D_MMRPhysMNF_BP_RGBTx36_SFSAM_Label_Fold1_DBP_outputs.pickle
