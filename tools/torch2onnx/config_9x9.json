@@ -18,7 +18,7 @@
         "rRSP"
     ],
     "model_info": {
-        "name": "SCAMPS_Multi",
+        "name": "SCAMPS_MultiTask_9x9",
         "version": "1.0",
         "description": "Remote physiological signal extraction model"
     },

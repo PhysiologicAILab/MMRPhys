@@ -3,8 +3,7 @@ import onnx
 import json
 import logging
 from pathlib import Path
-from torch2onnx.MMRPhysSEF import MMRPhysSEF
-from torch2onnx.weight_mapper import convert_weights
+from tools.torch2onnx.weight_mapper import convert_weights
 
 
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +20,14 @@ class OnnxConverter:
         self.num_channels = num_channels
         self.height = height
         self.width = width
+
+        if self.height == 9:
+            from tools.torch2onnx.MMRPhysSEF import MMRPhysSEF as rPhysModel
+        elif self.height == 72:
+            from tools.torch2onnx.MMRPhysLEF import MMRPhysLEF as rPhysModel
+        else:
+            raise ValueError("Invalid height. Supported values: 9, 72")
+
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
@@ -28,7 +35,27 @@ class OnnxConverter:
         self.config = self._load_or_create_config()
 
         # Initialize model
-        self.model = self._initialize_model()
+        try:
+            # Create model
+            self.model = rPhysModel(
+                frames=self.num_frames,
+                md_config=self.config,
+                in_channels=self.num_channels,
+                device=self.device
+            )
+
+            # Load weights
+            convert_weights(self.model_path, self.model)
+
+            # Prepare for conversion
+            self.model.eval()
+            self.model.to(self.device)
+
+
+        except Exception as e:
+            logger.error(f"Error initializing model: {str(e)}")
+            raise
+
 
     def _load_or_create_config(self):
         """Load or create model configuration"""
@@ -69,29 +96,6 @@ class OnnxConverter:
         logger.info("Created new config file")
         return config
 
-    def _initialize_model(self):
-        """Initialize and load the model"""
-        try:
-            # Create model
-            model = MMRPhysSEF(
-                frames=self.num_frames,
-                md_config=self.config,
-                in_channels=self.num_channels,
-                device=self.device
-            )
-
-            # Load weights
-            convert_weights(self.model_path, model)
-
-            # Prepare for conversion
-            model.eval()
-            model.to(self.device)
-
-            return model
-
-        except Exception as e:
-            logger.error(f"Error initializing model: {str(e)}")
-            raise
 
     def _force_eval_mode(self):
         """Ensure model is in evaluation mode"""

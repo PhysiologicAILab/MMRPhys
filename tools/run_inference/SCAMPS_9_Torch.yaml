@@ -1,0 +1,20 @@
+# Model configuration
+model:
+  path: "final_model_release/SCAMPS/SCAMPS_MMRPhysSEF_BVP_RSP_RGBx180x9_SFSAM_Label_Epoch0.pth"
+  type: "torch"  # options: ['torch', 'onnx']
+  input_shape:
+    num_frames: 181
+    channels: 3
+    height: 9
+    width: 9
+
+# Video configuration
+video:
+  path: "/Users/jiteshjoshi/Downloads/MMRPhys_Results/webapp/recoded_video1.mov"
+  sampling_rate: 30  # frames per second
+
+# Processing parameters
+processing:
+  plot_duration: 20  # seconds
+  face_detection_interval: 30  # frames
+  inference_interval: 180  # frames

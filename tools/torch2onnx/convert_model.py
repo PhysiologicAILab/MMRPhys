@@ -1,27 +1,37 @@
 import argparse
+import json
 import logging
 from pathlib import Path
-from torch2onnx.convert_to_onnx import OnnxConverter
+from tools.torch2onnx.convert_to_onnx import OnnxConverter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def load_config(config_path: str) -> dict:
+    """Load and validate the configuration file."""
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Validate required fields
+        required_fields = ['input_size', 'FRAME_NUM']
+        missing_fields = [field for field in required_fields if field not in config]
+        if missing_fields:
+            raise ValueError(f"Missing required fields in config: {missing_fields}")
+            
+        return config
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON format in config file: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"Error loading config file: {str(e)}")
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert PyTorch model to ONNX with weight mapping')
-    parser.add_argument('--model_path', type=str,
-                        default='torch2onnx/SCAMPS_MMRPhysSEF_BVP_RSP_RGBx180x9_SFSAM_Label_Epoch0.pth')
-    parser.add_argument('--onnx_path', type=str,
-                        default='torch2onnx/SCAMPS_Multi_9x9.onnx')
-    parser.add_argument('--config_path', type=str,
-                        default='torch2onnx/config.json')
-    parser.add_argument('--temp_weights', type=str,
-                        default='torch2onnx/temp_converted_weights.pth')
-    parser.add_argument('--num_frames', type=int, default=181)
-    parser.add_argument('--num_channels', type=int, default=3)
-    parser.add_argument('--height', type=int, default=9)
-    parser.add_argument('--width', type=int, default=9)
+        description='Convert PyTorch model to ONNX using configuration from JSON file')
+    parser.add_argument('config_path', type=str,
+                        help='Path to the JSON configuration file')
     parser.add_argument('--verbose', action='store_true', default=False,
                         help='Enable verbose logging')
 
@@ -32,23 +42,40 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     try:
-        # Create output directories if they don't exist
-        onnx_path = Path(args.onnx_path)
-        onnx_path.parent.mkdir(parents=True, exist_ok=True)
+        # Load and validate config
+        logger.info(f"Loading configuration from {args.config_path}")
+        config = load_config(args.config_path)
 
-        config_path = Path(args.config_path)
-        config_path.parent.mkdir(parents=True, exist_ok=True)
+        # Extract parameters from config
+        input_size = config['input_size']
+        if len(input_size) != 5:
+            raise ValueError("input_size must have 5 dimensions [batch, channels, frames, height, width]")
+
+        num_frames = config['FRAME_NUM']
+        num_channels = input_size[1]
+        height = input_size[3]
+        width = input_size[4]
+
+        # Construct paths
+        config_dir = Path(args.config_path).parent
+        model_name = config.get('model_info', {}).get('name', 'SCAMPS_Multi')
+        
+        model_path = config_dir / f"{model_name}.pth"
+        onnx_path = config_dir / f"{model_name}.onnx"
+
+        # Create output directories if they don't exist
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Initialize converter
         logger.info("Initializing converter...")
         converter = OnnxConverter(
-            model_path=args.model_path,
-            onnx_path=args.onnx_path,
+            model_path=str(model_path),
+            onnx_path=str(onnx_path),
             config_path=args.config_path,
-            num_frames=args.num_frames,
-            num_channels=args.num_channels,
-            height=args.height,
-            width=args.width
+            num_frames=num_frames,
+            num_channels=num_channels,
+            height=height,
+            width=width
         )
 
         # Perform conversion
@@ -56,8 +83,8 @@ def main():
         converter.convert()
 
         logger.info("Conversion completed successfully!")
-        logger.info(f"ONNX model saved to: {args.onnx_path}")
-        logger.info(f"Config file saved to: {args.config_path}")
+        logger.info(f"ONNX model saved to: {onnx_path}")
+        logger.info(f"Using config file: {args.config_path}")
 
     except Exception as e:
         logger.error(f"Conversion failed: {str(e)}")
