@@ -12,6 +12,11 @@ from scipy.signal import periodogram, welch
 import time
 from dataset.data_loader.face_detector.YOLO5Face import YOLO5Face
 import yaml
+import threading
+from queue import Queue
+import matplotlib.animation as animation
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
 
 
 class SignalProcessor:
@@ -224,6 +229,44 @@ class FaceDetector:
         return self.face
 
 
+class SignalPlotter:
+    def __init__(self, fs, plot_duration):
+        self.fs = fs
+        self.plot_duration = plot_duration
+        self.setup_plot()
+
+    def setup_plot(self):
+        self.root = tk.Tk()
+        self.root.title("Real-time Vital Signs")
+
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(10, 6))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
+        self.canvas.get_tk_widget().pack()
+
+        self.ax1.set_title('BVP Signal | HR: -- bpm')
+        self.ax2.set_title('RSP Signal | RR: -- br/min')
+        self.line_bvp, = self.ax1.plot([], [])
+        self.line_rsp, = self.ax2.plot([], [])
+
+    def update_plot(self, bvp_data, rsp_data, hr, rr):
+        if not hasattr(self, 'root'):
+            return
+
+        # Update BVP
+        self.ax1.clear()
+        self.ax1.plot(bvp_data)
+        self.ax1.set_title(f'BVP Signal | HR: {hr:.0f} bpm')
+
+        # Update RSP
+        self.ax2.clear()
+        self.ax2.plot(rsp_data)
+        self.ax2.set_title(f'RSP Signal | RR: {rr:.0f} br/min')
+
+        self.fig.tight_layout()
+        self.canvas.draw()
+        self.root.update()
+
+
 class RemoteVitalSigns:
     def __init__(self, config, config_path):
         self.model_path = Path(config['model']['path'])
@@ -231,14 +274,13 @@ class RemoteVitalSigns:
             raise FileNotFoundError(f"Model file not found: {self.model_path}")
 
         try:
-            # For live capture
             self.video_file = int(config['video']['path'])
         except:
-            # For video file
             self.video_file = Path(config['video']['path'])
             if not self.video_file.exists():
                 raise FileNotFoundError(f"Video file not found: {self.video_file}")
 
+        # Initialize all parameters from config
         self.model_type = config['model']['type']
         self.num_frames = config['model']['input_shape']['num_frames']
         self.in_channels = config['model']['input_shape']['channels']
@@ -249,64 +291,91 @@ class RemoteVitalSigns:
         self.inference_interval = int(config['processing']['inference_interval'])
         self.plot_duration = config['processing']['plot_duration']
 
+        # Initialize components
         self.signal_processor = SignalProcessor(self.fs)
         self.video_processor = videoProcessor(self.video_file)
         self.max_frames = self.video_processor.max_frames
-
         self.model_instance = InferenceWorker(config)
         self.face_detector = FaceDetector()
+        
+        # Initialize buffers
         self.init_buffers()
-
-        # Use config filename for output files
+        
+        # Initialize threading components
+        self.frame_queue = Queue(maxsize=100)
+        self.result_queue = Queue()
+        self.stop_event = threading.Event()
+        
+        # Initialize plotter
+        self.plotter = SignalPlotter(self.fs, self.plot_duration)
+        
+        # Setup output files
         config_stem = Path(config_path).stem
-        self.json_filename = self.video_file.parent.joinpath(f"{config_stem}_estimated.json")
-        self.plot_filename = self.video_file.parent.joinpath(f"{config_stem}_estimated.png")
+        # Extract video name, append timestamp for live video
+        if type(self.video_file) == type(Path.home()):
+            root_path = self.video_file.parent
+            vid_name = self.video_file.stem
+        else:
+            # Default to Downloads folder
+            root_path = Path.home().joinpath('Downloads', 'rPhys')
+            vid_name = f"{time.strftime('%Y%m%d_%H%M%S')}"
+            root_path.mkdir(exist_ok=True, parents=True)
 
+        self.json_filename = root_path.joinpath(f"{config_stem}_{vid_name}_estimated.json")
+        self.plot_filename = root_path.joinpath(f"{config_stem}_{vid_name}_estimated.png")
 
     def init_buffers(self):
         self.inference_frame_buffer = np.zeros(
-            (1, self.in_channels, self.num_frames, self.height, self.width))        
+            (1, self.in_channels, self.num_frames, self.height, self.width))
         self.estimated_bvp = np.array([])
         self.estimated_rsp = np.array([])
         self.hr_list = []
         self.rr_list = []
 
 
-    def run_inference(self):
-        '''
-        load video file and return face-cropped frames
-        run face detection and inference after every self.face_detection_interval frames
-        '''
+    def video_capture_thread(self):
         count_frame = 0
         face = None
- 
-        while count_frame < self.max_frames:
+        
+        while not self.stop_event.is_set() and count_frame < self.max_frames:
             frame = self.video_processor.get_frame()
             if frame is None:
                 break
-
-            # detect face after every self.face_detection_interval frames
+                
             if count_frame % self.face_detection_interval == 0:
                 face = self.face_detector.detect_face(frame)
 
-            if face is None:
+            if face is not None:
+                x1, y1, x2, y2 = face
+                frame = frame[y1:y2, x1:x2]
+                frame = cv2.resize(frame, (self.width, self.height))
+                frame = frame[np.newaxis, :, :, :]
+                frame = frame.transpose(0, 3, 1, 2)
+                self.frame_queue.put((count_frame, frame))
+            else:
                 print('Face not detected')
-                continue
+            
+            count_frame += 1
+            
+        self.frame_queue.put(None)
 
-            x1, y1, x2, y2 = face
-            frame = frame[y1:y2, x1:x2]
-            frame = cv2.resize(frame, (self.width, self.height))
-            frame = frame[np.newaxis, :, :, :]
-            frame = frame.transpose(0, 3, 1, 2)
-
+    def inference_thread(self):
+        count_frame = 0
+        
+        while not self.stop_event.is_set():
+            data = self.frame_queue.get()
+            if data is None:
+                break
+                
+            frame_idx, frame = data
+            
             if count_frame < self.num_frames:
-                self.inference_frame_buffer[:, :, count_frame , :, :] = frame
+                self.inference_frame_buffer[:, :, count_frame, :, :] = frame
             else:
                 self.inference_frame_buffer[:, :, :-1, :, :] = self.inference_frame_buffer[:, :, 1:, :, :]
                 self.inference_frame_buffer[:, :, -1, :, :] = frame
-
+                
             if count_frame >= self.num_frames and count_frame % self.inference_interval == 0:
-
                 t1 = time.time()
                 bvp, rsp = self.model_instance.infer_rphys(self.inference_frame_buffer)
                 t2 = time.time()
@@ -315,46 +384,72 @@ class RemoteVitalSigns:
                 bvp, rsp = self.signal_processor.post_process(bvp, rsp)
                 bvp = bvp.reshape(-1)
                 rsp = rsp.reshape(-1)
-
-                # append estimated signals
-                # Handle signal concatenation for overlapping windows
-                if len(self.estimated_bvp) == 0:
-                    # First inference: use all samples
-                    self.estimated_bvp = bvp
-                    self.estimated_rsp = rsp
-                else:
-                    # Subsequent inferences: only use the new samples
-                    # inference_interval represents the number of new frames since last inference
-                    self.estimated_bvp = np.concatenate([self.estimated_bvp, bvp[-self.inference_interval:]])
-                    self.estimated_rsp = np.concatenate([self.estimated_rsp, rsp[-self.inference_interval:]])
                 
-                # For live plot of estimated signals
-                bvp = self.estimated_bvp[-int(self.plot_duration*self.fs):]
-                rsp = self.estimated_rsp[-int(self.plot_duration*self.fs):]
-
-                # Continuous metrics computation
-                hr, rr = self.signal_processor.compute_metrics(bvp, rsp)
-                self.hr_list.append(hr)
-                self.rr_list.append(rr)
-
+                self.result_queue.put((bvp, rsp))
+                
             count_frame += 1
+            
+        self.result_queue.put(None)
 
+    def plotting_thread(self):
+        while not self.stop_event.is_set():
+            data = self.result_queue.get()
+            if data is None:
+                break
+                
+            bvp, rsp = data
+            
+            if len(self.estimated_bvp) == 0:
+                self.estimated_bvp = bvp
+                self.estimated_rsp = rsp
+            else:
+                self.estimated_bvp = np.concatenate([self.estimated_bvp, bvp[-self.inference_interval:]])
+                self.estimated_rsp = np.concatenate([self.estimated_rsp, rsp[-self.inference_interval:]])
+            
+            plot_samples = int(self.plot_duration * self.fs)
+            bvp_plot = self.estimated_bvp[-plot_samples:]
+            rsp_plot = self.estimated_rsp[-plot_samples:]
+            
+            hr, rr = self.signal_processor.compute_metrics(bvp_plot, rsp_plot)
+            self.hr_list.append(hr)
+            self.rr_list.append(rr)
+            
+            self.plotter.update_plot(bvp_plot, rsp_plot, hr, rr)
+
+    def run_inference(self):
+        # Start threads
+        video_thread = threading.Thread(target=self.video_capture_thread)
+        inference_thread = threading.Thread(target=self.inference_thread)
+        plot_thread = threading.Thread(target=self.plotting_thread)
+
+        video_thread.start()
+        inference_thread.start()
+        plot_thread.start()
+
+        try:
+            # Keep main thread alive for GUI
+            self.plotter.root.mainloop()
+        except KeyboardInterrupt:
+            print("\nStopping processing...")
+            self.stop_event.set()
+
+        # Wait for threads to complete
+        video_thread.join()
+        inference_thread.join()
+        plot_thread.join()
 
     def save_estimated_signals(self):
-        # save estimated signals in a dictionary
-        estimated_signals = {}
-        estimated_signals['hr_list'] = self.hr_list
-        estimated_signals['rr_list'] = self.rr_list
-        estimated_signals['bvp'] = self.estimated_bvp.tolist()
-        estimated_signals['rsp'] = self.estimated_bvp.tolist()
-
-        # save estimated signals in json file
+        estimated_signals = {
+            'hr_list': self.hr_list,
+            'rr_list': self.rr_list,
+            'bvp': self.estimated_bvp.tolist(),
+            'rsp': self.estimated_rsp.tolist()
+        }
+        
         with open(self.json_filename, 'w') as f:
             json.dump(estimated_signals, f)
 
-
     def save_plots(self):
-        # Make combines plots of estimated signals
         plt.figure(figsize=(10, 6))
         plt.subplot(2, 1, 1)
         plt.plot(self.estimated_bvp)
@@ -367,24 +462,23 @@ class RemoteVitalSigns:
         plt.close()
 
     def workflow(self):
-        self.run_inference()
-        self.save_estimated_signals()
-        self.save_plots()
+        try:
+            self.run_inference()
+        finally:
+            self.save_estimated_signals()
+            self.save_plots()
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Remote Vital Signs Detection')
+    parser = argparse.ArgumentParser(description='Remote Vital Signs Detection')
     parser.add_argument('--config', type=str, required=True, help='Path to configuration file')
     args = parser.parse_args()
 
-    # Load configuration
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
 
     rPhysObj = RemoteVitalSigns(config, args.config)
     rPhysObj.workflow()
-
 
 if __name__ == '__main__':
     main()

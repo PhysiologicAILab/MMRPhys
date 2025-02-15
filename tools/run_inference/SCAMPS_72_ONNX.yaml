@@ -1,16 +1,16 @@
 # Model configuration
 model:
-  path: "tools/torch2onnx/SCAMPS_MultiTask_9x9.onnx"
+  path: "tools/torch2onnx/SCAMPS_MultiTask_72x72.onnx"
   type: "onnx"  # options: ['torch', 'onnx']
   input_shape:
     num_frames: 181
     channels: 3
-    height: 9
-    width: 9
+    height: 72
+    width: 72
 
 # Video configuration
 video:
-  path: "/Users/jiteshjoshi/Downloads/MMRPhys_Results/webapp/recoded_video1.mov"
+  path: "/Users/jiteshjoshi/Downloads/MMRPhys_Results/webapp/recoded_video.mov"
   sampling_rate: 30  # frames per second
 
 # Processing parameters
