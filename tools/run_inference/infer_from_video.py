@@ -1,3 +1,12 @@
+'''
+Remote Vital Signs Detection from Video
+This script demonstrates how to estimate vital signs (Heart Rate and Respiration Rate) from a video file.
+The script uses a pre-trained model to estimate vital signs from facial video data.
+
+Usage:
+    python infer_from_video.py --config config.yaml
+'''
+
 import torch
 import onnxruntime as ort
 import cv2
@@ -482,7 +491,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# tools/torch2onnx/SCAMPS_Multi_9x9.pth
-# final_model_release/SCAMPS/SCAMPS_MMRPhysLEF_BVP_RSP_RGBx180x72_SFSAM_Label_Epoch0.pth
-# final_model_release/BP4D_MMRPhysSEF_BVP_RSP_RGBx180x9_SFSAM_Label_Fold3_Epoch4.pth
