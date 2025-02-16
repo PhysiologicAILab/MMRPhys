@@ -15,6 +15,8 @@ import numpy as np
 from scipy import signal
 import json
 from collections import OrderedDict
+from PIL import Image, ImageTk
+import collections
 import argparse
 import matplotlib.pyplot as plt
 from scipy.signal import periodogram, welch
@@ -243,37 +245,173 @@ class SignalPlotter:
         self.fs = fs
         self.plot_duration = plot_duration
         self.setup_plot()
+        self.last_update = time.time()
+        self.update_interval = 1/30  # 30 FPS update rate
+        self.should_stop = False
+        self.is_paused = False
+        self.cleanup_requested = False
 
     def setup_plot(self):
         self.root = tk.Tk()
-        self.root.title("Real-time Vital Signs")
+        self.root.title("Remote Vital Signs Monitor")
 
-        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(10, 6))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
-        self.canvas.get_tk_widget().pack()
+        # Create main frame
+        self.main_frame = tk.Frame(self.root)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Create video frame with fixed size for face ROI
+        self.video_frame = tk.Frame(self.main_frame)
+        self.video_frame.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # Create video label with fixed size
+        # Fixed size for face ROI
+        self.video_label = tk.Label(self.video_frame, width=360, height=360)
+        self.video_label.pack()
+
+        # Add ROI status indicator
+        self.roi_status = tk.Label(self.video_frame, text="Face ROI Status: Detecting...",
+                                   fg="orange")
+        self.roi_status.pack()
+
+        # Create plots frame
+        self.plots_frame = tk.Frame(self.main_frame)
+        self.plots_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # Setup matplotlib figure
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(8, 6))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.plots_frame)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        # Setup initial plot lines
+        plot_samples = int(self.plot_duration * self.fs)
+        self.time_axis = np.linspace(0, self.plot_duration, plot_samples)
+        zeros = np.zeros(plot_samples)
 
         self.ax1.set_title('BVP Signal | HR: -- bpm')
         self.ax2.set_title('RSP Signal | RR: -- br/min')
-        self.line_bvp, = self.ax1.plot([], [])
-        self.line_rsp, = self.ax2.plot([], [])
+        self.line_bvp, = self.ax1.plot(self.time_axis, zeros)
+        self.line_rsp, = self.ax2.plot(self.time_axis, zeros)
 
-    def update_plot(self, bvp_data, rsp_data, hr, rr):
-        if not hasattr(self, 'root'):
+        # Add controls
+        self.controls_frame = tk.Frame(self.root)
+        self.controls_frame.pack(fill=tk.X)
+
+        self.stop_button = tk.Button(
+            self.controls_frame, text="Stop", command=self.stop_processing)
+        self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)
+
+        self.pause_button = tk.Button(
+            self.controls_frame, text="Pause", command=self.toggle_pause)
+        self.pause_button.pack(side=tk.RIGHT, padx=5, pady=5)
+
+        self.is_paused = False
+        self.should_stop = False
+
+    def stop_processing(self):
+        self.should_stop = True
+
+    def toggle_pause(self):
+        self.is_paused = not self.is_paused
+        self.pause_button.config(text="Resume" if self.is_paused else "Pause")
+
+    def update_plot(self, face_frame, bvp_data, rsp_data, hr, rr, face_detected):
+        if not hasattr(self, 'root') or self.is_paused:
             return
 
-        # Update BVP
-        self.ax1.clear()
-        self.ax1.plot(bvp_data)
-        self.ax1.set_title(f'BVP Signal | HR: {hr:.0f} bpm')
+        current_time = time.time()
+        if (current_time - self.last_update) < self.update_interval:
+            return
 
-        # Update RSP
-        self.ax2.clear()
-        self.ax2.plot(rsp_data)
-        self.ax2.set_title(f'RSP Signal | RR: {rr:.0f} br/min')
+        self.last_update = current_time
 
-        self.fig.tight_layout()
+        # Update face ROI frame
+    def update_plot(self, face_frame, bvp_data, rsp_data, hr, rr, face_detected):
+        if not hasattr(self, 'root') or self.is_paused:
+            return
+
+        current_time = time.time()
+        if (current_time - self.last_update) < self.update_interval:
+            return
+
+        self.last_update = current_time
+
+        # Update face ROI frame
+        if face_frame is not None and face_detected:
+            # Resize face ROI to fixed display size while maintaining aspect ratio
+            display_size = (360, 360)
+            face_h, face_w = face_frame.shape[:2]
+            scale = min(display_size[0]/face_w, display_size[1]/face_h)
+            new_size = (int(face_w * scale), int(face_h * scale))
+
+            face_frame = cv2.resize(face_frame, new_size)
+
+            # Create black canvas of fixed size
+            canvas = np.zeros((display_size[1], display_size[0], 3), dtype=np.uint8)
+
+            # Center the face ROI in the canvas
+            y_offset = (display_size[1] - new_size[1]) // 2
+            x_offset = (display_size[0] - new_size[0]) // 2
+            canvas[y_offset:y_offset+new_size[1],
+                   x_offset:x_offset+new_size[0]] = face_frame
+
+            # Convert to PIL Image - face_frame is already in RGB, so no need to convert
+            img = Image.fromarray(canvas)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.video_label.imgtk = imgtk
+            self.video_label.configure(image=imgtk)
+
+            # Update ROI status
+            self.roi_status.config(text="Face ROI Status: Detected", fg="green")
+        else:
+            # Display blank frame when no face is detected
+            canvas = np.zeros((360, 360, 3), dtype=np.uint8)
+            img = Image.fromarray(canvas)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.video_label.imgtk = imgtk
+            self.video_label.configure(image=imgtk)
+            self.roi_status.config(text="Face ROI Status: No Face Detected", fg="red")
+
+        # Smooth update of signal plots
+        plot_samples = int(self.plot_duration * self.fs)
+        if len(bvp_data) > plot_samples:
+            bvp_data = bvp_data[-plot_samples:]
+            rsp_data = rsp_data[-plot_samples:]
+
+        # Pad with zeros if needed
+        if len(bvp_data) < plot_samples:
+            bvp_data = np.pad(bvp_data, (plot_samples - len(bvp_data), 0))
+            rsp_data = np.pad(rsp_data, (plot_samples - len(rsp_data), 0))
+
+        self.line_bvp.set_ydata(bvp_data)
+        self.line_rsp.set_ydata(rsp_data)
+
+        # Update titles with metrics only when face is detected
+        if face_detected:
+            self.ax1.set_title(f'BVP Signal | HR: {hr:.0f} bpm')
+            self.ax2.set_title(f'RSP Signal | RR: {rr:.0f} br/min')
+        else:
+            self.ax1.set_title('BVP Signal | HR: -- bpm')
+            self.ax2.set_title('RSP Signal | RR: -- br/min')
+
+        # Update axis limits for better visualization
+        self.ax1.set_ylim(np.min(bvp_data)-0.1, np.max(bvp_data)+0.1)
+        self.ax2.set_ylim(np.min(rsp_data)-0.1, np.max(rsp_data)+0.1)
+
         self.canvas.draw()
         self.root.update()
+
+    def stop_processing(self):
+        self.should_stop = True
+        
+    def cleanup(self):
+        """Safe cleanup method to be called from main thread"""
+        try:
+            if hasattr(self, 'root') and self.root.winfo_exists():
+                self.root.quit()
+                self.root.destroy()
+        except Exception:
+            # If the root is already destroyed, just pass
+            pass
 
 
 class RemoteVitalSigns:
@@ -318,14 +456,19 @@ class RemoteVitalSigns:
         # Initialize plotter
         self.plotter = SignalPlotter(self.fs, self.plot_duration)
         
+        # Additional buffer initialization for smooth updates
+        self.signal_buffer_size = int(self.fs * self.plot_duration)
+        self.bvp_buffer = collections.deque(maxlen=self.signal_buffer_size)
+        self.rsp_buffer = collections.deque(maxlen=self.signal_buffer_size)
+        
         # Setup output files
         config_stem = Path(config_path).stem
         # Extract video name, append timestamp for live video
-        if type(self.video_file) == type(Path.home()):
+        if isinstance(self.video_file, Path):
             root_path = self.video_file.parent
             vid_name = self.video_file.stem
         else:
-            # Default to Downloads folder
+            # Default to Downloads folder for live capture
             root_path = Path.home().joinpath('Downloads', 'rPhys')
             vid_name = f"{time.strftime('%Y%m%d_%H%M%S')}"
             root_path.mkdir(exist_ok=True, parents=True)
@@ -341,89 +484,215 @@ class RemoteVitalSigns:
         self.hr_list = []
         self.rr_list = []
 
-
     def video_capture_thread(self):
         count_frame = 0
         face = None
-        
+        last_frame_time = time.time()
+        frame_interval = 1/30  # Target 30 FPS
+
         while not self.stop_event.is_set() and count_frame < self.max_frames:
+            if self.plotter.is_paused:
+                time.sleep(0.1)
+                continue
+
+            current_time = time.time()
+            if (current_time - last_frame_time) < frame_interval:
+                continue
+
             frame = self.video_processor.get_frame()
             if frame is None:
                 break
-                
+
+            last_frame_time = current_time
+
             if count_frame % self.face_detection_interval == 0:
                 face = self.face_detector.detect_face(frame)
 
             if face is not None:
                 x1, y1, x2, y2 = face
-                frame = frame[y1:y2, x1:x2]
-                frame = cv2.resize(frame, (self.width, self.height))
-                frame = frame[np.newaxis, :, :, :]
-                frame = frame.transpose(0, 3, 1, 2)
-                self.frame_queue.put((count_frame, frame))
+                face_frame = frame[y1:y2, x1:x2]
+                processed_frame = cv2.resize(
+                    face_frame, (self.width, self.height))
+                processed_frame = processed_frame[np.newaxis, :, :, :]
+                processed_frame = processed_frame.transpose(0, 3, 1, 2)
+                self.frame_queue.put(
+                    (count_frame, face_frame, processed_frame, True))
             else:
-                print('Face not detected')
-            
+                self.frame_queue.put((count_frame, None, None, False))
+
             count_frame += 1
-            
+
         self.frame_queue.put(None)
 
     def inference_thread(self):
         count_frame = 0
-        
+
         while not self.stop_event.is_set():
             data = self.frame_queue.get()
             if data is None:
                 break
-                
-            frame_idx, frame = data
-            
-            if count_frame < self.num_frames:
-                self.inference_frame_buffer[:, :, count_frame, :, :] = frame
-            else:
-                self.inference_frame_buffer[:, :, :-1, :, :] = self.inference_frame_buffer[:, :, 1:, :, :]
-                self.inference_frame_buffer[:, :, -1, :, :] = frame
-                
-            if count_frame >= self.num_frames and count_frame % self.inference_interval == 0:
-                t1 = time.time()
-                bvp, rsp = self.model_instance.infer_rphys(self.inference_frame_buffer)
-                t2 = time.time()
-                print(f'Inference time: {t2-t1}')
 
-                bvp, rsp = self.signal_processor.post_process(bvp, rsp)
-                bvp = bvp.reshape(-1)
-                rsp = rsp.reshape(-1)
-                
-                self.result_queue.put((bvp, rsp))
-                
+            if self.plotter.is_paused:
+                continue
+
+            frame_idx, face_frame, processed_frame, face_detected = data
+
+            if face_detected and processed_frame is not None:
+                if count_frame < self.num_frames:
+                    self.inference_frame_buffer[:, :,
+                                                count_frame, :, :] = processed_frame
+                else:
+                    self.inference_frame_buffer[:, :, :-1, :,
+                                                :] = self.inference_frame_buffer[:, :, 1:, :, :]
+                    self.inference_frame_buffer[:,
+                                                :, -1, :, :] = processed_frame
+
+                if count_frame >= self.num_frames and count_frame % self.inference_interval == 0:
+                    bvp, rsp = self.model_instance.infer_rphys(
+                        self.inference_frame_buffer)
+                    bvp, rsp = self.signal_processor.post_process(bvp, rsp)
+
+                    # Update signal buffers
+                    self.bvp_buffer.extend(bvp.reshape(-1))
+                    self.rsp_buffer.extend(rsp.reshape(-1))
+
+                    # Calculate metrics using the buffered signals
+                    hr, rr = self.signal_processor.compute_metrics(
+                        np.array(list(self.bvp_buffer)),
+                        np.array(list(self.rsp_buffer))
+                    )
+
+                    self.result_queue.put((face_frame, np.array(list(self.bvp_buffer)),
+                                           np.array(list(self.rsp_buffer)), hr, rr, face_detected))
+            else:
+                # Send empty frame with current signals when no face is detected
+                self.result_queue.put((None, np.array(list(self.bvp_buffer)) if self.bvp_buffer else np.zeros(self.signal_buffer_size),
+                                       np.array(list(self.rsp_buffer)) if self.rsp_buffer else np.zeros(
+                                           self.signal_buffer_size),
+                                       np.nan, np.nan, False))
+
             count_frame += 1
-            
+
         self.result_queue.put(None)
 
     def plotting_thread(self):
-        while not self.stop_event.is_set():
-            data = self.result_queue.get()
-            if data is None:
-                break
-                
-            bvp, rsp = data
-            
-            if len(self.estimated_bvp) == 0:
-                self.estimated_bvp = bvp
-                self.estimated_rsp = rsp
+        saved_metrics = {
+            'timestamps': [],
+            'hr_values': [],
+            'rr_values': [],
+            'bvp_signal': [],
+            'rsp_signal': []
+        }
+
+        start_time = time.time()
+
+        try:
+            while not self.stop_event.is_set():
+                if self.plotter.should_stop:
+                    self.stop_event.set()
+                    break
+
+                data = self.result_queue.get()
+                if data is None:
+                    break
+
+                face_frame, bvp, rsp, hr, rr, face_detected = data
+
+                # Update the plot
+                self.plotter.update_plot(
+                    face_frame, bvp, rsp, hr, rr, face_detected)
+
+                # Save metrics only when face is detected
+                if face_detected and not np.isnan(hr) and not np.isnan(rr):
+                    current_time = time.time() - start_time
+                    saved_metrics['timestamps'].append(current_time)
+                    saved_metrics['hr_values'].append(hr)
+                    saved_metrics['rr_values'].append(rr)
+
+                    if len(bvp) > 0:
+                        saved_metrics['bvp_signal'].extend(
+                            bvp[-self.inference_interval:])
+                    if len(rsp) > 0:
+                        saved_metrics['rsp_signal'].extend(
+                            rsp[-self.inference_interval:])
+
+            # Save final results
+            if len(saved_metrics['hr_values']) > 0:
+                # Calculate average metrics
+                avg_hr = np.nanmean(saved_metrics['hr_values'])
+                avg_rr = np.nanmean(saved_metrics['rr_values'])
+
+                # Save metrics to JSON
+                results = {
+                    'average_hr': float(avg_hr),
+                    'average_rr': float(avg_rr),
+                    'hr_values': saved_metrics['hr_values'],
+                    'rr_values': saved_metrics['rr_values'],
+                    'timestamps': saved_metrics['timestamps'],
+                    'sampling_rate': self.fs,
+                    'bvp_signal': saved_metrics['bvp_signal'],
+                    'rsp_signal': saved_metrics['rsp_signal'],
+                    'duration': saved_metrics['timestamps'][-1] if saved_metrics['timestamps'] else 0
+                }
+
+                with open(self.json_filename, 'w') as f:
+                    json.dump(results, f, indent=4)
+
+                # Create and save final plots
+                plt.figure(figsize=(12, 8))
+
+                # Plot HR over time
+                plt.subplot(3, 1, 1)
+                plt.plot(saved_metrics['timestamps'],
+                         saved_metrics['hr_values'], 'b-')
+                plt.title(f'Heart Rate Over Time (Average: {avg_hr:.1f} bpm)')
+                plt.xlabel('Time (s)')
+                plt.ylabel('Heart Rate (bpm)')
+                plt.grid(True)
+
+                # Plot RR over time
+                plt.subplot(3, 1, 2)
+                plt.plot(saved_metrics['timestamps'],
+                         saved_metrics['rr_values'], 'g-')
+                plt.title(
+                    f'Respiration Rate Over Time (Average: {avg_rr:.1f} br/min)')
+                plt.xlabel('Time (s)')
+                plt.ylabel('Resp. Rate (br/min)')
+                plt.grid(True)
+
+                # Plot final signal segments
+                plt.subplot(3, 1, 3)
+                time_axis = np.arange(
+                    len(saved_metrics['bvp_signal'])) / self.fs
+                plt.plot(
+                    time_axis, saved_metrics['bvp_signal'], 'b-', label='BVP', alpha=0.7)
+                plt.plot(
+                    time_axis, saved_metrics['rsp_signal'], 'g-', label='RSP', alpha=0.7)
+                plt.title('Final Signal Segments')
+                plt.xlabel('Time (s)')
+                plt.ylabel('Amplitude')
+                plt.legend()
+                plt.grid(True)
+
+                plt.tight_layout()
+                plt.savefig(self.plot_filename)
+                plt.close()
+
+                print(f"\nProcessing complete!")
+                print(f"Average Heart Rate: {avg_hr:.1f} bpm")
+                print(f"Average Respiration Rate: {avg_rr:.1f} br/min")
+                print(f"Results saved to: {self.json_filename}")
+                print(f"Plots saved to: {self.plot_filename}")
             else:
-                self.estimated_bvp = np.concatenate([self.estimated_bvp, bvp[-self.inference_interval:]])
-                self.estimated_rsp = np.concatenate([self.estimated_rsp, rsp[-self.inference_interval:]])
-            
-            plot_samples = int(self.plot_duration * self.fs)
-            bvp_plot = self.estimated_bvp[-plot_samples:]
-            rsp_plot = self.estimated_rsp[-plot_samples:]
-            
-            hr, rr = self.signal_processor.compute_metrics(bvp_plot, rsp_plot)
-            self.hr_list.append(hr)
-            self.rr_list.append(rr)
-            
-            self.plotter.update_plot(bvp_plot, rsp_plot, hr, rr)
+                print("\nNo valid measurements were recorded.")
+
+        except Exception as e:
+            print(f"Error in plotting thread: {e}")
+        finally:
+            # Schedule GUI cleanup on the main thread
+            if hasattr(self.plotter, 'root'):
+                self.plotter.root.after(100, self.plotter.cleanup)
+
 
     def run_inference(self):
         # Start threads
@@ -440,12 +709,15 @@ class RemoteVitalSigns:
             self.plotter.root.mainloop()
         except KeyboardInterrupt:
             print("\nStopping processing...")
+        finally:
             self.stop_event.set()
+            self.plotter.should_stop = True
 
         # Wait for threads to complete
         video_thread.join()
         inference_thread.join()
         plot_thread.join()
+
 
     def save_estimated_signals(self):
         estimated_signals = {
@@ -470,13 +742,20 @@ class RemoteVitalSigns:
         plt.savefig(self.plot_filename)
         plt.close()
 
+
     def workflow(self):
         try:
             self.run_inference()
+        except Exception as e:
+            print(f"Error during processing: {e}")
         finally:
-            self.save_estimated_signals()
-            self.save_plots()
-
+            # Ensure cleanup is done in the main thread
+            try:
+                if hasattr(self, 'plotter'):
+                    self.plotter.cleanup()
+            except Exception as e:
+                print(f"Cleanup error (can be safely ignored): {e}")
+            cv2.destroyAllWindows()
 
 def main():
     parser = argparse.ArgumentParser(description='Remote Vital Signs Detection')
