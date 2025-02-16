@@ -191,26 +191,73 @@ class videoProcessor:
     def __init__(self, video_file):
         self.video_file = video_file
         self.cap = None
+        self.is_live_capture = isinstance(video_file, int)
         self.initialize_video_stream()
-        self.max_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if self.is_live_capture:
+            self.max_frames = float('inf')  # For live capture, set to infinite
+        else:
+            self.max_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def initialize_video_stream(self):
         try:
+            print(
+                f"Attempting to open {'camera' if isinstance(self.video_file, int) else 'video file'}: {self.video_file}")
             self.cap = cv2.VideoCapture(self.video_file)
-        except:
-            raise FileNotFoundError(f"Video file or capture device not found: {self.video_file}")
+
+            if not self.cap.isOpened():
+                raise IOError("Failed to open video capture")
+
+            # Print camera properties for live capture
+            if isinstance(self.video_file, int):
+                width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                fps = self.cap.get(cv2.CAP_PROP_FPS)
+                print(
+                    f"Camera initialized: Resolution {width}x{height}, FPS: {fps}")
+
+                # Try setting camera properties
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                self.cap.set(cv2.CAP_PROP_FPS, 30)
+
+                # Verify settings
+                actual_width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                actual_height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                actual_fps = self.cap.get(cv2.CAP_PROP_FPS)
+                print(
+                    f"Camera settings after initialization: Resolution {actual_width}x{actual_height}, FPS: {actual_fps}")
+
+        except Exception as e:
+            print(f"Error initializing video capture: {str(e)}")
+            raise
 
     def get_frame(self):
-        ret, frame = self.cap.read()
-        if not ret:
+        if self.cap is None or not self.cap.isOpened():
+            print("Error: Video capture is not initialized or has been closed")
             return None
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        return frame
+
+        try:
+            ret, frame = self.cap.read()
+            if not ret:
+                if self.is_live_capture:
+                    print("Error reading frame from camera")
+                return None
+
+            if frame is None:
+                print("Received null frame")
+                return None
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            return frame
+
+        except Exception as e:
+            print(f"Error reading frame: {str(e)}")
+            return None
 
     def __del__(self):
         if self.cap is not None:
+            print("Releasing video capture")
             self.cap.release()
-
 
 class FaceDetector:
     def __init__(self):
@@ -226,30 +273,33 @@ class FaceDetector:
         if not self.face_detected:
             face = self.faceDetector.detect_face(frame)
             if face is not None:
+                print(f"Face detected! Bbox: {face}")  # Debug print
                 self.face_detected = True
                 self.face = face
                 self.count_no_face = 0
             else:
                 self.count_no_face += 1
                 self.face_detected = False
-        
+                if self.count_no_face % 30 == 0:  # Print every 30 frames
+                    print(f"No face detected for {self.count_no_face} frames")
+
         if self.count_no_face > 10:
             self.reset()
             return None
-        
+
         return self.face
 
 
 class SignalPlotter:
-    def __init__(self, fs, plot_duration):
+    def __init__(self, fs, plot_duration, is_live_capture):
         self.fs = fs
         self.plot_duration = plot_duration
+        self.is_live_capture = is_live_capture
         self.setup_plot()
         self.last_update = time.time()
-        self.update_interval = 1/30  # 30 FPS update rate
+        self.update_interval = 1/30 if is_live_capture else 1/60  # Faster updates for recorded video
         self.should_stop = False
         self.is_paused = False
-        self.cleanup_requested = False
 
     def setup_plot(self):
         self.root = tk.Tk()
@@ -318,22 +368,15 @@ class SignalPlotter:
         if not hasattr(self, 'root') or self.is_paused:
             return
 
-        current_time = time.time()
-        if (current_time - self.last_update) < self.update_interval:
-            return
-
-        self.last_update = current_time
-
-        # Update face ROI frame
-    def update_plot(self, face_frame, bvp_data, rsp_data, hr, rr, face_detected):
-        if not hasattr(self, 'root') or self.is_paused:
-            return
-
-        current_time = time.time()
-        if (current_time - self.last_update) < self.update_interval:
-            return
-
-        self.last_update = current_time
+        # For recorded video, update as fast as possible while maintaining readable display
+        if self.is_live_capture:
+            current_time = time.time()
+            if (current_time - self.last_update) < self.update_interval:
+                return
+            self.last_update = current_time
+        else:
+            # For recorded video, just add a tiny sleep to prevent GUI from freezing
+            time.sleep(0.001)
 
         # Update face ROI frame
         if face_frame is not None and face_detected:
@@ -452,15 +495,18 @@ class RemoteVitalSigns:
         self.frame_queue = Queue(maxsize=100)
         self.result_queue = Queue()
         self.stop_event = threading.Event()
-        
+
+        # Determine if we're using live capture or recorded video
+        self.is_live_capture = isinstance(self.video_file, int)
+
         # Initialize plotter
-        self.plotter = SignalPlotter(self.fs, self.plot_duration)
+        self.plotter = SignalPlotter(self.fs, self.plot_duration, self.is_live_capture)
         
         # Additional buffer initialization for smooth updates
         self.signal_buffer_size = int(self.fs * self.plot_duration)
         self.bvp_buffer = collections.deque(maxlen=self.signal_buffer_size)
         self.rsp_buffer = collections.deque(maxlen=self.signal_buffer_size)
-        
+
         # Setup output files
         config_stem = Path(config_path).stem
         # Extract video name, append timestamp for live video
@@ -476,6 +522,7 @@ class RemoteVitalSigns:
         self.json_filename = root_path.joinpath(f"{config_stem}_{vid_name}_estimated.json")
         self.plot_filename = root_path.joinpath(f"{config_stem}_{vid_name}_estimated.png")
 
+
     def init_buffers(self):
         self.inference_frame_buffer = np.zeros(
             (1, self.in_channels, self.num_frames, self.height, self.width))
@@ -488,44 +535,65 @@ class RemoteVitalSigns:
         count_frame = 0
         face = None
         last_frame_time = time.time()
-        frame_interval = 1/30  # Target 30 FPS
+        frames_processed = 0
+        frames_with_face = 0
+
+        print("Starting video capture thread...")
+
+        # Add initial frame check
+        initial_frame = self.video_processor.get_frame()
+        if initial_frame is None:
+            print("Failed to get initial frame - check camera permissions and connection")
+            self.frame_queue.put(None)
+            return
+
+        print(f"Successfully got initial frame with shape: {initial_frame.shape}")
 
         while not self.stop_event.is_set() and count_frame < self.max_frames:
             if self.plotter.is_paused:
-                time.sleep(0.1)
-                continue
-
-            current_time = time.time()
-            if (current_time - last_frame_time) < frame_interval:
+                time.sleep(0.01)
                 continue
 
             frame = self.video_processor.get_frame()
             if frame is None:
+                print("Failed to get frame - camera disconnected or stream ended")
                 break
 
-            last_frame_time = current_time
-
+            frames_processed += 1
             if count_frame % self.face_detection_interval == 0:
                 face = self.face_detector.detect_face(frame)
 
             if face is not None:
+                frames_with_face += 1
                 x1, y1, x2, y2 = face
                 face_frame = frame[y1:y2, x1:x2]
-                processed_frame = cv2.resize(
-                    face_frame, (self.width, self.height))
+                processed_frame = cv2.resize(face_frame, (self.width, self.height))
                 processed_frame = processed_frame[np.newaxis, :, :, :]
                 processed_frame = processed_frame.transpose(0, 3, 1, 2)
-                self.frame_queue.put(
-                    (count_frame, face_frame, processed_frame, True))
+                
+                try:
+                    self.frame_queue.put((count_frame, face_frame, processed_frame, True), 
+                                    timeout=0.01)
+                except Queue.Full:
+                    print("Frame queue full!")  # Debug print
+                    continue
             else:
-                self.frame_queue.put((count_frame, None, None, False))
+                try:
+                    self.frame_queue.put((count_frame, None, None, False), 
+                                    timeout=0.01)
+                except Queue.Full:
+                    continue
 
             count_frame += 1
 
+        print(f"Video capture thread ended. Processed {frames_processed} frames total, {frames_with_face} with face")  # Debug print
         self.frame_queue.put(None)
 
     def inference_thread(self):
         count_frame = 0
+        measurements_recorded = 0
+
+        print("Starting inference thread...")  # Debug print
 
         while not self.stop_event.is_set():
             data = self.frame_queue.get()
@@ -539,40 +607,38 @@ class RemoteVitalSigns:
 
             if face_detected and processed_frame is not None:
                 if count_frame < self.num_frames:
-                    self.inference_frame_buffer[:, :,
-                                                count_frame, :, :] = processed_frame
+                    self.inference_frame_buffer[:, :, count_frame, :, :] = processed_frame
                 else:
-                    self.inference_frame_buffer[:, :, :-1, :,
-                                                :] = self.inference_frame_buffer[:, :, 1:, :, :]
-                    self.inference_frame_buffer[:,
-                                                :, -1, :, :] = processed_frame
+                    self.inference_frame_buffer[:, :, :-1, :, :] = self.inference_frame_buffer[:, :, 1:, :, :]
+                    self.inference_frame_buffer[:, :, -1, :, :] = processed_frame
 
                 if count_frame >= self.num_frames and count_frame % self.inference_interval == 0:
-                    bvp, rsp = self.model_instance.infer_rphys(
-                        self.inference_frame_buffer)
+                    bvp, rsp = self.model_instance.infer_rphys(self.inference_frame_buffer)
                     bvp, rsp = self.signal_processor.post_process(bvp, rsp)
 
-                    # Update signal buffers
                     self.bvp_buffer.extend(bvp.reshape(-1))
                     self.rsp_buffer.extend(rsp.reshape(-1))
 
-                    # Calculate metrics using the buffered signals
                     hr, rr = self.signal_processor.compute_metrics(
                         np.array(list(self.bvp_buffer)),
                         np.array(list(self.rsp_buffer))
                     )
 
+                    if not np.isnan(hr) and not np.isnan(rr):
+                        measurements_recorded += 1
+                        if measurements_recorded % 10 == 0:  # Print every 10 measurements
+                            print(f"Recorded {measurements_recorded} valid measurements. HR: {hr:.1f}, RR: {rr:.1f}")
+
                     self.result_queue.put((face_frame, np.array(list(self.bvp_buffer)),
-                                           np.array(list(self.rsp_buffer)), hr, rr, face_detected))
+                                        np.array(list(self.rsp_buffer)), hr, rr, face_detected))
             else:
-                # Send empty frame with current signals when no face is detected
                 self.result_queue.put((None, np.array(list(self.bvp_buffer)) if self.bvp_buffer else np.zeros(self.signal_buffer_size),
-                                       np.array(list(self.rsp_buffer)) if self.rsp_buffer else np.zeros(
-                                           self.signal_buffer_size),
-                                       np.nan, np.nan, False))
+                                    np.array(list(self.rsp_buffer)) if self.rsp_buffer else np.zeros(self.signal_buffer_size),
+                                    np.nan, np.nan, False))
 
             count_frame += 1
 
+        print(f"Inference thread ended. Recorded {measurements_recorded} valid measurements")  # Debug print
         self.result_queue.put(None)
 
     def plotting_thread(self):
@@ -757,13 +823,35 @@ class RemoteVitalSigns:
                 print(f"Cleanup error (can be safely ignored): {e}")
             cv2.destroyAllWindows()
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Remote Vital Signs Detection')
-    parser.add_argument('--config', type=str, required=True, help='Path to configuration file')
+    parser = argparse.ArgumentParser(
+        description='Remote Vital Signs Detection')
+    parser.add_argument('--config', type=str, required=True,
+                        help='Path to configuration file')
     args = parser.parse_args()
 
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+
+    # Check if using live capture
+    try:
+        video_path = config['video']['path']
+        is_live = isinstance(video_path, int) or video_path.isdigit()
+        if is_live:
+            print(f"Using live capture with camera index: {video_path}")
+            # Try opening camera briefly to check if it works
+            cap = cv2.VideoCapture(int(video_path))
+            if not cap.isOpened():
+                print("Error: Could not open camera. Please check if:")
+                print("1. Camera is properly connected")
+                print("2. Camera permissions are granted")
+                print("3. Camera is not being used by another application")
+                return
+            cap.release()
+    except Exception as e:
+        print(f"Error checking camera: {str(e)}")
+        return
 
     rPhysObj = RemoteVitalSigns(config, args.config)
     rPhysObj.workflow()
