@@ -17,16 +17,16 @@ export PATH="$HOME/miniconda/bin:$PATH"
 $HOME/miniconda/bin/conda init bash
 source ~/.bashrc
 
-echo "Creating conda environment 'dev'..."
-conda create -y -n dev python=3.11.2
+echo "Removing conda environment 'mmrphys', if it exists..."
+conda remove --name mmrphys --all -y
+
+echo "Creating conda environment 'mmrphys'..."
+conda create -y -n mmrphys python=3.11.2 pytorch=2.0.0 torchvision=0.15.1 torchaudio=2.0.1 cudatoolkit=11.8 -c pytorch -q -y
 
 echo "Activating environment and installing requirements..."
-conda activate dev
-
-# Install CUDA toolkit for GPU support
-conda install -y cudatoolkit=11.8
+conda activate mmrphys
 
 # Install packages from requirements.txt
 pip install -r requirements.txt
 
-echo "Setup complete! You can now activate the environment with: conda activate dev"
+echo "Setup complete! You can now activate the environment with: conda activate mmrphys"

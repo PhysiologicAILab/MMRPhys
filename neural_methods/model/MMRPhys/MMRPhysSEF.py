@@ -5,7 +5,7 @@ MMRPhys: Remote Extraction of Multiple Physiological Signals using Label Guided 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from neural_methods.model.MMRPhys.FSAM import FeaturesFactorizationModule
+from neural_methods.model.MMRPhys.TSFM import FeaturesFactorizationModule
 from neural_methods.model.MMRPhys.MMRPhysBP import BP_Estimation_Head
 # from neural_methods.model.TNM import TNM
 from copy import deepcopy
