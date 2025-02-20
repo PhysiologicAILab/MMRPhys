@@ -33,18 +33,18 @@ class MergeData(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--path1', default="/home/jitesh/data/BP4D/BP4D_RGBT_180_72x72",
+    # parser.add_argument('--path1', default="/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72",
     #                     dest="path1", type=str, help='path for data-1, e.g. with 180x72x72 res')
-    # parser.add_argument('--path2', default="/home/jitesh/data/BP4D/BP4D_RGBT_180_9x9",
+    # parser.add_argument('--path2', default="/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_9x9",
     #                     dest="path2", type=str, help='path for data-2, e.g. with 180x9x9 res')
-    # parser.add_argument('--dest', default="/home/jitesh/data/BP4D/BP4D_RGBT_180",
+    # parser.add_argument('--dest', default="/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180",
     #                     dest="dest", type=str, help='path store the merged the data')
 
-    parser.add_argument('--path1', default="/home/jitesh/data/SCAMPS/SCAMPS_Raw_180_72x72",
+    parser.add_argument('--path1', default="/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_72x72",
                         dest="path1", type=str, help='path for data-1, e.g. with 180x72x72 res')
-    parser.add_argument('--path2', default="/home/jitesh/data/SCAMPS/SCAMPS_Raw_180_9x9",
+    parser.add_argument('--path2', default="/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_9x9",
                         dest="path2", type=str, help='path for data-2, e.g. with 180x9x9 res')
-    parser.add_argument('--dest', default="/home/jitesh/data/SCAMPS/SCAMPS_Raw_180",
+    parser.add_argument('--dest', default="/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180",
                         dest="dest", type=str, help='path store the merged the data')
 
     parser.add_argument('REMAIN', nargs='*')

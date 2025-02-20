@@ -10,7 +10,7 @@ model:
 
 # Video configuration
 video:
-  path: "/Users/jiteshjoshi/Downloads/MMRPhys_Results/webapp/recoded_video1.mov"
+  path: "recoded_video1.mov"
   sampling_rate: 30  # frames per second
 
 # Processing parameters

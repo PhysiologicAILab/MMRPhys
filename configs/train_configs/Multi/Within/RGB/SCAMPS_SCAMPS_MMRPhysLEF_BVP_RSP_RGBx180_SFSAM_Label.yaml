@@ -12,7 +12,7 @@ TRAIN:
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/SCAMPS/scamps_videos"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/SCAMPS"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/SCAMPS"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "SCAMPS_Raw_180_72x72"
     BEGIN: 0.0
     END: 0.8
@@ -41,7 +41,7 @@ VALID:
     DO_PREPROCESS: False               # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/SCAMPS/scamps_videos"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/SCAMPS"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/SCAMPS"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "SCAMPS_Raw_180_72x72"
     BEGIN: 0.8
     END: 1.0
@@ -72,7 +72,7 @@ TEST:
     DO_PREPROCESS: False               # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/SCAMPS/scamps_videos"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/SCAMPS"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/SCAMPS"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "SCAMPS_Raw_180_72x72"
     BEGIN: 0.8
     END: 1.0

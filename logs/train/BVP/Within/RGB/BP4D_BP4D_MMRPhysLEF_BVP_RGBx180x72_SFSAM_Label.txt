@@ -66,14 +66,14 @@ NUM_OF_GPU_TRAIN: 1
 TEST:
   DATA:
     BEGIN: 0.7
-    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+    CACHED_PATH: /mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72
     DATASET: BP4D
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/BP4D_72x72
     DO_PREPROCESS: False
     END: 1.0
     EXP_DATA_NAME: BP4D_RGBT_180_72x72
-    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.7_1.0.csv
+    FILE_LIST_PATH: /mnt/sdc1/rppg/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.7_1.0.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -135,14 +135,14 @@ TRAIN:
   BATCH_SIZE: 4
   DATA:
     BEGIN: 0.0
-    CACHED_PATH: /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+    CACHED_PATH: /mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72
     DATASET: BP4D
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/BP4D_72x72
     DO_PREPROCESS: False
     END: 0.7
     EXP_DATA_NAME: BP4D_RGBT_180_72x72
-    FILE_LIST_PATH: /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_0.7.csv
+    FILE_LIST_PATH: /mnt/sdc1/rppg/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_0.7.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -263,7 +263,7 @@ UNSUPERVISED:
 VALID:
   DATA:
     BEGIN: 0.7
-    CACHED_PATH: /home/jitesh/data/BP4D
+    CACHED_PATH: /mnt/sdc1/rppg/BP4D
     DATASET: BP4D
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/BP4D_72x72
@@ -328,9 +328,9 @@ VALID:
 File list does not exist... generating now...
 File list generated.
 
-Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+Cached Data Path /mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72
 
-File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_0.7.csv
+File List Path /mnt/sdc1/rppg/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.0_0.7.csv
  train Preprocessed Dataset Length: 4532
 
 Testing uses last epoch, validation dataset is not required.
@@ -338,9 +338,9 @@ Testing uses last epoch, validation dataset is not required.
 File list does not exist... generating now...
 File list generated.
 
-Cached Data Path /home/jitesh/data/BP4D/BP4D_RGBT_180_72x72
+Cached Data Path /mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72
 
-File List Path /home/jitesh/data/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.7_1.0.csv
+File List Path /mnt/sdc1/rppg/BP4D/DataFileLists/BP4D_RGBT_180_72x72_0.7_1.0.csv
  test Preprocessed Dataset Length: 2138
 
 Tasks: ['BVP']

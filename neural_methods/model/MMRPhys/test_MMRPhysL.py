@@ -40,9 +40,9 @@ model_config = {
     "num_trials": 20,
     "visualize": True,
     "ckpt_path": "./runs/exp/BP4D_RGBT_180_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx180x72_FSAM_Epoch2.pth",
-    "data_path": "/home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72",
+    "data_path": "/mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72",
     # "ckpt_path": "./runs/exp/BP4D_RGBT_500_72x72/PreTrainedModels/BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1_Epoch4.pth",
-    # "data_path": "/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72",
+    # "data_path": "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_72x72",
 }
 
 

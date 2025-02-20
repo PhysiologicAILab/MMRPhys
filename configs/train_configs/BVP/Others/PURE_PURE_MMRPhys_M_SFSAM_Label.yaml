@@ -12,7 +12,7 @@ TRAIN:
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/PURE_Dataset"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "PURE_Raw_300_36x36"
     BEGIN: 0.0
     END: 0.7
@@ -41,7 +41,7 @@ VALID:
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/PURE_Dataset"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "PURE_Raw_300_36x36"
     BEGIN: 0.7
     END: 1.0
@@ -72,7 +72,7 @@ TEST:
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/mnt/sda/data/raw/PURE"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/home/jitesh/data/PURE_Dataset"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/mnt/sdc1/rppg/PURE_Dataset"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "PURE_Raw_300_36x36"
     BEGIN: 0.7
     END: 1.0

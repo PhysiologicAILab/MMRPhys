@@ -128,7 +128,7 @@ class AddHR2Labels(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datadir', default="/home/jitesh/data/PURE_Dataset/PURE_Raw_300_36x36",
+    parser.add_argument('--datadir', default="/mnt/sdc1/rppg/PURE_Dataset/PURE_Raw_300_36x36",
                         dest="datadir", type=str, help='path of the data')
     parser.add_argument('--fps', default=30,
                         dest="fps", type=int, help='sampling rate')
@@ -141,13 +141,13 @@ if __name__ == "__main__":
     utilObj.compute_and_add_hr()
 
 # fps: 30
-# SCAMPS: /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72; --file_filter: *label*.npy
+# SCAMPS: /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72; --file_filter: *label*.npy
 # SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_videos
 # SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_waveforms_csv; --file_filter: *.csv
-# UBFC-rPPG: /home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
-# iBVP: /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
-# PURE: /home/jitesh/data/PURE_Dataset/PURE_Raw_160_72x72
-# PURE: /home/jitesh/data/PURE_Dataset/PURE_Raw_300_36x36
+# UBFC-rPPG: /mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
+# iBVP: /mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72
+# PURE: /mnt/sdc1/rppg/PURE_Dataset/PURE_Raw_160_72x72
+# PURE: /mnt/sdc1/rppg/PURE_Dataset/PURE_Raw_300_36x36
 
 # fps: 25
 # BP4D: not needed as it comes with HR vector

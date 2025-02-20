@@ -137,7 +137,7 @@ if __name__ == "__main__":
     utilObj.compute_and_add_rr()
 
 # fps: 30
-# SCAMPS: /home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72
+# SCAMPS: /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72
 # SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_videos
 # SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_waveforms_csv
 # UBFC-rPPG: not needed as no RSP signal present

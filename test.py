@@ -16,10 +16,10 @@ import cv2
 # 'P001244.mat', 'P001130.mat', 'P000668.mat', 'P000278.mat'
 # Chunk ID:  ('2', '0', '0', '0')
 
-# data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
-# label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
-data_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_input0.npy"
-label_pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_label0.npy"
+# data_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
+# label_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
+data_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_input0.npy"
+label_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_label0.npy"
 data = np.load(data_pth)
 label = np.load(label_pth)
 print(data.shape)
@@ -308,7 +308,7 @@ for fn in fns:
 
 # %% check added HR to prepared data
 if run_cell == 4:
-    pth = Path("/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label1.npy")
+    pth = Path("/mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label1.npy")
     data = np.load(str(pth))
     print(data.shape)
     plt.plot(data[:, 0])
@@ -318,10 +318,10 @@ if run_cell == 4:
 
 # %% Read CSV and find a specific file, remove the row.
 if run_cell == 5:
-    csv_path = "/home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS.csv"
-    video_fn = "/home/jitesh/data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS/subject1_input8.npy"
+    csv_path = "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS.csv"
+    video_fn = "/mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS/subject1_input8.npy"
 
-    save_csv_path = "/home/jitesh/data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS_new.csv"
+    save_csv_path = "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS_new.csv"
     
     df = pd.read_csv(csv_path)
     loc = df[df.input_files == video_fn].index
@@ -344,8 +344,8 @@ if run_cell == 6:
     
 # %% check labels for BP4D data
 if run_cell == 7:
-    old_prep_label_fn = "/home/jitesh/data/BP4D/BP4D_RGBT_180_36x36/F001T01_label0.npy"
-    new_prep_label_fn = "/home/jitesh/data/BP4D/BP4D_RGBT_300_36x36/F001T01_label0.npy"
+    old_prep_label_fn = "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_36x36/F001T01_label0.npy"
+    new_prep_label_fn = "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_300_36x36/F001T01_label0.npy"
 
     l_old = np.load(old_prep_label_fn)
     l_new = np.load(new_prep_label_fn)
@@ -378,7 +378,7 @@ if run_cell == 7:
  
 # %% 
 if run_cell == 8:
-    fn = "/home/jitesh/dev/repos/vis/mmrPhys/BP4D_500x9_Fold1_RGBT.npy"
+    fn = "BP4D_500x9_Fold1_RGBT.npy"
     test_data = np.load(fn, allow_pickle=True).item()
     for models in test_data.keys():
         hr_labels = test_data[models]["hr_labels"]
@@ -450,7 +450,7 @@ if run_cell == 11:
 
 # %%
 if run_cell == 12:
-    pth = Path("/home/jitesh/data/BP4D/BP4D_RGBT_500_72x72/F001T01_label0.npy")
+    pth = Path("/mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_72x72/F001T01_label0.npy")
     data = np.load(pth)
     bvp = data[:, 11]
     # avg_bvp = np.mean(bvp)
@@ -529,7 +529,7 @@ print(p.shape)
 # %%
 
 
-pth = "/home/jitesh/data/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
+pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
 data = np.load(pth)
 print(data.shape)
 

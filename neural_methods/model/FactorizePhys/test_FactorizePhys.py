@@ -37,9 +37,9 @@ model_config = {
     "num_trials": 20,
     "visualize": True,
     "ckpt_path": "./runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_FactorizePhys_FSAM_Label_Epoch4.pth",
-    "data_path": "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72",
-    "label_path": "/home/jitesh/data/SCAMPS/SCAMPS_Raw_160_72x72",
-    "data_list": "/home/jitesh/data/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.8_1.0.csv",
+    "data_path": "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72",
+    "label_path": "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72",
+    "data_list": "/mnt/sdc1/rppg/SCAMPS/DataFileLists/SCAMPS_Raw_160_72x72_0.8_1.0.csv",
 }
 
 # ./runs/exp/SCAMPS_Raw_160_72x72/PreTrainedModels/SCAMPS_SCAMPS_FactorizePhys_FSAM_Label_Epoch4.pth

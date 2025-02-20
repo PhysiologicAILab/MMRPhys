@@ -66,14 +66,14 @@ NUM_OF_GPU_TRAIN: 1
 TEST:
   DATA:
     BEGIN: 0.7
-    CACHED_PATH: /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+    CACHED_PATH: /mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72
     DATASET: iBVP
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/iBVP
     DO_PREPROCESS: False
     END: 1.0
     EXP_DATA_NAME: iBVP_RGBT_160_72x72
-    FILE_LIST_PATH: /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.7_1.0.csv
+    FILE_LIST_PATH: /mnt/sdc1/rppg/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.7_1.0.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -135,14 +135,14 @@ TRAIN:
   BATCH_SIZE: 4
   DATA:
     BEGIN: 0.0
-    CACHED_PATH: /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+    CACHED_PATH: /mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72
     DATASET: iBVP
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/iBVP
     DO_PREPROCESS: False
     END: 0.7
     EXP_DATA_NAME: iBVP_RGBT_160_72x72
-    FILE_LIST_PATH: /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_0.7.csv
+    FILE_LIST_PATH: /mnt/sdc1/rppg/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_0.7.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -263,7 +263,7 @@ UNSUPERVISED:
 VALID:
   DATA:
     BEGIN: 0.7
-    CACHED_PATH: /home/jitesh/data/iBVP_Dataset
+    CACHED_PATH: /mnt/sdc1/rppg/iBVP_Dataset
     DATASET: iBVP
     DATA_FORMAT: NCDHW
     DATA_PATH: /mnt/sda/data/raw/iBVP
@@ -325,16 +325,16 @@ VALID:
         LABELS: BVP_RSP
       USE_PSUEDO_PPG_LABEL: False
 
-Cached Data Path /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+Cached Data Path /mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72
 
-File List Path /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_0.7.csv
+File List Path /mnt/sdc1/rppg/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.0_0.7.csv
  train Preprocessed Dataset Length: 2320
 
 Testing uses last epoch, validation dataset is not required.
 
-Cached Data Path /home/jitesh/data/iBVP_Dataset/iBVP_RGBT_160_72x72
+Cached Data Path /mnt/sdc1/rppg/iBVP_Dataset/iBVP_RGBT_160_72x72
 
-File List Path /home/jitesh/data/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.7_1.0.csv
+File List Path /mnt/sdc1/rppg/iBVP_Dataset/DataFileLists/iBVP_RGBT_160_72x72_0.7_1.0.csv
  test Preprocessed Dataset Length: 1096
 
 Tasks: ['BVP']
