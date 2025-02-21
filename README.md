@@ -1,7 +1,19 @@
 # MMRPhys
-Multi-Modal Multi-Task Remote Physiological Sensing
+Efficient and Robust Multidimensional Attention in Remote Physiological Sensing through Target Signal Constrained Factorization
 
 # About the Repository
+
+## Relative paths of codes related to core contributions - MMRPhys and TSFM
+
+        ├── neural_methods
+        │   ├── model
+        │   │   ├── MMRPhys
+        │   │   │   ├── MMRPhysLEF.py
+        │   │   │   ├── MMRPhysMEF.py
+        │   │   │   ├── MMRPhysSEF.py
+        │   │   │   ├── TSFM.py
+        │   └── trainer
+        │       ├── MMRPhysTrainer.py
 
 ## :notebook: Algorithms
 
