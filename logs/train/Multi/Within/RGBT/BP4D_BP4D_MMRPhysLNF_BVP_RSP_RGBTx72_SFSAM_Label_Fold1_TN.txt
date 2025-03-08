@@ -1,7 +1,7 @@
 => Merging a config file from configs/train_configs/Multi/Within/RGBT/BP4D_BP4D_MMRPhysLNF_BVP_RSP_RGBTx72_SFSAM_Label_Fold1.yaml
 Configuration:
 BASE: ['']
-DEVICE: cuda:1
+DEVICE: cuda:0
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: FFT
@@ -126,7 +126,7 @@ TEST:
       SCAMPS:
         LABELS: BVP_RSP
       USE_PSUEDO_PPG_LABEL: False
-  METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA', 'MACC']
+  METRICS: ['MAE', 'RMSE', 'MAPE', 'MACC', 'Pearson', 'SNR', 'BA']
   OUTPUT_SAVE_DIR: runs/exp/BP4D_RGBT_500_72x72/saved_test_outputs
   USE_LAST_EPOCH: True
 TOOLBOX_MODE: train_and_test

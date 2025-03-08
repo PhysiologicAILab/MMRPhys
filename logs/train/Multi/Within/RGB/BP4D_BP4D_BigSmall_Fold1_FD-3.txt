@@ -1,7 +1,7 @@
 => Merging a config file from configs/train_configs/Multi/Within/RGB/BP4D_BP4D_BigSmall_Fold1.yaml
 Configuration:
 BASE: ['']
-DEVICE: cuda:1
+DEVICE: cuda:0
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: FFT
