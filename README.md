@@ -1,6 +1,8 @@
 # MMRPhys
 Efficient and Robust Multidimensional Attention in Remote Physiological Sensing through Target Signal Constrained Factorization
 
+Visit live demo of the web-app deploying MMRPhys: https://physiologicailab.github.io/mmrphys-live/
+
 # About the Repository
 
 ## Relative paths of codes related to core contributions - MMRPhys and TSFM
