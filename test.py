@@ -16,10 +16,10 @@ import cv2
 # 'P001244.mat', 'P001130.mat', 'P000668.mat', 'P000278.mat'
 # Chunk ID:  ('2', '0', '0', '0')
 
-# data_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
-# label_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
-data_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_input0.npy"
-label_pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_label0.npy"
+# data_pth = "data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_input0.npy"
+# label_pth = "data/SCAMPS/SCAMPS_Raw_160_72x72/P000261.mat_label0.npy"
+data_pth = "data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_input0.npy"
+label_pth = "data/SCAMPS/SCAMPS_Raw_160_72x72/P000278.mat_label0.npy"
 data = np.load(data_pth)
 label = np.load(label_pth)
 print(data.shape)
@@ -232,7 +232,7 @@ if run_cell == 1:
 
 # %%
 if run_cell == 2:
-    wave_file = "/mnt/sda/data/raw/SCAMPS/scamps_videos/P000007.mat"
+    wave_file = "data/raw/SCAMPS/scamps_videos/P000007.mat"
     opt = "bvp_rsp"
     """Reads a bvp and resp signal file."""
     mat = mat73.loadmat(wave_file)
@@ -288,7 +288,7 @@ if run_cell == 3:
 
 # %%
 if run_cell == 4:
-    pth = "/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label3.npy"
+    pth = "data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label3.npy"
     data = np.load(pth)
     print(data.shape)
 
@@ -300,7 +300,7 @@ if len(data.shape) < 2:
     new_data = np.concatenate([temp_data, hr_vec], axis=1)
     print(new_data.shape)
 # %%
-pth = Path("/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72")
+pth = Path("data/prep/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72")
 fns = sorted(list(pth.glob("*label*.npy")))
 for fn in fns:
     print(fn.name)
@@ -308,7 +308,7 @@ for fn in fns:
 
 # %% check added HR to prepared data
 if run_cell == 4:
-    pth = Path("/mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label1.npy")
+    pth = Path("data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72/subject1_label1.npy")
     data = np.load(str(pth))
     print(data.shape)
     plt.plot(data[:, 0])
@@ -318,10 +318,10 @@ if run_cell == 4:
 
 # %% Read CSV and find a specific file, remove the row.
 if run_cell == 5:
-    csv_path = "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS.csv"
-    video_fn = "/mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS/subject1_input8.npy"
+    csv_path = "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS.csv"
+    video_fn = "data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS/subject1_input8.npy"
 
-    save_csv_path = "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS_new.csv"
+    save_csv_path = "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0_15FPS_new.csv"
     
     df = pd.read_csv(csv_path)
     loc = df[df.input_files == video_fn].index
@@ -344,8 +344,8 @@ if run_cell == 6:
     
 # %% check labels for BP4D data
 if run_cell == 7:
-    old_prep_label_fn = "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_36x36/F001T01_label0.npy"
-    new_prep_label_fn = "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_300_36x36/F001T01_label0.npy"
+    old_prep_label_fn = "data/BP4D/BP4D_RGBT_180_36x36/F001T01_label0.npy"
+    new_prep_label_fn = "data/BP4D/BP4D_RGBT_300_36x36/F001T01_label0.npy"
 
     l_old = np.load(old_prep_label_fn)
     l_new = np.load(new_prep_label_fn)
@@ -397,7 +397,7 @@ if run_cell == 8:
 # %%
 if run_cell == 9:
     fold_path = "dataset/BP4D_BigSmall_Subject_Splits/Split1_Test_Subjects.csv"
-    data_path = "/mnt/sda/data/raw/BP4D_9x9"
+    data_path = "data/raw/BP4D_9x9"
     data_dirs = glob.glob(data_path + os.sep + "*_*")
 
     dirs = list()
@@ -450,7 +450,7 @@ if run_cell == 11:
 
 # %%
 if run_cell == 12:
-    pth = Path("/mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_72x72/F001T01_label0.npy")
+    pth = Path("data/BP4D/BP4D_RGBT_500_72x72/F001T01_label0.npy")
     data = np.load(pth)
     bvp = data[:, 11]
     # avg_bvp = np.mean(bvp)
@@ -529,7 +529,7 @@ print(p.shape)
 # %%
 
 
-pth = "/mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
+pth = "data/SCAMPS/SCAMPS_Raw_500_72x72/P000001.mat_label0.npy"
 data = np.load(pth)
 print(data.shape)
 

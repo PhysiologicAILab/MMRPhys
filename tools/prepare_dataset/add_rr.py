@@ -124,7 +124,7 @@ class AddRR2Labels(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datadir', default="/mnt/sda/data/raw/SCAMPS/scamps_waveforms_csv",
+    parser.add_argument('--datadir', default="data/raw/SCAMPS/scamps_waveforms_csv",
                         dest="datadir", type=str, help='path of the data')
     parser.add_argument('--fps', default=30,
                         dest="fps", type=int, help='sampling rate')
@@ -137,9 +137,9 @@ if __name__ == "__main__":
     utilObj.compute_and_add_rr()
 
 # fps: 30
-# SCAMPS: /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_160_72x72
-# SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_videos
-# SCAMPS Raw data: /mnt/sda/data/raw/SCAMPS/scamps_waveforms_csv
+# SCAMPS: data/SCAMPS/SCAMPS_Raw_160_72x72
+# SCAMPS Raw data: data/raw/SCAMPS/scamps_videos
+# SCAMPS Raw data: data/raw/SCAMPS/scamps_waveforms_csv
 # UBFC-rPPG: not needed as no RSP signal present
 # iBVP: not needed as no RSP signal present
 # PURE: not needed as no RSP signal present

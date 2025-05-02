@@ -65,14 +65,14 @@ NUM_OF_GPU_TRAIN: 1
 TEST:
   DATA:
     BEGIN: 0.0
-    CACHED_PATH: /mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
+    CACHED_PATH: data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
     DATASET: UBFC-rPPG
     DATA_FORMAT: NCDHW
-    DATA_PATH: /mnt/sda/data/raw/UBFC-rPPG/DATASET_2
+    DATA_PATH: data/raw/UBFC-rPPG/DATASET_2
     DO_PREPROCESS: False
     END: 1.0
     EXP_DATA_NAME: UBFC-rPPG_Raw_160_72x72
-    FILE_LIST_PATH: /mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
+    FILE_LIST_PATH: data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -324,9 +324,9 @@ VALID:
         LABELS: BVP_RSP
       USE_PSUEDO_PPG_LABEL: False
 
-Cached Data Path /mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
+Cached Data Path data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72
 
-File List Path /mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
+File List Path data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_0.0_1.0.csv
  test Preprocessed Dataset Length: 375
 
 Tasks: ['BVP']

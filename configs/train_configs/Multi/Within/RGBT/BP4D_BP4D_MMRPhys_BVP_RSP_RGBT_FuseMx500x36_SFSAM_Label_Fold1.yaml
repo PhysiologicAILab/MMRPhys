@@ -11,8 +11,8 @@ TRAIN:
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sdc1/rppg/raw/BP4D_36x36"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/mnt/sdc1/rppg/BP4D"    # Processed dataset save path, need to be updated
+    DATA_PATH: "data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
+    CACHED_PATH: "data/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Train'
@@ -44,8 +44,8 @@ VALID:
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sdc1/rppg/raw/BP4D_36x36"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/mnt/sdc1/rppg/BP4D"    # Processed dataset save path, need to be updated
+    DATA_PATH: "data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
+    CACHED_PATH: "data/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Test'
@@ -79,8 +79,8 @@ TEST:
     DATASET: BP4D
     DO_PREPROCESS: False            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/mnt/sdc1/rppg/raw/BP4D_36x36"          # Raw dataset path, need to be updated
-    CACHED_PATH: "/mnt/sdc1/rppg/BP4D"    # Processed dataset save path, need to be updated
+    DATA_PATH: "data/raw/BP4D_36x36"          # Raw dataset path, need to be updated
+    CACHED_PATH: "data/BP4D"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_500_36x36"
     FOLD:
       FOLD_NAME: 'Fold1_Test'

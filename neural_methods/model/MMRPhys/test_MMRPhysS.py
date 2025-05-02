@@ -39,7 +39,7 @@ model_config = {
     "num_trials": 20,
     "visualize": False,
     "ckpt_path": "./runs/exp/BP4D_RGBT_500_9x9/PreTrainedModels/BP4D_MMRPhysMNF_BVP_RSP_RGBTx9_SFSAM_Label_Fold1_Epoch39.pth",
-    "data_path": "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_9x9",
+    "data_path": "data/BP4D/BP4D_RGBT_500_9x9",
 }
 
 

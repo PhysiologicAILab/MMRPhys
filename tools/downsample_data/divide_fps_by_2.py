@@ -59,20 +59,20 @@ class DownSampleData(object):
 
         if "ubfc" in datadir.lower():
             self.data_lists = [
-                "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_0.7.csv", 
-                "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_0.8.csv",
-                "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_1.0.csv", 
-                "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.7_1.0.csv", 
-                "/mnt/sdc1/rppg/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.8_1.0.csv"
+                "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_0.7.csv", 
+                "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_0.8.csv",
+                "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.0_1.0.csv", 
+                "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.7_1.0.csv", 
+                "data/UBFC-rPPG/DataFileLists/UBFC-rPPG_Raw_160_72x72_15FPS_0.8_1.0.csv"
                 ]
 
         elif "pure" in datadir.lower():
             self.data_lists = [
-                "/mnt/sdc1/rppg/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_0.7.csv",
-                "/mnt/sdc1/rppg/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_0.8.csv",
-                "/mnt/sdc1/rppg/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_1.0.csv",
-                "/mnt/sdc1/rppg/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.7_1.0.csv",
-                "/mnt/sdc1/rppg/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.8_1.0.csv",
+                "data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_0.7.csv",
+                "data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_0.8.csv",
+                "data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.0_1.0.csv",
+                "data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.7_1.0.csv",
+                "data/PURE_Dataset/DataFileLists/PURE_Raw_160_72x72_15FPS_0.8_1.0.csv",
                 ]
 
         elif "ibvp" in datadir.lower():
@@ -207,9 +207,9 @@ class DownSampleData(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datadir', default="/mnt/sdc1/rppg/PURE_Dataset/PURE_Raw_160_72x72_15FPS",
+    parser.add_argument('--datadir', default="data/PURE_Dataset/PURE_Raw_160_72x72_15FPS",
                         dest="datadir", type=str, help='path of the data')
-    parser.add_argument('--plotdir', default="/mnt/sdc1/rppg/Review15FPSData/PURE",
+    parser.add_argument('--plotdir', default="data/Review15FPSData/PURE",
                         dest="plotdir", type=str, help='path of the plots')
     parser.add_argument('--fps', default=30, dest="fps",
                         type=int, help='original video frame rate')
@@ -233,6 +233,6 @@ if __name__ == "__main__":
 # 5. Add these files in the list of respective dataset files "self.data_lists" in the init function.
 
 
-# BP4D = "/mnt/sdc1/rppg/BP4D/BP4D_RGBT_180_72x72"
-# UBFC-rPPG = "/mnt/sdc1/rppg/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS"
-# PURE = "/mnt/sdc1/rppg/PURE_Dataset/PURE_Raw_160_72x72_15FPS"
+# BP4D = "data/BP4D/BP4D_RGBT_180_72x72"
+# UBFC-rPPG = "data/UBFC-rPPG/UBFC-rPPG_Raw_160_72x72_15FPS"
+# PURE = "data/PURE_Dataset/PURE_Raw_160_72x72_15FPS"

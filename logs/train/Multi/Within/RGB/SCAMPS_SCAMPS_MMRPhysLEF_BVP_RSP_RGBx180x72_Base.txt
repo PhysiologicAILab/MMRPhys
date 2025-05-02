@@ -65,14 +65,14 @@ NUM_OF_GPU_TRAIN: 1
 TEST:
   DATA:
     BEGIN: 0.8
-    CACHED_PATH: /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_72x72
+    CACHED_PATH: data/SCAMPS/SCAMPS_Raw_180_72x72
     DATASET: SCAMPS
     DATA_FORMAT: NCDHW
-    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DATA_PATH: data/raw/SCAMPS/scamps_videos
     DO_PREPROCESS: False
     END: 1.0
     EXP_DATA_NAME: SCAMPS_Raw_180_72x72
-    FILE_LIST_PATH: /mnt/sdc1/rppg/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.8_1.0.csv
+    FILE_LIST_PATH: data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.8_1.0.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -134,14 +134,14 @@ TRAIN:
   BATCH_SIZE: 4
   DATA:
     BEGIN: 0.0
-    CACHED_PATH: /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_72x72
+    CACHED_PATH: data/SCAMPS/SCAMPS_Raw_180_72x72
     DATASET: SCAMPS
     DATA_FORMAT: NCDHW
-    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DATA_PATH: data/raw/SCAMPS/scamps_videos
     DO_PREPROCESS: False
     END: 0.8
     EXP_DATA_NAME: SCAMPS_Raw_180_72x72
-    FILE_LIST_PATH: /mnt/sdc1/rppg/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_0.8.csv
+    FILE_LIST_PATH: data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_0.8.csv
     FILTERING:
       EXCLUSION_LIST: ['']
       SELECT_TASKS: False
@@ -262,10 +262,10 @@ UNSUPERVISED:
 VALID:
   DATA:
     BEGIN: 0.8
-    CACHED_PATH: /mnt/sdc1/rppg/SCAMPS
+    CACHED_PATH: data/SCAMPS
     DATASET: SCAMPS
     DATA_FORMAT: NCDHW
-    DATA_PATH: /mnt/sda/data/raw/SCAMPS/scamps_videos
+    DATA_PATH: data/raw/SCAMPS/scamps_videos
     DO_PREPROCESS: False
     END: 1.0
     EXP_DATA_NAME: SCAMPS_Raw_180_72x72
@@ -324,16 +324,16 @@ VALID:
         LABELS: BVP_RSP
       USE_PSUEDO_PPG_LABEL: False
 
-Cached Data Path /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_72x72
+Cached Data Path data/SCAMPS/SCAMPS_Raw_180_72x72
 
-File List Path /mnt/sdc1/rppg/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_0.8.csv
+File List Path data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.0_0.8.csv
  train Preprocessed Dataset Length: 6717
 
 Testing uses last epoch, validation dataset is not required.
 
-Cached Data Path /mnt/sdc1/rppg/SCAMPS/SCAMPS_Raw_180_72x72
+Cached Data Path data/SCAMPS/SCAMPS_Raw_180_72x72
 
-File List Path /mnt/sdc1/rppg/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.8_1.0.csv
+File List Path data/SCAMPS/DataFileLists/SCAMPS_Raw_180_72x72_0.8_1.0.csv
  test Preprocessed Dataset Length: 1680
 
 Tasks: ['BVP', 'RSP']

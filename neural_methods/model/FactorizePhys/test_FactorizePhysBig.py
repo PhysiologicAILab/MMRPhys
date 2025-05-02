@@ -37,11 +37,11 @@ model_config = {
     "data_type": "rgb",
     "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_Base_HighRes.pth",
     # "ckpt_path": "./final_model_release/UBFC-rPPG_Intra_FactorizePhys_FSAM_Res_HighRes.pth",
-    "data_path": "/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128",
-    "label_path": "/mnt/sda/data/prep/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128"
+    "data_path": "data/prep/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128",
+    "label_path": "data/prep/UBFC-rPPG/UBFC-rPPG_Raw_240_128x128"
     # "ckpt_path": "./runs/exp/iBVP_RGBT_240_128x128/PreTrainedModels/iBVP_T_FactorizePhys_HighRes_Epoch9.pth",
-    # "data_path": "/mnt/sda/data/prep/iBVP_Dataset/iBVP_RGBT_240_128x128",
-    # "label_path": "/mnt/sda/data/prep/iBVP_Dataset/iBVP_RGBT_240_128x128"
+    # "data_path": "data/prep/iBVP_Dataset/iBVP_RGBT_240_128x128",
+    # "label_path": "data/prep/iBVP_Dataset/iBVP_RGBT_240_128x128"
 }
 
 # default `log_dir` is "runs" - we'll be more specific here

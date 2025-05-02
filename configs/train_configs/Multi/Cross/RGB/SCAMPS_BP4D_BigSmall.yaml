@@ -11,8 +11,8 @@ TRAIN:
     DATASET: SCAMPSBigSmall
     DO_PREPROCESS: False              # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH:  "/mnt/sda/data/raw/SCAMPS/scamps_videos" 
-    CACHED_PATH: "/mnt/sdc1/rppg/SCAMPS"  # Processed dataset save path, need to be updated
+    DATA_PATH:  "data/raw/SCAMPS/scamps_videos" 
+    CACHED_PATH: "data/SCAMPS"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "SCAMPS_Raw_180"
     BEGIN: 0.0
     END: 1.0
@@ -43,8 +43,8 @@ VALID:
     DATASET: SCAMPSBigSmall
     DO_PREPROCESS: False              # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH:  "/mnt/sda/data/raw/SCAMPS/scamps_videos"
-    CACHED_PATH: "/mnt/sdc1/rppg/SCAMPS"  # Processed dataset save path, need to be updated
+    DATA_PATH:  "data/raw/SCAMPS/scamps_videos"
+    CACHED_PATH: "data/SCAMPS"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "SCAMPS_Raw_180"
     BEGIN: 0.7
     END: 1.0
@@ -77,8 +77,8 @@ TEST:
     DATASET: BP4DBigSmall
     DO_PREPROCESS: False              # if first time, should be true
     DATA_FORMAT: NDCHW
-    DATA_PATH:  "/mnt/sdc1/rppg/BP4D" 
-    CACHED_PATH: "/mnt/sdc1/rppg/BP4D"  # Processed dataset save path, need to be updated
+    DATA_PATH:  "data/BP4D" 
+    CACHED_PATH: "data/BP4D"  # Processed dataset save path, need to be updated
     EXP_DATA_NAME: "BP4D_RGBT_180"
     BEGIN: 0.0
     END: 1.0

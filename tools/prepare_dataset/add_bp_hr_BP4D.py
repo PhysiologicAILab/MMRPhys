@@ -267,7 +267,7 @@ class AddHR2Labels(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--datadir', default="/mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_72x72",
+    parser.add_argument('--datadir', default="data/BP4D/BP4D_RGBT_500_72x72",
                         dest="datadir", type=str, help='path of the data')
     parser.add_argument('--fps', default=25,
                         dest="fps", type=int, help='sampling rate')
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     #                     dest="file_filter", type=str, help='string used for filtering the data: [*label*.npy, *.mat, *.csv]')
     # parser.add_argument('--file_filter', default="*input*.npy",
     #                     dest="file_filter", type=str, help='string used for filtering the data: [*label*.npy, *.mat, *.csv]')
-    parser.add_argument('--ref_file', default="/mnt/sdc1/rppg/BP4D/BP4D_500_72_Clean.csv",
+    parser.add_argument('--ref_file', default="data/BP4D/BP4D_500_72_Clean.csv",
                         dest="ref_file", type=str, help='file with datalist used for removing the noisy data')
 
 
@@ -294,6 +294,6 @@ if __name__ == "__main__":
 
 
 # fps: 25
-# BP4D: /mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_72x72; '/mnt/sdc1/rppg/BP4D/BP4D_500_72_Clean.csv'
-# BP4D: /mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_36x36; '/mnt/sdc1/rppg/BP4D/BP4D_500_36_Clean.csv'
-# BP4D: /mnt/sdc1/rppg/BP4D/BP4D_RGBT_500_9x9; '/mnt/sdc1/rppg/BP4D/BP4D_500_9_Clean.csv'
+# BP4D: data/BP4D/BP4D_RGBT_500_72x72; 'data/BP4D/BP4D_500_72_Clean.csv'
+# BP4D: data/BP4D/BP4D_RGBT_500_36x36; 'data/BP4D/BP4D_500_36_Clean.csv'
+# BP4D: data/BP4D/BP4D_RGBT_500_9x9; 'data/BP4D/BP4D_500_9_Clean.csv'
