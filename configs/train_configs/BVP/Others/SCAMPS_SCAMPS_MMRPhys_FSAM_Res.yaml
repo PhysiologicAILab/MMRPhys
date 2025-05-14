@@ -27,7 +27,7 @@ TRAIN:
         LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
-        BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face
+        BACKEND: 'Y5F'    # HC for Haar Cascade, Y5F for YOLO5Face
         USE_LARGE_FACE_BOX: True
         LARGE_BOX_COEF: 1.5
         DETECTION:
@@ -59,7 +59,7 @@ VALID:
         LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
-        BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face
+        BACKEND: 'Y5F'    # HC for Haar Cascade, Y5F for YOLO5Face
         USE_LARGE_FACE_BOX: True
         LARGE_BOX_COEF: 1.5
         DETECTION:
@@ -93,7 +93,7 @@ TEST:
         LABELS: BVP_RSP
       CROP_FACE:
         DO_CROP_FACE: True
-        BACKEND: 'Y5F'    # HC for Haar Cascade, RF for RetinaFace, Y5F for YOLO5Face
+        BACKEND: 'Y5F'    # HC for Haar Cascade, Y5F for YOLO5Face
         USE_LARGE_FACE_BOX: True
         LARGE_BOX_COEF: 1.5
         DETECTION:

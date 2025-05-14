@@ -13,6 +13,7 @@
         72,
         72
     ],
+    "half_precision": true,
     "output_names": [
         "rPPG",
         "rRSP"

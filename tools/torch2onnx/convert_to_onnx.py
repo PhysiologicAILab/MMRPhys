@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class OnnxConverter:
     def __init__(self, model_path, onnx_path, config_path, num_frames=181,
-                 num_channels=3, height=9, width=9):
+                 num_channels=3, height=9, width=9, half_precision=False):
         self.model_path = Path(model_path)
         self.onnx_path = Path(onnx_path)
         self.config_path = Path(config_path)
@@ -20,6 +20,7 @@ class OnnxConverter:
         self.num_channels = num_channels
         self.height = height
         self.width = width
+        self.half_precision = half_precision
 
         if self.height == 9:
             from tools.torch2onnx.MMRPhysSEF import MMRPhysSEF as rPhysModel
@@ -50,7 +51,11 @@ class OnnxConverter:
             # Prepare for conversion
             self.model.eval()
             self.model.to(self.device)
-
+            
+            # Convert model to half precision if requested
+            if self.half_precision:
+                logger.info("Converting model to half precision (FP16)")
+                self.model.half()
 
         except Exception as e:
             logger.error(f"Error initializing model: {str(e)}")
@@ -88,7 +93,8 @@ class OnnxConverter:
                     "max_rate": 30,
                     "buffer_size": 180
                 }
-            }
+            },
+            "half_precision": self.half_precision
         }
 
         with open(self.config_path, 'w') as f:
@@ -121,6 +127,10 @@ class OnnxConverter:
                 self.height, self.width,
                 requires_grad=False
             ).to(self.device)
+            
+            # Convert input to half precision if model is in half precision
+            if self.half_precision:
+                dummy_input = dummy_input.half()
 
             # Define dynamic axes
             dynamic_axes = {
@@ -144,6 +154,17 @@ class OnnxConverter:
                 training=torch.onnx.TrainingMode.EVAL,
                 keep_initializers_as_inputs=False
             )
+
+            # Add half precision info to ONNX model metadata
+            if self.half_precision:
+                model = onnx.load(self.onnx_path)
+                if not model.metadata_props:
+                    model.metadata_props.add(key="precision", value="float16")
+                else:
+                    prop = model.metadata_props.add()
+                    prop.key = "precision"
+                    prop.value = "float16"
+                onnx.save(model, self.onnx_path)
 
             logger.info(f"Model exported to {self.onnx_path}")
             self._verify_onnx()
@@ -183,6 +204,8 @@ if __name__ == "__main__":
     parser.add_argument('--num_channels', type=int, default=3)
     parser.add_argument('--height', type=int, default=9)
     parser.add_argument('--width', type=int, default=9)
+    parser.add_argument('--half_precision', action='store_true', 
+                        help='Convert to half precision (FP16) model')
 
     args = parser.parse_args()
 
@@ -193,6 +216,7 @@ if __name__ == "__main__":
         args.num_frames,
         args.num_channels,
         args.height,
-        args.width
+        args.width,
+        args.half_precision
     )
     converter.convert()

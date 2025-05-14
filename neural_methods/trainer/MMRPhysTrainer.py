@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import torch
+import torch.amp as amp # for mixed precision training
 import torch.optim as optim
 import neurokit2 as nk
 from evaluation.metrics import calculate_metrics, calculate_rsp_metrics, calculate_bp_metrics
@@ -42,10 +43,17 @@ class MMRPhysTrainer(BaseTrainer):
         if torch.cuda.is_available() and config.NUM_OF_GPU_TRAIN > 0:
             dev_list = [int(d) for d in config.DEVICE.replace("cuda:", "").split(",")]
             self.device = torch.device(dev_list[0])     #currently toolbox only supports 1 GPU
+            # self.dev_str = "cuda:"+str(dev_list[0])
+            self.dev_str = "cuda"
             self.num_of_gpu = 1     #config.NUM_OF_GPU_TRAIN  # set number of used GPUs
         else:
             self.device = torch.device("cpu")  # if no GPUs set device is CPU
+            self.dev_str = "cpu"
             self.num_of_gpu = 0  # no GPUs used
+
+        self.precision = config.PRECISION
+        self.use_amp = (self.precision == "fp16" and torch.cuda.is_available())
+        self.scaler = amp.GradScaler(enabled=self.use_amp)
 
         frames = self.config.MODEL.MMRPhys.FRAME_NUM
         in_channels = self.config.MODEL.MMRPhys.CHANNELS
@@ -103,11 +111,12 @@ class MMRPhysTrainer(BaseTrainer):
             print("Unexpected model type specified. Should be standard or big, but specified:", model_type)
             exit()
 
-
         if torch.cuda.device_count() > 0 and self.num_of_gpu > 0:  # distribute model across GPUs
             self.model = torch.nn.DataParallel(self.model, device_ids=[self.device])  # data parallel model
         else:
             self.model = torch.nn.DataParallel(self.model).to(self.device)
+
+        print(f"Using {'mixed' if self.use_amp else 'full'} precision training: {self.precision}")
 
         if self.config.TOOLBOX_MODE == "train_and_test" or self.config.TOOLBOX_MODE == "only_train":
             self.num_train_batches = len(data_loader["train"])
@@ -150,6 +159,25 @@ class MMRPhysTrainer(BaseTrainer):
         else:
             raise ValueError("MMRPhys trainer initialized in incorrect toolbox mode!")
 
+    def safe_normalize(self, tensor, dim=1):
+        """Safely normalize tensor with proper handling for half-precision"""
+        mean = torch.mean(tensor, dim=dim, keepdim=True)
+        std = torch.std(tensor, dim=dim, keepdim=True)
+        
+        # Use larger epsilon for half-precision
+        epsilon = 1e-3 if self.use_amp else 1e-8
+        
+        # Clip std to prevent extreme values
+        std = torch.clamp(std, min=epsilon)
+        
+        # Normalize
+        result = (tensor - mean) / std
+        
+        # Clip to reasonable range for half-precision
+        if self.use_amp:
+            result = torch.clamp(result, min=-10.0, max=10.0)
+        
+        return result
 
     def train(self, data_loader):
         """Training routine for model"""
@@ -235,35 +263,33 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels[torch.isnan(labels)] = 0
 
                 self.optimizer.zero_grad()
-                out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
-                
-                pred_bvp = out[0]
-                pred_rsp = out[1]
-                pred_bp = out[2]
 
-                if self.model.training and self.use_fsam:
-                    appx_error_bvp = out[6]
-                    appx_error_rsp = out[8]
+                with amp.autocast(device_type=self.dev_str, enabled=self.use_amp):
+                    out = self.model(data, label_bvp=label_bvp, label_rsp=label_rsp)
+                    
+                    pred_bvp = out[0]
+                    pred_rsp = out[1]
+                    pred_bp = out[2]
 
-                loss = 0
+                    if self.model.training and self.use_fsam:
+                        appx_error_bvp = out[6]
+                        appx_error_rsp = out[8]
 
-                if "BVP" in self.tasks:
-                    mean_pred_bvp = torch.mean(pred_bvp, dim=1, keepdim=True)
-                    std_pred_bvp = torch.std(pred_bvp, dim=1, keepdim=True)
-                    pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
-                    loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
-                    loss = loss + loss_bvp
+                    loss = 0
 
-                if "RSP" in self.tasks:
-                    mean_pred_rsp = torch.mean(pred_rsp, dim=1, keepdim=True)
-                    std_pred_rsp = torch.std(pred_rsp, dim=1, keepdim=True)
-                    pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
-                    loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
-                    loss = loss + loss_rsp
-                
-                if "BP" in self.tasks:
-                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
-                    loss = loss + loss_bp
+                    if "BVP" in self.tasks:
+                        pred_bvp = self.safe_normalize(pred_bvp, dim=1)
+                        loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
+                        loss = loss + loss_bvp
+
+                    if "RSP" in self.tasks:
+                        pred_rsp = self.safe_normalize(pred_rsp, dim=1)
+                        loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
+                        loss = loss + loss_rsp
+                    
+                    if "BP" in self.tasks:
+                        loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP) 
+                        loss = loss + loss_bp
 
                 if torch.isnan(loss).any():
                     print("Nan found - idx:", idx)
@@ -275,7 +301,18 @@ class MMRPhysTrainer(BaseTrainer):
                     print("label_rsp min max:", label_rsp.min(), label_rsp.max())
                     exit()
 
-                loss.backward()
+                if self.use_amp:
+                    self.scaler.scale(loss).backward()
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    loss.backward()
+                    # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                    self.optimizer.step()
+                
+                self.scheduler.step()
 
                 if "BVP" in self.tasks:
                     running_loss_bvp += loss_bvp.item()
@@ -313,8 +350,8 @@ class MMRPhysTrainer(BaseTrainer):
                 # Append the current learning rate to the list
                 lrs.append(self.scheduler.get_last_lr())
 
-                self.optimizer.step()
-                self.scheduler.step()
+                # self.optimizer.step()
+                # self.scheduler.step()
 
                 bar_dict = {}
                 if "BVP" in self.tasks:
@@ -452,47 +489,44 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels = labels/ torch.std(labels)  # normalize
                 # labels[torch.isnan(labels)] = 0
 
-                out = self.model(data)
+                with amp.autocast(device_type=self.dev_str, enabled=self.use_amp):
+                    out = self.model(data)
                 
-                pred_bvp = out[0]
-                pred_rsp = out[1]
-                pred_bp = out[2]
+                    pred_bvp = out[0]
+                    pred_rsp = out[1]
+                    pred_bp = out[2]
 
-                loss = 0
+                    loss = 0
 
-                if "BVP" in self.tasks:
-                    mean_pred_bvp = torch.mean(pred_bvp, dim=1, keepdim=True)
-                    std_pred_bvp = torch.std(pred_bvp, dim=1, keepdim=True)
-                    pred_bvp = (pred_bvp - mean_pred_bvp) / std_pred_bvp  # normalize
-                    loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
-                    valid_loss_bvp.append(loss_bvp.item())
-                    loss += loss_bvp
+                    if "BVP" in self.tasks:
+                        pred_bvp = self.safe_normalize(pred_bvp, dim=1)
+                        loss_bvp = self.criterion_bvp(pred_bvp, label_bvp)
+                        valid_loss_bvp.append(loss_bvp.item())
+                        loss += loss_bvp
 
-                if "RSP" in self.tasks:
-                    mean_pred_rsp = torch.mean(pred_rsp, dim=1, keepdim=True)
-                    std_pred_rsp = torch.std(pred_rsp, dim=1, keepdim=True)
-                    pred_rsp = (pred_rsp - mean_pred_rsp) / std_pred_rsp  # normalize
-                    loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
-                    valid_loss_rsp.append(loss_rsp.item())
-                    loss += loss_rsp
-                
-                if "BP" in self.tasks:
-                    loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP)
-                    valid_loss_bp.append(loss_bp.item())
-                    loss += loss_bp
+                    if "RSP" in self.tasks:
+                        pred_rsp = self.safe_normalize(pred_rsp, dim=1)
+                        loss_rsp = self.criterion_rsp(pred_rsp, label_rsp)
+                        valid_loss_rsp.append(loss_rsp.item())
+                        loss += loss_rsp
+                    
+                    if "BP" in self.tasks:
+                        loss_bp = self.criterion_sbp(pred_bp[:, 0], SBP) + self.criterion_dbp(pred_bp[:, 1], DBP)
+                        valid_loss_bp.append(loss_bp.item())
+                        loss += loss_bp
 
-                valid_step += 1
+                    valid_step += 1
 
-                bar_dict = {}
-                if "BVP" in self.tasks:
-                    bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
-                if "RSP" in self.tasks:
-                    bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
-                if "BP" in self.tasks:
-                    bar_dict["loss_bp"] = round(loss_bp.item(), 2)
+                    bar_dict = {}
+                    if "BVP" in self.tasks:
+                        bar_dict["loss_bvp"] = round(loss_bvp.item(), 2)
+                    if "RSP" in self.tasks:
+                        bar_dict["loss_rsp"] = round(loss_rsp.item(), 2)
+                    if "BP" in self.tasks:
+                        bar_dict["loss_bp"] = round(loss_bp.item(), 2)
 
-                # vbar.set_postfix(loss=loss.item())
-                vbar.set_postfix(bar_dict, loss=loss.item())
+                    # vbar.set_postfix(loss=loss.item())
+                    vbar.set_postfix(bar_dict, loss=loss.item())
 
             if "BVP" in self.tasks:
                 avg_valid_loss_bvp = np.mean(np.asarray(valid_loss_bvp))
@@ -524,22 +558,45 @@ class MMRPhysTrainer(BaseTrainer):
         if self.config.TOOLBOX_MODE == "only_test":
             if not os.path.exists(self.config.INFERENCE.MODEL_PATH):
                 raise ValueError("Inference model path error! Please check INFERENCE.MODEL_PATH in your yaml.")
-            self.model.load_state_dict(torch.load(self.config.INFERENCE.MODEL_PATH, map_location=self.device))
-            print("Testing uses pretrained model!")
+
+            # Load checkpoint with new format support
+            checkpoint = torch.load(self.config.INFERENCE.MODEL_PATH, map_location=self.device)
+            # Handle both dictionary format and direct state_dict format
+            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                self.model.load_state_dict(checkpoint['model_state_dict'])
+                precision = checkpoint.get('precision', 'fp32')
+                print(f"Testing uses pretrained model in {precision} precision!")
+            else:
+                # Regular state_dict format
+                self.model.load_state_dict(checkpoint)
+                print("Testing uses pretrained model!")
             print(self.config.INFERENCE.MODEL_PATH)
+
         else:
             if self.config.TEST.USE_LAST_EPOCH:
                 last_epoch_model_path = os.path.join(
                 self.model_dir, self.model_file_name + '_Epoch' + str(self.max_epoch_num - 1) + '.pth')
                 print("Testing uses last epoch as non-pretrained model!")
                 print(last_epoch_model_path)
-                self.model.load_state_dict(torch.load(last_epoch_model_path, map_location=self.device))
+                
+                checkpoint = torch.load(last_epoch_model_path, map_location=self.device)
+                # Handle both dictionary format and direct state_dict format
+                if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                    self.model.load_state_dict(checkpoint['model_state_dict'])
+                else:
+                    self.model.load_state_dict(checkpoint)
             else:
                 best_model_path = os.path.join(
                     self.model_dir, self.model_file_name + '_Epoch' + str(self.best_epoch) + '.pth')
                 print("Testing uses best epoch selected using model selection as non-pretrained model!")
                 print(best_model_path)
-                self.model.load_state_dict(torch.load(best_model_path, map_location=self.device))
+                
+                checkpoint = torch.load(best_model_path, map_location=self.device)
+                # Handle both dictionary format and direct state_dict format
+                if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                    self.model.load_state_dict(checkpoint['model_state_dict'])
+                else:
+                    self.model.load_state_dict(checkpoint)
 
         self.model = self.model.to(self.device)
         self.model.eval()
@@ -591,95 +648,96 @@ class MMRPhysTrainer(BaseTrainer):
                 # labels_test = labels_test/ torch.std(labels_test)  # normalize
                 # labels_test[torch.isnan(labels_test)] = 0
                 
-                out = self.model(data)
+                with amp.autocast(device_type=self.dev_str, enabled=self.use_amp):
+                    out = self.model(data)
 
-                pred_bvp_test = out[0]
-                pred_rsp_test = out[1]
-                pred_bp_test = out[2]
+                    pred_bvp_test = out[0]
+                    pred_rsp_test = out[1]
+                    pred_bp_test = out[2]
 
-                if "BVP" in self.tasks:
-                    mean_label_bvp_test = torch.mean(label_bvp_test, dim=1, keepdim=True).cpu()
-                    std_label_bvp_test = torch.std(label_bvp_test, dim=1, keepdim=True).cpu()
-                    mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1, keepdim=True).cpu()
-                    std_pred_bvp_test = torch.std(pred_bvp_test, dim=1, keepdim=True).cpu()
-                    # pred_bvp_test = (pred_bvp_test - mean_pred_bvp_test) / std_pred_bvp_test  # normalize
-                if "RSP" in self.tasks:
-                    mean_label_rsp_test = torch.mean(label_rsp_test, dim=1, keepdim=True).cpu()
-                    std_label_rsp_test = torch.std(label_rsp_test, dim=1, keepdim=True).cpu()
-                    mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1, keepdim=True).cpu()
-                    std_pred_rsp_test = torch.std(pred_rsp_test, dim=1, keepdim=True).cpu()
-                    # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
-
-
-                if self.config.TEST.OUTPUT_SAVE_DIR:
                     if "BVP" in self.tasks:
-                        label_bvp_test = label_bvp_test.cpu()
-                        pred_bvp_test = pred_bvp_test.cpu()
+                        mean_label_bvp_test = torch.mean(label_bvp_test, dim=1, keepdim=True).cpu()
+                        std_label_bvp_test = torch.std(label_bvp_test, dim=1, keepdim=True).cpu()
+                        mean_pred_bvp_test = torch.mean(pred_bvp_test, dim=1, keepdim=True).cpu()
+                        std_pred_bvp_test = torch.std(pred_bvp_test, dim=1, keepdim=True).cpu()
+                        # pred_bvp_test = (pred_bvp_test - mean_pred_bvp_test) / std_pred_bvp_test  # normalize
                     if "RSP" in self.tasks:
-                        label_rsp_test = label_rsp_test.cpu()
-                        pred_rsp_test = pred_rsp_test.cpu()
-                    if "BP" in self.tasks:
-                        SBP_test = SBP_test.cpu()
-                        DBP_test = DBP_test.cpu()
-                        pred_bp_test = pred_bp_test.cpu()
+                        mean_label_rsp_test = torch.mean(label_rsp_test, dim=1, keepdim=True).cpu()
+                        std_label_rsp_test = torch.std(label_rsp_test, dim=1, keepdim=True).cpu()
+                        mean_pred_rsp_test = torch.mean(pred_rsp_test, dim=1, keepdim=True).cpu()
+                        std_pred_rsp_test = torch.std(pred_rsp_test, dim=1, keepdim=True).cpu()
+                        # pred_rsp_test = (pred_rsp_test - mean_pred_rsp_test) / std_pred_rsp_test  # normalize
 
-                for idx in range(batch_size):
-                    subj_index = test_batch[2][idx]
-                    sort_index = int(test_batch[3][idx])
 
-                    if subj_index not in pred_bvp_dict.keys():
+                    if self.config.TEST.OUTPUT_SAVE_DIR:
                         if "BVP" in self.tasks:
-                            pred_bvp_dict[subj_index] = dict()
-                            label_bvp_dict[subj_index] = dict()
+                            label_bvp_test = label_bvp_test.cpu()
+                            pred_bvp_test = pred_bvp_test.cpu()
+                        if "RSP" in self.tasks:
+                            label_rsp_test = label_rsp_test.cpu()
+                            pred_rsp_test = pred_rsp_test.cpu()
+                        if "BP" in self.tasks:
+                            SBP_test = SBP_test.cpu()
+                            DBP_test = DBP_test.cpu()
+                            pred_bp_test = pred_bp_test.cpu()
+
+                    for idx in range(batch_size):
+                        subj_index = test_batch[2][idx]
+                        sort_index = int(test_batch[3][idx])
+
+                        if subj_index not in pred_bvp_dict.keys():
+                            if "BVP" in self.tasks:
+                                pred_bvp_dict[subj_index] = dict()
+                                label_bvp_dict[subj_index] = dict()
+
+                            if "RSP" in self.tasks:
+                                pred_rsp_dict[subj_index] = dict()
+                                label_rsp_dict[subj_index] = dict()
+
+                            if "BP" in self.tasks:
+                                pred_sbp_dict[subj_index] = dict()
+                                pred_dbp_dict[subj_index] = dict()
+                                label_sbp_dict[subj_index] = dict()
+                                label_dbp_dict[subj_index] = dict()
+
+
+                        if "BVP" in self.tasks:
+                            if std_label_bvp_test[idx] > 0.001:
+                                label_bvp_dict[subj_index][sort_index] = (label_bvp_test[idx] - mean_label_bvp_test[idx]) / std_label_bvp_test[idx]   #label_bvp_test[idx]    # standardize
+                            else:
+                                label_bvp_dict[subj_index][sort_index] = label_bvp_test[idx]
+                            
+                            if std_pred_bvp_test[idx] > 0.001:
+                                pred_bvp_dict[subj_index][sort_index] = (pred_bvp_test[idx] - mean_pred_bvp_test[idx]) / std_pred_bvp_test[idx]   #pred_bvp_test[idx]    # standardize
+                            else:
+                                pred_bvp_dict[subj_index][sort_index] = pred_bvp_test[idx]
 
                         if "RSP" in self.tasks:
-                            pred_rsp_dict[subj_index] = dict()
-                            label_rsp_dict[subj_index] = dict()
+                            if (std_label_rsp_test[idx]) > 0.001:
+                                label_rsp_dict[subj_index][sort_index] = (label_rsp_test[idx] - mean_label_rsp_test[idx]) / (std_label_rsp_test[idx])   #label_rsp_test[idx]    # standardize
+                            else:
+                                label_rsp_dict[subj_index][sort_index] = label_rsp_test[idx]
+
+                            if (std_pred_rsp_test[idx]) > 0.001:
+                                pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / (std_pred_rsp_test[idx])  #pred_rsp_test[idx]    # standardize
+                            else:
+                                pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
 
                         if "BP" in self.tasks:
-                            pred_sbp_dict[subj_index] = dict()
-                            pred_dbp_dict[subj_index] = dict()
-                            label_sbp_dict[subj_index] = dict()
-                            label_dbp_dict[subj_index] = dict()
-
-
-                    if "BVP" in self.tasks:
-                        if std_label_bvp_test[idx] > 0.001:
-                            label_bvp_dict[subj_index][sort_index] = (label_bvp_test[idx] - mean_label_bvp_test[idx]) / std_label_bvp_test[idx]   #label_bvp_test[idx]    # standardize
-                        else:
-                            label_bvp_dict[subj_index][sort_index] = label_bvp_test[idx]
-                        
-                        if std_pred_bvp_test[idx] > 0.001:
-                            pred_bvp_dict[subj_index][sort_index] = (pred_bvp_test[idx] - mean_pred_bvp_test[idx]) / std_pred_bvp_test[idx]   #pred_bvp_test[idx]    # standardize
-                        else:
-                            pred_bvp_dict[subj_index][sort_index] = pred_bvp_test[idx]
-
-                    if "RSP" in self.tasks:
-                        if (std_label_rsp_test[idx]) > 0.001:
-                            label_rsp_dict[subj_index][sort_index] = (label_rsp_test[idx] - mean_label_rsp_test[idx]) / (std_label_rsp_test[idx])   #label_rsp_test[idx]    # standardize
-                        else:
-                            label_rsp_dict[subj_index][sort_index] = label_rsp_test[idx]
-
-                        if (std_pred_rsp_test[idx]) > 0.001:
-                            pred_rsp_dict[subj_index][sort_index] = (pred_rsp_test[idx] - mean_pred_rsp_test[idx]) / (std_pred_rsp_test[idx])  #pred_rsp_test[idx]    # standardize
-                        else:
-                            pred_rsp_dict[subj_index][sort_index] = pred_rsp_test[idx]
-
-                    if "BP" in self.tasks:
-                        label_sbp_dict[subj_index][sort_index] = SBP_test[idx]
-                        label_dbp_dict[subj_index][sort_index] = DBP_test[idx]
-                        pred_SBP = pred_bp_test[idx][0]
-                        pred_DBP = pred_bp_test[idx][1]
-                        # if pred_SBP < 90:
-                        #     pred_SBP = 90
-                        # elif pred_SBP > 180:
-                        #     pred_SBP = 180
-                        # if pred_DBP < 60:
-                        #     pred_DBP = 60
-                        # elif pred_DBP > 120:
-                        #     pred_DBP = 120
-                        pred_sbp_dict[subj_index][sort_index] = pred_SBP
-                        pred_dbp_dict[subj_index][sort_index] = pred_DBP
+                            label_sbp_dict[subj_index][sort_index] = SBP_test[idx]
+                            label_dbp_dict[subj_index][sort_index] = DBP_test[idx]
+                            pred_SBP = pred_bp_test[idx][0]
+                            pred_DBP = pred_bp_test[idx][1]
+                            # if pred_SBP < 90:
+                            #     pred_SBP = 90
+                            # elif pred_SBP > 180:
+                            #     pred_SBP = 180
+                            # if pred_DBP < 60:
+                            #     pred_DBP = 60
+                            # elif pred_DBP > 120:
+                            #     pred_DBP = 120
+                            pred_sbp_dict[subj_index][sort_index] = pred_SBP
+                            pred_dbp_dict[subj_index][sort_index] = pred_DBP
 
         print('')
         if "BVP" in self.tasks:
@@ -706,5 +764,13 @@ class MMRPhysTrainer(BaseTrainer):
             os.makedirs(self.model_dir)
         model_path = os.path.join(
             self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
-        torch.save(self.model.state_dict(), model_path)
-        print('Saved Model Path: ', model_path)
+        
+        if self.precision == "fp16":
+            # Convert to half precision but save just the state_dict directly
+            state_dict = {k: v.half() for k, v in self.model.state_dict().items()}
+            torch.save(state_dict, model_path)
+            print(f'Saved Model in FP16 precision - Path: {model_path}')
+        else:
+            # Standard full precision save
+            torch.save(self.model.state_dict(), model_path)
+            print(f'Saved Model in FP32 precision - Path: {model_path}')

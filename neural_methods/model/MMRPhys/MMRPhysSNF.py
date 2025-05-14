@@ -1,5 +1,5 @@
 """
-MMRPhys: Remote Extraction of Multiple Physiological Signals using Label Guided Factorization
+Efficient and Robust Multidimensional Attention in Remote Physiological Sensing through Target Signal Constrained Factorization
 """
 
 import torch

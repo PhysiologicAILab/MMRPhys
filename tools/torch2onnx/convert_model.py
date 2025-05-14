@@ -34,6 +34,8 @@ def main():
                         help='Path to the JSON configuration file')
     parser.add_argument('--verbose', action='store_true', default=False,
                         help='Enable verbose logging')
+    parser.add_argument('--half_precision', action='store_true', default=False,
+                        help='Convert to half precision (FP16) model')
 
     args = parser.parse_args()
 
@@ -55,13 +57,18 @@ def main():
         num_channels = input_size[1]
         height = input_size[3]
         width = input_size[4]
+        
+        # Check for half precision in config (command line argument takes precedence)
+        half_precision = args.half_precision or config.get('half_precision', False)
+        if half_precision:
+            logger.info("Half precision (FP16) conversion enabled")
 
         # Construct paths
         config_dir = Path(args.config_path).parent
         model_name = config.get('model_info', {}).get('name', 'SCAMPS_Multi')
         
         model_path = config_dir / f"{model_name}.pth"
-        onnx_path = config_dir / f"{model_name}.onnx"
+        onnx_path = config_dir / f"{model_name}{'_fp16' if half_precision else ''}.onnx"
 
         # Create output directories if they don't exist
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,7 +82,8 @@ def main():
             num_frames=num_frames,
             num_channels=num_channels,
             height=height,
-            width=width
+            width=width,
+            half_precision=half_precision
         )
 
         # Perform conversion
@@ -85,6 +93,8 @@ def main():
         logger.info("Conversion completed successfully!")
         logger.info(f"ONNX model saved to: {onnx_path}")
         logger.info(f"Using config file: {args.config_path}")
+        if half_precision:
+            logger.info("Model converted to half precision (FP16)")
 
     except Exception as e:
         logger.error(f"Conversion failed: {str(e)}")

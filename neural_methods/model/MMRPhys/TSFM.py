@@ -1,5 +1,5 @@
 """
-SAMPhys: Smooth Tensor Factorization for Enhanced Multidimensional Attention in Remote Photo-plethysmography through Factorization of Voxel Embeddings
+Efficient and Robust Multidimensional Attention in Remote Physiological Sensing through Target Signal Constrained Factorization
 """
 
 import torch
@@ -37,6 +37,21 @@ class _MatrixDecompositionBase(nn.Module):
         # print('inv_t', self.inv_t)
         # print('eta', self.eta)
         # print('rand_init', self.rand_init)
+
+    def get_epsilon(self):
+        """Return appropriate epsilon based on precision"""
+        # Check if torch.amp.autocast is enabled
+        if hasattr(torch, 'is_autocast_enabled') and torch.is_autocast_enabled():
+            return 1e-3  # Use larger epsilon for half precision
+        
+        # Try to check parameter dtype
+        try:
+            param = next(self.parameters())
+            is_half = param.dtype == torch.float16
+            return 1e-3 if is_half else 1e-6
+        except StopIteration:
+            # No parameters available, default to fp32 epsilon
+            return 1e-6
 
     def _build_bases(self, B, S, D, R):
         raise NotImplementedError
@@ -225,29 +240,40 @@ class NMF(_MatrixDecompositionBase):
 
     @torch.no_grad()
     def local_step(self, x, bases, coef):
+        eps = self.get_epsilon()
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
         numerator = torch.bmm(x.transpose(1, 2), bases)
         # (B * S, N, R) @ [(B * S, D, R)^T @ (B * S, D, R)] -> (B * S, N, R)
         denominator = coef.bmm(bases.transpose(1, 2).bmm(bases))
+        # Clip denominator to prevent extreme values
+        denominator = torch.clamp(denominator, min=eps)
         # Multiplicative Update
-        coef = coef * numerator / (denominator + 1e-6)
+        coef = coef * (numerator / denominator)
+        coef = torch.nan_to_num(coef, nan=0.0, posinf=1.0, neginf=0.0)  # Handle any NaNs
 
         # (B * S, D, N) @ (B * S, N, R) -> (B * S, D, R)
         numerator = torch.bmm(x, coef)
         # (B * S, D, R) @ [(B * S, N, R)^T @ (B * S, N, R)] -> (B * S, D, R)
         denominator = bases.bmm(coef.transpose(1, 2).bmm(coef))
+        # Clip denominator
+        denominator = torch.clamp(denominator, min=eps)
         # Multiplicative Update
-        bases = bases * numerator / (denominator + 1e-6)
+        bases = bases * (numerator / denominator)
+        bases = torch.nan_to_num(bases, nan=0.0, posinf=1.0, neginf=0.0)
 
         return bases, coef
 
     def compute_coef(self, x, bases, coef):
+        eps = self.get_epsilon()
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
         numerator = torch.bmm(x.transpose(1, 2), bases)
         # (B * S, N, R) @ (B * S, D, R)^T @ (B * S, D, R) -> (B * S, N, R)
         denominator = coef.bmm(bases.transpose(1, 2).bmm(bases))
+        # Clip denominator
+        denominator = torch.clamp(denominator, min=eps)
         # multiplication update
-        coef = coef * numerator / (denominator + 1e-6)
+        coef = coef * (numerator / denominator)
+        coef = torch.nan_to_num(coef, nan=0.0, posinf=1.0, neginf=0.0)  # Handle any NaNs
 
         return coef
 
@@ -280,6 +306,21 @@ class _SmoothMatrixDecompositionBase(nn.Module):
         # print('inv_t', self.inv_t)
         # print('eta', self.eta)
         # print('rand_init', self.rand_init)
+
+    def get_epsilon(self):
+        """Return appropriate epsilon based on precision"""
+        # Check if torch.amp.autocast is enabled
+        if hasattr(torch, 'is_autocast_enabled') and torch.is_autocast_enabled():
+            return 1e-3  # Use larger epsilon for half precision
+        
+        # Try to check parameter dtype
+        try:
+            param = next(self.parameters())
+            is_half = param.dtype == torch.float16
+            return 1e-3 if is_half else 1e-6
+        except StopIteration:
+            # No parameters available, default to fp32 epsilon
+            return 1e-6
 
     def _build_bases(self, B, S, D, R):
         raise NotImplementedError
@@ -467,38 +508,47 @@ class SNMF(_SmoothMatrixDecompositionBase):
     @torch.no_grad()
     def local_step(self, x, SNMF_estimators, bases, coef):
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
-
+        eps = self.get_epsilon()
         bases_prod = torch.bmm(SNMF_estimators, bases)
 
         numerator = torch.bmm(x.transpose(1, 2), bases_prod)
         # (B * S, N, R) @ [(B * S, D, R)^T @ (B * S, D, R)] -> (B * S, N, R)
         denominator = coef.bmm(bases_prod.transpose(1, 2).bmm(bases_prod))
+        # Clip denominator to prevent extreme values
+        denominator = torch.clamp(denominator, min=eps)
         # Multiplicative Update
-        coef = coef * numerator / (denominator + 1e-6)
+        coef = coef * (numerator / denominator)
+        coef = torch.nan_to_num(coef, nan=0.0, posinf=1.0, neginf=0.0)
 
         # (B * S, D, N) @ (B * S, N, R) -> (B * S, D, R)
         numerator = torch.bmm(x, coef)
         # (B * S, D, R) @ [(B * S, N, R)^T @ (B * S, N, R)] -> (B * S, D, R)
         denominator = bases_prod.bmm(coef.transpose(1, 2).bmm(coef))
-        # Multiplicative Update
 
+        # Clip denominator
+        denominator = torch.clamp(denominator, min=eps)
+        # Multiplicative Update
         # bases = (bases_prod * numerator / (denominator + 1e-6))
-        bases = torch.bmm(SNMF_estimators.transpose(1, 2), (bases_prod * numerator /
-                          (denominator + 1e-6)))
+        bases = torch.bmm(SNMF_estimators.transpose(1, 2), (bases_prod * (numerator / denominator)))
+        bases = torch.nan_to_num(bases, nan=0.0, posinf=1.0, neginf=0.0)
         # print(bases.shape)
         # exit()
 
         return bases, coef
 
     def compute_coef(self, x, SNMF_estimators, bases, coef):
+        eps = self.get_epsilon()
         bases_prod = torch.bmm(SNMF_estimators, bases)
 
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
         numerator = torch.bmm(x.transpose(1, 2), bases_prod)
         # (B * S, N, R) @ (B * S, D, R)^T @ (B * S, D, R) -> (B * S, N, R)
         denominator = coef.bmm(bases_prod.transpose(1, 2).bmm(bases_prod))
+        # Clip denominator
+        denominator = torch.clamp(denominator, min=eps)
         # multiplication update
-        coef = coef * numerator / (denominator + 1e-6)
+        coef = coef * (numerator / denominator)
+        coef = torch.nan_to_num(coef, nan=0.0, posinf=1.0, neginf=0.0)  # Handle any NaNs
 
         return coef
 
@@ -516,11 +566,12 @@ class VQ(_MatrixDecompositionBase):
 
     @torch.no_grad()
     def local_step(self, x, bases, _):
+        eps = self.get_epsilon()
         # (B * S, D, N), normalize x along D (for cosine similarity)
         std_x = F.normalize(x, dim=1)
 
         # (B * S, D, R), normalize bases along D (for cosine similarity)
-        std_bases = F.normalize(bases, dim=1, eps=1e-6)
+        std_bases = F.normalize(bases, dim=1, eps=eps)
 
         # (B * S, D, N)^T @ (B * S, D, R) -> (B * S, N, R)
         coef = torch.bmm(std_x.transpose(1, 2), std_bases)
@@ -529,7 +580,8 @@ class VQ(_MatrixDecompositionBase):
         coef = F.softmax(self.inv_t * coef, dim=-1)
 
         # normalize along N
-        coef = coef / (1e-6 + coef.sum(dim=1, keepdim=True))
+        coef = coef / (eps + coef.sum(dim=1, keepdim=True))
+        coef = torch.nan_to_num(coef, nan=0.0, posinf=1.0, neginf=0.0)
 
         # (B * S, D, N) @ (B * S, N, R) -> (B * S, D, R)
         bases = torch.bmm(x, coef)
@@ -538,15 +590,18 @@ class VQ(_MatrixDecompositionBase):
 
 
     def compute_coef(self, x, bases, _):
+        eps = self.get_epsilon()
         with torch.no_grad():
             # (B * S, D, N) -> (B * S, 1, N)
             x_norm = x.norm(dim=1, keepdim=True)
 
+        # Clip x_norm to prevent division by very small values
+        x_norm = torch.clamp(x_norm, min=eps)
         # (B * S, D, N) / (B * S, 1, N) -> (B * S, D, N)
-        std_x = x / (1e-6 + x_norm)
+        std_x = x / x_norm
 
         # (B * S, D, R), normalize bases along D (for cosine similarity)
-        std_bases = F.normalize(bases, dim=1, eps=1e-6)
+        std_bases = F.normalize(bases, dim=1, eps=eps)
 
         # (B * S, N, D)^T @ (B * S, D, R) -> (B * S, N, R)
         coef = torch.bmm(std_x.transpose(1, 2), std_bases)
